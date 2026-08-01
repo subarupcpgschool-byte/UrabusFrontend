@@ -1,6 +1,9 @@
+import { Feature } from '@/types/Feature';
+import { Job } from '@/types/Job';
+import { COLORS } from '@constants/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { Href, router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { ExternalPathString, Href, router } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import {
     Platform,
     Pressable,
@@ -10,25 +13,7 @@ import {
     useWindowDimensions,
     View,
 } from 'react-native';
-import { COLORS } from '../../constants/colors';
 
-type Job = {
-    id: string;
-    avatar: string;
-    title: string;
-    company: string;
-    location: string;
-    employmentType: string;
-    rating: number;
-    pay: string;
-    tags: string[];
-};
-
-type Feature = {
-    icon: keyof typeof Ionicons.glyphMap;
-    title: string;
-    description: string;
-};
 const jobs: Job[] = [
     {
         id: '1',
@@ -85,12 +70,19 @@ const features: Feature[] = [
 
 export default function TopScreen() {
     const { width } = useWindowDimensions();
-    const isDesktop = width >= 1040;
-    const isTablet = width >= 720;
+
+    const [isWebReady, setIsWebReady] = useState(
+        Platform.OS !== 'web'
+    );
 
     const [keyword, setKeyword] = useState('');
     const [location, setLocation] = useState('');
-    const [favorites, setFavorites] = useState<Set<string>>(new Set());
+    const [favorites, setFavorites] = useState<Set<string>>(
+        new Set()
+    );
+
+    const isDesktop = width >= 1040;
+    const isTablet = width >= 720;
 
     const pagePadding = useMemo(() => {
         if (width >= 1280) return 48;
@@ -98,9 +90,20 @@ export default function TopScreen() {
         return 18;
     }, [width]);
 
+    useEffect(() => {
+        if (Platform.OS === 'web') {
+            setIsWebReady(true);
+        }
+    }, []);
+
+    // ★ Hookを全部呼んだ後に判定する
+    if (!isWebReady) {
+        return <View style={styles.initialRender} />;
+    }
+
     const goToSearch = () => {
         router.push({
-            pathname: '/jobs',
+            pathname: '/jobs' as ExternalPathString,
             params: {
                 keyword: keyword.trim(),
                 location: location.trim(),
@@ -133,7 +136,7 @@ export default function TopScreen() {
                     title="評価の高い新着求人"
                     description="実際に働いた人の評価を確認して応募できます。"
                     buttonLabel="求人をもっと見る"
-                    onPress={() => router.push('/jobs')}
+                    onPress={() => router.push('/jobs' as Href)}
                     compact={!isTablet}
                 />
 
@@ -1079,4 +1082,10 @@ const styles = StyleSheet.create({
         opacity: 0.82,
         backgroundColor: COLORS.blueDark,
     },
+    initialRender: {
+        flex: 1,
+        width: '100%',
+        backgroundColor: COLORS.background,
+    },
+
 });
