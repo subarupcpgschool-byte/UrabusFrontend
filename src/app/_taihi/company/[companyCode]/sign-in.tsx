@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 
-import { CompanyAuthScreen } from '@components/auth/CompanyAuthScreen';
+import { CompanyAuthScreen } from '@/components/_taihi/auth/CompanyAuthScreen';
 
 export default function CompanySignInPage() {
     const { companyCode } = useLocalSearchParams<{ companyCode: string }>();
