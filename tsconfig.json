@@ -9,12 +9,17 @@
       "@/assets/*": [
         "./assets/*"
       ],
+      "@/locales/*": [
+        "./src/i18n/locales/*"
+      ],
+      /*
       "@constants/*": [
         "./src/constants/*"
       ],
       "@components/*": [
         "./src/components/*"
       ],
+      */
     }
   },
   "include": [

@@ -13,25 +13,20 @@ import { StyleSheet } from 'react-native'
  *   combined with useWindowDimensions()/useResponsive().
  */
 export const COLORS = {
-  blue: '#2463EB',
-  blue2: '#4C8DF6',
-  navy: '#10213F',
-  ink: '#16223A',
-  muted: '#6D7B92',
-  line: '#DFE6F0',
-  background: '#F5F7FB',
-  white: '#FFFFFF',
-  green: '#16A273',
-  amber: '#E89B1D',
-  red: '#E34C57',
-  purple: '#7C5CE7',
-  lightBlue: '#E8F1FF',
-  lightGreen: '#E4F7EF',
-  lightAmber: '#FFF3D8',
-  lightRed: '#FFE8EB',
-  lightPurple: '#EFEAFF',
-  lightGray: '#EDF1F6'
+  blue: '#2463eb',
+  blue2: '#4c8df6',
+  navy: '#10213f',
+  ink: '#16223a',
+  muted: '#6d7b92',
+  line: '#dfe6f0',
+  bg: '#f5f7fb',
+  white: '#fff',
+  green: '#16a273',
+  amber: '#e89b1d',
+  red: '#e34c57',
+  purple: '#7c5ce7'
 } as const
+
 export const TOKENS = {
   radius: 16
 } as const
@@ -2898,4 +2893,3 @@ export const mobileStyles = StyleSheet.create({
     borderRadius: 10
   }
 })
-export const LAYOUT = { maxWidth: 1240, sidebarWidth: 252 } as const

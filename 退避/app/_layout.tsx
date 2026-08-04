@@ -1,5 +1,4 @@
 // 全ページ共通レイアウト
-import "@/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";

@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native'
 /**
  * Auto-converted from the supplied CSS for React Native / Expo.
  *
- * important differences from CSS:
+ * Important differences from CSS:
  * - CSS Grid rules are approximated with Flexbox and may need child width/flex styles.
  * - :before / :after require explicit <View>/<Text> elements in JSX.
  * - :hover / :focus should be implemented with Pressable state or component state.
@@ -13,18 +13,29 @@ import { StyleSheet } from 'react-native'
  *   combined with useWindowDimensions()/useResponsive().
  */
 export const COLORS = {
-  blue: '#2463EB',
-  blue2: '#4C8DF6',
-  navy: '#10213F',
-  ink: '#16223A',
-  muted: '#6D7B92',
-  line: '#DFE6F0',
-  background: '#F5F7FB',
-  white: '#FFFFFF',
-  green: '#16A273',
-  amber: '#E89B1D',
-  red: '#E34C57',
-  purple: '#7C5CE7',
+  blue: '#2463eb',
+  blue2: '#4c8df6',
+  navy: '#10213f',
+  ink: '#16223a',
+  muted: '#6d7b92',
+  line: '#dfe6f0',
+  bg: '#f5f7fb',
+  white: '#fff',
+  green: '#16a273',
+  amber: '#e89b1d',
+  red: '#e34c57',
+  purple: '#7c5ce7',
+
+  blueDark: '#245CA9',
+  blueLight: '#EAF3FF',
+  sky: '#6FC0F0',
+  greenLight: '#E6F6EF',
+  purpleLight: '#F0EBFF',
+  border: '#D8E2EF',
+  surface: '#FFFFFF',
+  background: '#F5F8FC',
+  soft: '#EFF5FC',
+  warning: '#F4A340',
   lightBlue: '#E8F1FF',
   lightGreen: '#E4F7EF',
   lightAmber: '#FFF3D8',
@@ -32,6 +43,7 @@ export const COLORS = {
   lightPurple: '#EFEAFF',
   lightGray: '#EDF1F6'
 } as const
+
 export const TOKENS = {
   radius: 16
 } as const
@@ -165,7 +177,8 @@ export const styles = StyleSheet.create({
     paddingVertical: 3,
     paddingHorizontal: 9,
     fontSize: 11,
-    fontWeight: '700'
+    fontWeight: '700',
+    width: 'fit-content' as any
   },
   badgeBlue: {
     color: '#1d54ba',
@@ -222,9 +235,11 @@ export const styles = StyleSheet.create({
   },
   publicMain: {
     maxWidth: 1240,
-    paddingTop: 0,
+    paddingTop: 20,
     paddingHorizontal: 28,
-    paddingBottom: 70
+    paddingBottom: 70,
+    marginHorizontal: "auto"
+
   },
   routeBanner: {
     marginTop: 16,
@@ -297,7 +312,7 @@ export const styles = StyleSheet.create({
     color: '#98a8c3'
   },
   hero: {
-    minHeight: 610,
+    minHeight: 450,
     marginTop: 0,
     display: 'flex',
     alignItems: 'center',
@@ -374,8 +389,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 28,
     padding: 25,
-    textAlign: 'center',
-    transform: [{ rotate: '-2deg' }]
+    textAlign: 'center'
   },
   portrait: {
     height: 220,
@@ -1213,7 +1227,8 @@ export const styles = StyleSheet.create({
   pricingGrid: {
     display: 'flex',
     gap: 18,
-    alignItems: 'center'
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   pricingGridArticle: {
     backgroundColor: '#fff',
@@ -2898,4 +2913,3 @@ export const mobileStyles = StyleSheet.create({
     borderRadius: 10
   }
 })
-export const LAYOUT = { maxWidth: 1240, sidebarWidth: 252 } as const
