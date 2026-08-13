@@ -83,7 +83,7 @@ export default function TopScreen() {
               i18nKey="top.title"
               components={{
                 em: <Text style={text("heroCopyH1Em")} />,
-                br: <br />,
+                br: <>{"\n"}</>,
               }}
             />
           </Text>

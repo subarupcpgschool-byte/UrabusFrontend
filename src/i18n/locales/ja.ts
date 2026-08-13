@@ -7,7 +7,7 @@ export default {
     },
 
     top: {
-        title: "評価でつながる、<br/><em>直接雇用</em>の新しいかたち。",
+        title: "評価でつながる、\n<em>直接雇用</em>の新しいかたち。",
         searchJobs: "求人を検索",
     },
 

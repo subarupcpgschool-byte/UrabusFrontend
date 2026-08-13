@@ -1,7 +1,6 @@
 import { baseStyle, layoutFixStyle, textStyle } from "@/theme/responsiveStyle";
 import { capitalize } from "@/utils/stringUtils";
-import { Text } from "expo-router/build/react-navigation";
-import { useWindowDimensions, View } from "react-native";
+import { Text, useWindowDimensions, View } from "react-native";
 
 export type BadgeProps = {
   message: string;

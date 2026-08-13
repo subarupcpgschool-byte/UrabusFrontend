@@ -2,8 +2,7 @@ import { IconProps } from "@/constants/props";
 import { COLORS } from "@/theme/GlobalWorkersStyles";
 import { baseStyle, layoutFixStyle, textStyle } from "@/theme/responsiveStyle";
 import { Ionicons } from "@expo/vector-icons";
-import { Text } from "expo-router/build/react-navigation";
-import { View } from "react-native";
+import { Text, View } from "react-native";
 
 export type JobMetaProps = {
   width: number;

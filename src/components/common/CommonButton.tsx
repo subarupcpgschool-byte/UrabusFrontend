@@ -3,8 +3,7 @@ import { COLORS } from "@/theme/GlobalWorkersStyles";
 import { baseStyle, layoutFixStyle, textStyle } from "@/theme/responsiveStyle";
 import { capitalize } from "@/utils/stringUtils";
 import { Ionicons } from "@expo/vector-icons";
-import { Text } from "expo-router/build/react-navigation";
-import { GestureResponderEvent, Pressable } from "react-native";
+import { GestureResponderEvent, Pressable, Text } from "react-native";
 
 export type ButtonProps = {
   message: MessageProps;
