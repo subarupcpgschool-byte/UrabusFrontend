@@ -9,16 +9,18 @@ import {
   View,
 } from "react-native";
 
+import CommonButton from "@/components/common/CommonButton";
+import JobBadge from "@/components/job/JobBadge";
+import JobCard from "@/components/job/JobCard";
 import { COLORS } from "@/theme/GlobalWorkersStyles";
-import { layoutFixes } from "@/theme/layoutFixes";
-import { responsiveStyles, responsiveTextStyle } from "@/theme/themeUtils";
+import { baseStyle, layoutFixStyle, textStyle } from "@/theme/responsiveStyle";
 import { Trans, useTranslation } from "react-i18next";
 export default function TopScreen() {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
-  const s = (...names: string[]) => responsiveStyles(names, width) as never;
-  const text = (...names: string[]) => responsiveTextStyle(names, width);
-  const lx = (classes: readonly string[]) => layoutFixes(classes, width);
+  const s = (...names: string[]) => baseStyle(names, width) as never;
+  const text = (...names: string[]) => textStyle(names, width);
+  const lx = (classes: readonly string[]) => layoutFixStyle(classes, width);
   const cycleSelect = (
     value: string,
     setter: (value: string) => void,
@@ -97,7 +99,7 @@ export default function TopScreen() {
           </Text>
           <View style={[s("heroSearch"), lx(["hero-search"])]}>
             <View style={s("heroSearchDiv")}>
-              <Ionicons name="ellipse-outline" size={16} color={COLORS.muted} />
+              <Ionicons name="search-outline" size={16} color={COLORS.muted} />
               <TextInput
                 value={companyName}
                 onChangeText={setCompanyName}
@@ -124,8 +126,8 @@ export default function TopScreen() {
               onPress={handleSearchJobs}
               style={({ pressed }) => [
                 [
-                  s("btn", "btnPrimary", "btnLg"),
-                  lx(["btn", "btn-primary", "btn-lg"]),
+                  s("btn", "btnPrimary", "btnLg", "flexRow"),
+                  lx(["btn", "btn-primary", "btn-lg", "flexRow"]),
                 ],
                 pressed && { opacity: 0.72 },
               ]}
@@ -199,23 +201,19 @@ export default function TopScreen() {
               {"実際に働いた人の評価を確認して応募できます。"}
             </Text>
           </View>
-          <Pressable
-            onPress={handleShowJobs}
-            style={({ pressed }) => [
-              [
-                s("btn", "btnPrimary", "sectionHeadingBtn"),
-                lx(["btn", "btn-primary"]),
-              ],
-              pressed && { opacity: 0.72 },
-            ]}
-          >
-            <Ionicons name="briefcase-outline" size={16} color={COLORS.white} />
-            <Text style={text("btn", "btnPrimary", "sectionHeadingBtn")}>
-              {"求人をもっと見る"}
-            </Text>
-          </Pressable>
+          <CommonButton
+            message={{ text: "求人をもっと見る", color: "white" }}
+            btn={{ color: "blue" }}
+            width={width}
+          />
         </View>
         <View style={[s("jobGrid"), lx(["job-grid"])]}>
+          <JobCard
+            clickApplyAction={() => {}}
+            clickDetailAction={() => {}}
+            clickFavoriteAction={() => {}}
+            width={width}
+          />
           <View style={[s("jobCard"), lx(["job-card"])]}>
             <View style={[s("jobCardHead"), lx(["job-card-head"])]}>
               <View style={[s("companyAvatar"), lx(["company-avatar"])]}>
@@ -236,14 +234,7 @@ export default function TopScreen() {
                   pressed && { opacity: 0.72 },
                 ]}
               >
-                <Ionicons
-                  name="ellipse-outline"
-                  size={16}
-                  color={COLORS.blue}
-                />
-                <Text style={text("iconBtn", "jobCardHeadIconBtn")}>
-                  {"操作"}
-                </Text>
+                <Ionicons name="star-outline" size={16} color={COLORS.blue} />
               </Pressable>
             </View>
             <View style={[s("jobMeta"), lx(["job-meta"])]}>
@@ -289,6 +280,7 @@ export default function TopScreen() {
               <Text>{"月給 45万〜65万円"}</Text>
             </View>
             <View style={[s("tagRow"), lx(["tag-row"])]}>
+              <JobBadge message="未経験OK" color="blue" />
               <View
                 style={[s("badge", "badgeBlue"), lx(["badge", "badge-blue"])]}
               >
@@ -373,14 +365,7 @@ export default function TopScreen() {
                   pressed && { opacity: 0.72 },
                 ]}
               >
-                <Ionicons
-                  name="ellipse-outline"
-                  size={16}
-                  color={COLORS.blue}
-                />
-                <Text style={text("iconBtn", "jobCardHeadIconBtn")}>
-                  {"操作"}
-                </Text>
+                <Ionicons name="star-outline" size={16} color={COLORS.blue} />
               </Pressable>
             </View>
             <View style={[s("jobMeta"), lx(["job-meta"])]}>
@@ -390,11 +375,7 @@ export default function TopScreen() {
                   { flexDirection: "row", alignItems: "center", gap: 6 },
                 ]}
               >
-                <Ionicons
-                  name="ellipse-outline"
-                  size={16}
-                  color={COLORS.muted}
-                />
+                <Ionicons name="star-outline" size={16} color={COLORS.muted} />
                 <Text style={text("jobMetaSpan")}>{"大阪府／週3リモート"}</Text>
               </View>
               <View
@@ -506,14 +487,7 @@ export default function TopScreen() {
                   pressed && { opacity: 0.72 },
                 ]}
               >
-                <Ionicons
-                  name="ellipse-outline"
-                  size={16}
-                  color={COLORS.blue}
-                />
-                <Text style={text("iconBtn", "jobCardHeadIconBtn")}>
-                  {"操作"}
-                </Text>
+                <Ionicons name="star-outline" size={16} color={COLORS.blue} />
               </Pressable>
             </View>
             <View style={[s("jobMeta"), lx(["job-meta"])]}>

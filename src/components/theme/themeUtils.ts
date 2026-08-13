@@ -34,7 +34,7 @@ const TEXT_PROPERTIES = new Set<keyof TextStyle>([
   'userSelect'
 ])
 
-export function cssClassToThemeKey (value: string): string {
+export function cssClassToThemeKey(value: string): string {
   const parts = value.split(/[-_]+/g).filter(Boolean)
 
   if (parts.length === 0) {
@@ -50,16 +50,16 @@ export function cssClassToThemeKey (value: string): string {
   )
 }
 
-export function pascal (value: string): string {
+export function pascal(value: string): string {
   if (!value) return value
   return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
-export function hasThemeStyle (name: string): boolean {
+export function hasThemeStyle(name: string): boolean {
   return name in base || name in tablet || name in mobile
 }
 
-export function responsiveStyle (name: string, width: number): unknown[] {
+export function responsiveStyle(name: string, width: number): unknown[] {
   const result: unknown[] = []
 
   if (name in base) {
@@ -77,7 +77,7 @@ export function responsiveStyle (name: string, width: number): unknown[] {
   return result
 }
 
-export function responsiveStyles (
+export function responsiveStyles(
   names: readonly string[],
   width: number
 ): unknown[] {
@@ -91,7 +91,7 @@ export function responsiveStyles (
   return result
 }
 
-export function responsiveTextStyle (
+export function responsiveTextStyle(
   names: readonly string[],
   width: number
 ): TextStyle {

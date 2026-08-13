@@ -116,7 +116,11 @@ export const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '800'
   },
+  flex1: {
+    flex: 1
+  },
   btn: {
+    flexDirection: "row",
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: 'transparent',
@@ -178,7 +182,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 9,
     fontSize: 11,
     fontWeight: '700',
-    width: 'fit-content' as any
+    width: 'fit-content' as any,
   },
   badgeBlue: {
     color: '#1d54ba',
@@ -356,7 +360,9 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 11,
     borderRightWidth: 1,
     borderRightColor: '#dfe6f0',
-    color: '#7b8ba2'
+    color: '#7b8ba2',
+    flexDirection: "row",
+    flexGrow: 1
   },
   heroSearchInput: {
     width: '100%',
@@ -458,9 +464,13 @@ export const styles = StyleSheet.create({
   },
   jobGrid: {
     display: 'flex',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 18
   },
   jobCard: {
+    minWidth: 350,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderStyle: 'solid',
@@ -2726,6 +2736,10 @@ export const styles = StyleSheet.create({
   reviewTimelineSpan: {
     color: '#6d7b92',
     fontSize: 11
+  },
+  flexRow: {
+    display: 'flex',
+    flexDirection: 'row'
   }
 })
 

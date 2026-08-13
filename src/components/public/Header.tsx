@@ -33,6 +33,7 @@ export default function HeaderComponent() {
       style={[
         ...responsiveStyle("publicHeader", width),
         {
+          justifyContent: "space-around",
           flexDirection: "row",
           paddingHorizontal: width < BREAKPOINTS.tablet ? 15 : 28,
         },
@@ -44,6 +45,7 @@ export default function HeaderComponent() {
           maxWidth: 1240,
           alignSelf: "center",
           flexDirection: "row",
+          justifyContent: "space-between",
           alignItems: "center",
           gap: desktop ? 48 : 14,
         }}
@@ -79,7 +81,7 @@ export default function HeaderComponent() {
                 {
                   flex: 1,
                   flexDirection: "row",
-                  justifyContent: "center",
+                  justifyContent: "right",
                 },
               ]}
             >

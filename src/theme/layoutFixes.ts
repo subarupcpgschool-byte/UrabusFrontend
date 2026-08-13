@@ -1,6 +1,6 @@
 import { BREAKPOINTS } from './GlobalWorkersStyles'
 
-export function layoutFixes (
+export function layoutFixes(
   classes: readonly string[],
   width: number
 ): object[] {
@@ -45,10 +45,10 @@ export function layoutFixes (
     result.push(
       desktop
         ? {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }
         : { flexDirection: 'column', alignItems: 'stretch' }
     )
   if (classes.includes('hero') || classes.includes('hero-search'))
