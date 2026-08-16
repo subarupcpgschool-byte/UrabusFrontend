@@ -1,0 +1,9 @@
+import { router } from "expo-router";
+import { StyleSheet, Text, View } from "react-native";
+import AppPage from "@/components/layout/AppPage";
+import { AppButton, Panel, StatusBadge } from "@/components/ui/AppUI";
+import { SEARCH_COLORS as C } from "@/components/search/theme";
+
+const items=[["バックエンドエンジニア","TechVision株式会社","選考中"],["Webデザイナー","株式会社イノート","面接"],["店舗運営スタッフ","グリーンリーフ株式会社","不採用"]];
+export default function ApplicationsPage(){return <AppPage title="応募履歴" subtitle="応募状況と選考の進捗を確認できます" role="user" activeMenu="応募履歴"><View style={s.tabs}>{["すべて 12","選考中 5","面接 2","内定 1"].map(x=><View key={x} style={s.tab}><Text style={s.tabText}>{x}</Text></View>)}</View>{items.map((x,i)=><Panel key={x[0]}><View style={s.head}><View style={{flex:1}}><Text style={s.title}>{x[0]}</Text><Text style={s.sub}>{x[1]}　応募日：2026/06/0{i+1}</Text></View><StatusBadge label={x[2]} tone={i===0?"yellow":i===1?"blue":"red"}/></View>{i===0&&<View style={s.timeline}>{["応募","書類選考","面接","内定"].map((v,n)=><View key={v} style={s.step}><View style={[s.dot,n<2&&s.done]}/><Text style={s.stepText}>{v}</Text></View>)}</View>}<AppButton label="メッセージを開く" outline onPress={()=>router.push("/chat/job/1" as never)}/></Panel>)}</AppPage>}
+const s=StyleSheet.create({tabs:{flexDirection:"row",flexWrap:"wrap",gap:8},tab:{borderRadius:8,borderWidth:1,borderColor:C.border,backgroundColor:C.white,paddingHorizontal:16,paddingVertical:10},tabText:{color:C.textSub,fontSize:11,fontWeight:"700"},head:{flexDirection:"row",alignItems:"center",gap:12},title:{color:C.text,fontSize:15,fontWeight:"900"},sub:{marginTop:4,color:C.textSub,fontSize:11},timeline:{flexDirection:"row",marginVertical:14},step:{flex:1,alignItems:"center",borderTopWidth:2,borderTopColor:C.border},dot:{width:13,height:13,borderRadius:7,marginTop:-8,backgroundColor:C.white,borderWidth:2,borderColor:C.border},done:{backgroundColor:C.success,borderColor:C.success},stepText:{marginTop:6,color:C.textSub,fontSize:9.5}});
