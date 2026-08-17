@@ -1,10 +1,12 @@
+import { Button } from "@/components/common/Button";
+import { Header } from "@/components/common/Header";
+import { Logo } from "@/components/common/Logo";
+import { C } from "@/theme/colors";
+import { notify } from "@/utils/pathUtils";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
 import { useState } from "react";
 
 import {
-  Alert,
-  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -14,22 +16,6 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-
-const C = {
-  blue: "#2563EB",
-  blueDark: "#1748B8",
-  blueSoft: "#EAF2FF",
-  navy: "#10284B",
-  green: "#159A69",
-  greenSoft: "#E5F7EF",
-  bg: "#F5F8FC",
-  white: "#FFFFFF",
-  text: "#162033",
-  sub: "#61708A",
-  muted: "#8995A8",
-  border: "#DDE6F1",
-  yellow: "#F4B740",
-} as const;
 
 type IconName = keyof typeof Ionicons.glyphMap;
 type Job = {
@@ -79,146 +65,6 @@ const jobs: Job[] = [
     tags: ["未経験OK", "接客", "交通費支給"],
   },
 ];
-
-const notify = (title: string) => {
-  if (title === "top" || title === "top") {
-    router.push("/" as never);
-    return;
-  }
-  if (title === "求人を探す" || title === "求人検索") {
-    router.push("/jobs" as never);
-    return;
-  }
-  if (title === "企業を探す") {
-    router.push("/companies" as never);
-    return;
-  }
-  if (title === "ログイン" || title === "無料で始める") {
-    router.push("/auth" as never);
-    return;
-  }
-  if (title.includes("詳細")) {
-    router.push("/jobs/1" as never);
-    return;
-  }
-  if (title.includes("応募")) {
-    router.push("/jobs/1/apply" as never);
-    return;
-  }
-  Alert.alert(title, "検索条件を受け付けました（デモ）。");
-};
-
-function Logo({ inverse = false }: { inverse?: boolean }) {
-  return (
-    <View style={s.logo}>
-      <Pressable key="logo" onPress={() => notify("top")} style={s.logoMark}>
-        <Image
-          source={require("@/assets/images/logo.svg")}
-          style={{
-            height: "100%",
-            width: "100%",
-            borderRadius: 0,
-          }}
-          resizeMode="contain"
-        />
-      </Pressable>
-    </View>
-  );
-}
-
-function Button({
-  label,
-  outline = false,
-  onPress,
-}: {
-  label: string;
-  outline?: boolean;
-  onPress?: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress ?? (() => notify(label))}
-      style={({ pressed }) => [
-        s.button,
-        outline && s.buttonOutline,
-        pressed && s.pressed,
-      ]}
-    >
-      <Text style={[s.buttonText, outline && s.buttonTextOutline]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function Header({ desktop }: { desktop: boolean }) {
-  const [open, setOpen] = useState(false);
-  const items = [
-    {
-      path: "/jobs",
-      text: "求人を探す",
-    },
-    {
-      path: "/companies",
-      text: "企業を探す",
-    },
-    {
-      path: "/ssss",
-      text: "評価について",
-    },
-    {
-      path: "/price",
-      text: "料金",
-    },
-    {
-      path: "/guide",
-      text: "ご利用ガイド",
-    },
-  ];
-  return (
-    <View style={s.header}>
-      <View style={s.headerInner}>
-        <Logo />
-        {desktop ? (
-          <>
-            <View style={s.nav}>
-              {items.map((x) => (
-                <Pressable key={x.path} onPress={() => notify(x.text)}>
-                  <Text style={s.navText}>{x.text}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <View style={s.headerActions}>
-              <Pressable onPress={() => notify("ログイン")}>
-                <Text style={s.login}>ログイン</Text>
-              </Pressable>
-              <Button label="無料で始める" />
-            </View>
-          </>
-        ) : (
-          <Pressable onPress={() => setOpen((v) => !v)} style={s.menu}>
-            <Ionicons name={open ? "close" : "menu"} size={29} color={C.navy} />
-          </Pressable>
-        )}
-      </View>
-      {!desktop && open && (
-        <View style={s.mobileMenu}>
-          {items.map((x) => (
-            <Pressable
-              key={x.path}
-              onPress={() => notify(x.text)}
-              style={s.mobileItem}
-            >
-              <Text style={s.navText}>{x.text}</Text>
-              <Ionicons name="chevron-forward" size={18} color={C.muted} />
-            </Pressable>
-          ))}
-          <Button label="無料で始める" />
-        </View>
-      )}
-    </View>
-  );
-}
 
 function Search({ mobile }: { mobile: boolean }) {
   return (
@@ -413,7 +259,7 @@ function Footer({ desktop }: { desktop: boolean }) {
     <View style={s.footer}>
       <View style={[s.footerInner, !desktop && { flexDirection: "column" }]}>
         <View style={s.footerBrand}>
-          <Logo inverse />
+          <Logo backgroundColor="white" />
           <Text style={s.footerDesc}>
             評価でつながる直接雇用プラットフォーム。企業と働く人の信頼をつなぎ、より良い雇用の未来をつくります。
           </Text>
@@ -621,24 +467,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     flexDirection: "row",
     alignItems: "center",
-  },
-  logo: { flexDirection: "row", alignItems: "center", gap: 10, height: "100%" },
-  logoMark: {
-    width: 200,
-    height: 58,
-    borderRadius: 11,
-    borderColor: "transparent",
-    backgroundColor: "transparent",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  logoLetters: { color: C.white, fontWeight: "900", fontSize: 14 },
-  logoName: {
-    color: C.text,
-    fontWeight: "700",
-    fontSize: 19,
-    letterSpacing: -0.4,
   },
   nav: { flex: 1, flexDirection: "row", justifyContent: "center", gap: 27 },
   navText: { color: C.text, fontSize: 14, fontWeight: "700" },
