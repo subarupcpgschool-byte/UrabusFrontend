@@ -1,9 +1,10 @@
+import { AuthProvider } from "@/auth/AuthProvider";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
 export default function RootLayout() {
   return (
-    <>
+    <AuthProvider>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -19,6 +20,6 @@ export default function RootLayout() {
         <Stack.Screen name="jobs/[id]/apply" />
         <Stack.Screen name="companies/index" />
       </Stack>
-    </>
+    </AuthProvider>
   );
 }

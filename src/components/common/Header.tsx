@@ -1,3 +1,5 @@
+import { router } from "expo-router";
+import { useAuth } from "@/auth/AuthProvider";
 import { C } from "@/theme/colors";
 import { notify } from "@/utils/pathUtils";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,6 +10,7 @@ import { Logo } from "./Logo";
 
 export function Header({ desktop }: { desktop: boolean }) {
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
   const items = [
     {
       path: "/jobs",
@@ -44,10 +47,10 @@ export function Header({ desktop }: { desktop: boolean }) {
               ))}
             </View>
             <View style={s.headerActions}>
-              <Pressable onPress={() => notify("ログイン")}>
-                <Text style={s.login}>ログイン</Text>
+              <Pressable onPress={() => router.push("/auth")}>
+                <Text style={s.login}>{user ? user.displayName : "ログイン"}</Text>
               </Pressable>
-              <Button label="無料で始める" />
+              <Button label={user ? "アカウント" : "無料で始める"} onPress={() => router.push(user ? "/auth" : { pathname: "/auth", params: { mode: "register" } })} />
             </View>
           </>
         ) : (
@@ -58,6 +61,7 @@ export function Header({ desktop }: { desktop: boolean }) {
       </View>
       {!desktop && open && (
         <View style={s.mobileMenu}>
+          <Pressable onPress={() => router.push("/auth")} style={s.mobileItem}><Text style={s.login}>{user ? user.displayName : "ログイン"}</Text></Pressable>
           {items.map((x) => (
             <Pressable
               key={x.path}
@@ -68,7 +72,7 @@ export function Header({ desktop }: { desktop: boolean }) {
               <Ionicons name="chevron-forward" size={18} color={C.muted} />
             </Pressable>
           ))}
-          <Button label="無料で始める" />
+          <Button label={user ? "アカウント" : "無料で始める"} onPress={() => router.push(user ? "/auth" : { pathname: "/auth", params: { mode: "register" } })} />
         </View>
       )}
     </View>

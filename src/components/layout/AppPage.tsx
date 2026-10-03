@@ -1,3 +1,4 @@
+import { useAuth } from "@/auth/AuthProvider";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -85,6 +86,7 @@ export default function AppPage({
 }
 
 function Header({ compact }: { compact: boolean }) {
+  const { user } = useAuth();
   return (
     <View style={s.header}>
       <View style={s.headerInner}>
@@ -105,10 +107,10 @@ function Header({ compact }: { compact: boolean }) {
         <View style={s.actions}>
           <Ionicons name="notifications-outline" size={22} color={C.textSub} />
           <Ionicons name="heart-outline" size={22} color={C.textSub} />
-          <View style={s.avatar}>
-            <Text style={s.avatarText}>山</Text>
-          </View>
-          {!compact && <Text style={s.user}>山田 太郎</Text>}
+          <Pressable accessibilityRole="button" onPress={() => router.push("/auth")} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View style={s.avatar}><Text style={s.avatarText}>{user ? user.displayName.slice(0, 1) : "人"}</Text></View>
+            {!compact && <Text style={s.user}>{user ? user.displayName : "ログイン・登録"}</Text>}
+          </Pressable>
         </View>
       </View>
     </View>
