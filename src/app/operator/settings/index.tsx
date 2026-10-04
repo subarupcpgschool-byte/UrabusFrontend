@@ -1,8 +1,9 @@
+import { AppTextInput } from "@/components/common/AppTextInput";
 import AppPage from "@/components/layout/AppPage";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
 import { AppButton, Panel, SectionTitle } from "@/components/ui/AppUI";
 import { useState } from "react";
-import { Alert, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Alert, StyleSheet, Switch, Text, View } from "react-native";
 
 const initial = [
   {
@@ -54,7 +55,7 @@ export default function OperatorSettingsPage() {
             </View>
             <View style={s.condition}>
               <Text style={s.when}>しきい値</Text>
-              <TextInput
+              <AppTextInput
                 value={r.condition}
                 onChangeText={(v) =>
                   setRules((old) =>
@@ -83,7 +84,7 @@ export default function OperatorSettingsPage() {
         <Panel style={s.card}>
           <SectionTitle>通知先</SectionTitle>
           <Text style={s.label}>運営メールアドレス</Text>
-          <TextInput
+          <AppTextInput
             defaultValue="operator@globalworkers.jp"
             style={s.fullInput}
           />
@@ -97,9 +98,9 @@ export default function OperatorSettingsPage() {
         <Panel style={s.card}>
           <SectionTitle>監視データ保持期間</SectionTitle>
           <Text style={s.label}>アクセスログ</Text>
-          <TextInput defaultValue="90日" style={s.fullInput} />
+          <AppTextInput defaultValue="90日" style={s.fullInput} />
           <Text style={s.label}>エラーログ</Text>
-          <TextInput defaultValue="180日" style={s.fullInput} />
+          <AppTextInput defaultValue="180日" style={s.fullInput} />
         </Panel>
       </View>
       <View style={s.actions}>

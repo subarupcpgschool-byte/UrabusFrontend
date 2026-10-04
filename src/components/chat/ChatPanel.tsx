@@ -1,3 +1,4 @@
+import { AppTextInput } from "@/components/common/AppTextInput";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
 import { Panel, StatusBadge } from "@/components/ui/AppUI";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 
@@ -58,11 +58,10 @@ export default function ChatPanel({
           <Bubble text="もちろんです。オンライン面談の日程候補をお送りします。" />
         </ScrollView>
         <View style={s.composer}>
-          <TextInput
+          <AppTextInput
             value={message}
             onChangeText={setMessage}
             placeholder="メッセージを入力"
-            placeholderTextColor={C.textMuted}
             style={s.input}
           />
           <Pressable

@@ -1,6 +1,7 @@
+import { AppTextInput } from "@/components/common/AppTextInput";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import AppPage from "@/components/layout/AppPage";
 import { Panel } from "@/components/ui/AppUI";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
@@ -48,10 +49,10 @@ export default function AuthPage() {
       <Text style={s.title}>{register ? "無料ユーザー登録" : "アカウントへログイン"}</Text>
       {button(register ? "Googleで登録する" : "Googleでログイン", () => void run(google), true)}
       <Text style={s.divider}>またはメールアドレスで{register ? "登録" : "ログイン"}</Text>
-      {register && <View style={s.field}><Text style={s.label}>お名前</Text><TextInput accessibilityLabel="お名前" value={name} onChangeText={setName} editable={!busy} maxLength={100} placeholder="山田 太郎" style={s.input} /></View>}
-      <View style={s.field}><Text style={s.label}>メールアドレス</Text><TextInput accessibilityLabel="メールアドレス" value={email} onChangeText={setEmail} editable={!busy} maxLength={254} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" placeholder="example@example.jp" style={s.input} /></View>
-      <View style={s.field}><Text style={s.label}>パスワード</Text><TextInput accessibilityLabel="パスワード" value={password} onChangeText={setPassword} editable={!busy} secureTextEntry={!visible} autoCapitalize="none" autoCorrect={false} autoComplete={register ? "new-password" : "current-password"} placeholder={register ? "8文字以上" : "パスワード"} style={s.input} /></View>
-      {register && <View style={s.field}><Text style={s.label}>パスワード（確認）</Text><TextInput accessibilityLabel="確認用パスワード" value={confirm} onChangeText={setConfirm} editable={!busy} secureTextEntry={!visible} autoCapitalize="none" autoCorrect={false} placeholder="もう一度入力" style={s.input} /></View>}
+      {register && <View style={s.field}><Text style={s.label}>お名前</Text><AppTextInput accessibilityLabel="お名前" value={name} onChangeText={setName} editable={!busy} maxLength={100} placeholder="山田 太郎" style={s.input} /></View>}
+      <View style={s.field}><Text style={s.label}>メールアドレス</Text><AppTextInput accessibilityLabel="メールアドレス" value={email} onChangeText={setEmail} editable={!busy} maxLength={254} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" placeholder="example@example.jp" style={s.input} /></View>
+      <View style={s.field}><Text style={s.label}>パスワード</Text><AppTextInput accessibilityLabel="パスワード" value={password} onChangeText={setPassword} editable={!busy} secureTextEntry={!visible} autoCapitalize="none" autoCorrect={false} autoComplete={register ? "new-password" : "current-password"} placeholder={register ? "8文字以上" : "パスワード"} style={s.input} /></View>
+      {register && <View style={s.field}><Text style={s.label}>パスワード（確認）</Text><AppTextInput accessibilityLabel="確認用パスワード" value={confirm} onChangeText={setConfirm} editable={!busy} secureTextEntry={!visible} autoCapitalize="none" autoCorrect={false} placeholder="もう一度入力" style={s.input} /></View>}
       <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: visible }} onPress={() => setVisible(v => !v)}><Text style={s.link}>{visible ? "パスワードを隠す" : "パスワードを表示"}</Text></Pressable>
       {register && <Text style={s.info}>登録後、確認メールのリンクを開くと承認が完了します。承認後にログインできます。</Text>}
       {button(busy ? "処理中…" : register ? "確認メールを送信" : "ログイン", () => void run(submit))}

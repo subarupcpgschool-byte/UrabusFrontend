@@ -1,6 +1,7 @@
+import { AppTextInput } from "@/components/common/AppTextInput";
 import { Ionicons } from "@expo/vector-icons";
 import type { PropsWithChildren, ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SEARCH_COLORS as C, SEARCH_SHADOW } from "@/components/search/theme";
 
 export function Panel({children,style}:{children:ReactNode;style?:object}){return <View style={[s.panel,style]}>{children}</View>}
@@ -8,7 +9,7 @@ export function SectionTitle({children}:{children:ReactNode}){return <Text style
 export function BodyText({children}:{children:ReactNode}){return <Text style={s.body}>{children}</Text>}
 export function AppButton({label,outline=false,danger=false,onPress}:{label:string;outline?:boolean;danger?:boolean;onPress:()=>void}){return <Pressable onPress={onPress} style={({pressed})=>[s.button,outline&&s.outline,danger&&s.danger,pressed&&s.pressed]}><Text style={[s.buttonText,outline&&s.outlineText]}>{label}</Text></Pressable>}
 export function StatusBadge({label,tone="blue"}:{label:string;tone?:"blue"|"green"|"yellow"|"red"}){return <View style={[s.badge,tone==="green"&&s.badgeGreen,tone==="yellow"&&s.badgeYellow,tone==="red"&&s.badgeRed]}><Text style={[s.badgeText,tone==="green"&&{color:C.success},tone==="yellow"&&{color:"#9A6800"},tone==="red"&&{color:C.danger}]}>{label}</Text></View>}
-export function FormField({label,placeholder,large=false,value,onChangeText}:{label:string;placeholder:string;large?:boolean;value?:string;onChangeText?:(value:string)=>void}){return <View style={s.field}><Text style={s.label}>{label}</Text><TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={C.textMuted} multiline={large} style={[s.input,large&&s.textarea]}/></View>}
+export function FormField({label,placeholder,large=false,value,onChangeText}:{label:string;placeholder:string;large?:boolean;value?:string;onChangeText?:(value:string)=>void}){return <View style={s.field}><Text style={s.label}>{label}</Text><AppTextInput value={value} onChangeText={onChangeText} placeholder={placeholder} multiline={large} style={[s.input,large&&s.textarea]}/></View>}
 export function StatCard({label,value,change}:{label:string;value:string;change?:string}){return <Panel style={s.stat}><Text style={s.statLabel}>{label}</Text><Text style={s.statValue}>{value}</Text>{change&&<Text style={s.change}>{change}</Text>}</Panel>}
 export function DataTable({headers,rows}:{headers:string[];rows:string[][]}){return <ScrollView horizontal showsHorizontalScrollIndicator={false}><View style={s.table}><View style={s.row}>{headers.map(x=><Text key={x} style={[s.cell,s.head]}>{x}</Text>)}</View>{rows.map((row,i)=><View key={i} style={s.row}>{row.map((x,n)=><Text key={`${i}-${n}`} style={[s.cell,n===0&&s.first]}>{x}</Text>)}</View>)}</View></ScrollView>}
 export function EmptyIcon({name}:{name:keyof typeof Ionicons.glyphMap}){return <View style={s.icon}><Ionicons name={name} size={26} color={C.primary}/></View>}
