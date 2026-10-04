@@ -1,3 +1,4 @@
+import { useMapResults } from "@/components/search/useMapResults";
 import CompanySearchCard from "@/components/search/CompanySearchCard";
 import SearchFilterPanel from "@/components/search/SearchFilterPanel";
 import SearchPageShell from "@/components/search/SearchPageShell";
@@ -9,20 +10,20 @@ import {
 import type { SearchConditions } from "@/components/search/types";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, StyleSheet, useWindowDimensions, View } from "react-native";
+import { Alert, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
 export default function CompanySearchPage() {
   const { width } = useWindowDimensions();
   const [conditions, setConditions] = useState<SearchConditions | null>(null);
   const [sort, setSort] = useState("評価が高い順");
   const chips = conditions?.selectedValues ?? [];
-  const results = useMemo(
-    () =>
-      conditions && conditions.selectedValues.length > 0
-        ? COMPANY_SEARCH_ITEMS.filter((_, i) => i < 3)
-        : COMPANY_SEARCH_ITEMS,
-    [conditions],
-  );
+  const mapResults = useMapResults("companies",conditions);
+  const useSamples = useMemo(() => COMPANY_SEARCH_ITEMS.filter(item => {
+    const keyword=conditions?.keyword.trim().toLowerCase()??"";
+    const location=conditions?.location.trim().toLowerCase()??"";
+    return JSON.stringify(item).toLowerCase().includes(keyword) && item.location.toLowerCase().includes(location);
+  }), [conditions]);
+  const results = conditions?.area ? mapResults.companies : useSamples;
   const changeSort = () =>
     setSort((v) =>
       v === "評価が高い順"
@@ -42,16 +43,16 @@ export default function CompanySearchPage() {
           config={COMPANY_FILTER_CONFIG}
           onSearch={(next) => {
             setConditions(next);
-            Alert.alert(
-              "企業検索",
-              `${next.selectedValues.length || "すべての"}条件で検索しました。`,
-            );
+
           }}
         />
         <View style={s.results}>
+          {mapResults.busy && <Text>検索中…</Text>}
+          {!!mapResults.error && <Text accessibilityRole="alert" style={{color:"#B42318"}}>{mapResults.error}</Text>}
+          {conditions?.area && !mapResults.busy && !mapResults.error && results.length === 0 && <Text>指定範囲に座標登録済みのデータがありません。</Text>}
           <SearchResultHeader
             label="企業検索結果"
-            count={conditions ? 84 : 326}
+            count={results.length}
             sort={sort}
             onChangeSort={changeSort}
             chips={chips}

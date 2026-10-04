@@ -1,3 +1,4 @@
+import { useMapResults } from "@/components/search/useMapResults";
 import JobSearchCard from "@/components/search/JobSearchCard";
 import SearchFilterPanel from "@/components/search/SearchFilterPanel";
 import SearchPageShell from "@/components/search/SearchPageShell";
@@ -7,22 +8,23 @@ import {
   JOB_SEARCH_ITEMS,
 } from "@/components/search/searchData";
 import type { SearchConditions } from "@/components/search/types";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, StyleSheet, useWindowDimensions, View } from "react-native";
+import { Alert, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
 export default function JobSearchPage() {
+  const params=useLocalSearchParams<{keyword?:string;location?:string}>();
   const { width } = useWindowDimensions();
-  const [conditions, setConditions] = useState<SearchConditions | null>(null);
+  const [conditions, setConditions] = useState<SearchConditions | null>(()=> params.keyword || params.location ? {keyword:params.keyword||"",location:params.location||"",selectedValues:[]} : null);
   const [sort, setSort] = useState("おすすめ順");
   const chips = conditions?.selectedValues ?? [];
-  const results = useMemo(
-    () =>
-      conditions && conditions.selectedValues.length > 0
-        ? JOB_SEARCH_ITEMS.filter((_, i) => i < 2)
-        : JOB_SEARCH_ITEMS,
-    [conditions],
-  );
+  const mapResults = useMapResults("jobs",conditions);
+  const useSamples = useMemo(() => JOB_SEARCH_ITEMS.filter(item => {
+    const keyword=conditions?.keyword.trim().toLowerCase()??"";
+    const location=conditions?.location.trim().toLowerCase()??"";
+    return JSON.stringify(item).toLowerCase().includes(keyword) && item.location.toLowerCase().includes(location);
+  }), [conditions]);
+  const results = conditions?.area ? mapResults.jobs : useSamples;
   const changeSort = () =>
     setSort((v) =>
       v === "おすすめ順"
@@ -39,19 +41,20 @@ export default function JobSearchPage() {
     >
       <View style={[s.layout, width < 900 && s.mobile]}>
         <SearchFilterPanel
+          initialConditions={conditions}
           config={JOB_FILTER_CONFIG}
           onSearch={(next) => {
             setConditions(next);
-            Alert.alert(
-              "求人検索",
-              `${next.selectedValues.length || "すべての"}条件で検索しました。`,
-            );
+
           }}
         />
         <View style={s.results}>
+          {mapResults.busy && <Text>検索中…</Text>}
+          {!!mapResults.error && <Text accessibilityRole="alert" style={{color:"#B42318"}}>{mapResults.error}</Text>}
+          {conditions?.area && !mapResults.busy && !mapResults.error && results.length === 0 && <Text>指定範囲に座標登録済みのデータがありません。</Text>}
           <SearchResultHeader
             label="検索結果"
-            count={conditions ? 326 : 1248}
+            count={results.length}
             sort={sort}
             onChangeSort={changeSort}
             chips={chips}

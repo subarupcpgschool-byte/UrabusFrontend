@@ -1,3 +1,4 @@
+import type { SearchArea } from "../geo/types";
 export type FilterOption = {
   label: string;
   value: string;
@@ -16,6 +17,7 @@ export type SearchFilterConfig = {
 };
 
 export type SearchConditions = {
+  area?: SearchArea;
   keyword: string;
   location: string;
   selectedValues: string[];
@@ -24,7 +26,7 @@ export type SearchConditions = {
 };
 
 export type JobSearchItem = {
-  id: number;
+  id: number | string;
   mark: string;
   markColor: string;
   title: string;
@@ -40,7 +42,7 @@ export type JobSearchItem = {
 };
 
 export type CompanySearchItem = {
-  id: number;
+  id: number | string;
   mark: string;
   markColor: string;
   companyName: string;

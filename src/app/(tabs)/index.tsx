@@ -4,6 +4,7 @@ import { Logo } from "@/components/common/Logo";
 import { C } from "@/theme/colors";
 import { notify } from "@/utils/pathUtils";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useState } from "react";
 
 import {
@@ -67,13 +68,17 @@ const jobs: Job[] = [
 ];
 
 function Search({ mobile }: { mobile: boolean }) {
+  const [keyword, setKeyword] = useState("");
+  const [location, setLocation] = useState("");
   return (
     <View style={[s.search, mobile && s.searchMobile]}>
       <View style={s.searchField}>
         <Ionicons name="search" size={20} color={C.sub} />
         <TextInput
+          value={keyword}
+          onChangeText={setKeyword}
           placeholder="職種・スキル・企業名"
-          placeholderTextColor={C.muted}
+          placeholderTextColor="#9098A3"
           style={s.input}
         />
       </View>
@@ -81,13 +86,20 @@ function Search({ mobile }: { mobile: boolean }) {
       <View style={s.searchField}>
         <Ionicons name="location-outline" size={21} color={C.sub} />
         <TextInput
+          value={location}
+          onChangeText={setLocation}
           placeholder="勤務地・リモート"
-          placeholderTextColor={C.muted}
+          placeholderTextColor="#9098A3"
           style={s.input}
         />
       </View>
       <Pressable
-        onPress={() => notify("求人検索")}
+        onPress={() =>
+          router.push({
+            pathname: "/jobs",
+            params: { keyword, location },
+          } as never)
+        }
         style={({ pressed }) => [
           s.searchButton,
           mobile && { width: "100%" },
@@ -572,7 +584,12 @@ const s = StyleSheet.create({
     gap: 9,
     paddingHorizontal: 13,
   },
-  input: { flex: 1, color: C.text, fontSize: 14 },
+  input: {
+    outlineWidth: 0,
+    flex: 1,
+    color: C.text,
+    fontSize: 14,
+  },
   divider: { width: 1, height: 32, backgroundColor: C.border },
   dividerMobile: { width: "100%", height: 1 },
   searchButton: {

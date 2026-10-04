@@ -16,7 +16,7 @@ export function SearchInput({ value, onChangeText, placeholder }: Props) {
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={COLORS.textMuted}
+        placeholderTextColor="#9098A3"
         style={styles.input}
       />
     </View>
@@ -36,6 +36,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   input: {
+    outlineWidth: 0,
     flex: 1,
     color: COLORS.text,
     fontSize: 14,
