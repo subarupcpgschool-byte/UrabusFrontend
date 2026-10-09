@@ -41,7 +41,7 @@ export function Header({ desktop }: { desktop: boolean }) {
           <>
             <View style={s.nav}>
               {items.map((x) => (
-                <Pressable key={x.path} onPress={() => notify(x.text)}>
+                <Pressable key={x.path} onPress={() => x.path === "/price" ? router.push("/price") : notify(x.text)}>
                   <Text style={s.navText}>{x.text}</Text>
                 </Pressable>
               ))}
@@ -65,7 +65,7 @@ export function Header({ desktop }: { desktop: boolean }) {
           {items.map((x) => (
             <Pressable
               key={x.path}
-              onPress={() => notify(x.text)}
+              onPress={() => x.path === "/price" ? router.push("/price") : notify(x.text)}
               style={s.mobileItem}
             >
               <Text style={s.navText}>{x.text}</Text>
