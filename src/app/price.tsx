@@ -23,12 +23,15 @@ function Feature({ children, color }: { children: string; color: string }) {
 export default function PriceScreen() {
   const { width } = useWindowDimensions();
   const desktop = width >= 1000, columns = width >= 760;
+  const [audience, setAudience] = useState<'company' | 'user'>('company');
   const [opened, setOpened] = useState([true, true]);
   return <ScrollView style={s.page} contentContainerStyle={{ flexGrow: 1 }}>
     <Header desktop={desktop} />
     <View style={s.main}>
       <View style={s.breadcrumb}><Pressable onPress={() => router.push('/')}><Text style={s.small}>ホーム</Text></Pressable><Ionicons name="chevron-forward" size={13} color={navy} /><Text style={s.small}>料金体系</Text></View>
-      <View style={s.hero}><Text style={s.tag}>企業向け掲載プラン</Text><Text style={s.title}>料金体系</Text><Text style={[s.body, { textAlign: 'center', fontSize: 19 }]}>中小企業の採用を、もっとシンプルに。</Text></View>
+      <View style={s.hero}><Text style={s.tag}>{audience === 'company' ? '企業向け掲載プラン' : 'ユーザー向け利用プラン'}</Text><Text style={s.title}>料金体系</Text><Text style={[s.body, { textAlign: 'center', fontSize: 19 }]}>{audience === 'company' ? '中小企業の採用を、もっとシンプルに。' : '仕事探しを、もっとシンプルに。'}</Text></View>
+      <View accessibilityRole="tablist" style={s.segment}>{([{ key: 'company', label: '企業' }, { key: 'user', label: 'ユーザー' }] as const).map(x => <Pressable key={x.key} accessibilityRole="tab" accessibilityState={{ selected: audience === x.key }} onPress={() => setAudience(x.key)} style={({ pressed }) => [s.segmentButton, audience === x.key && s.segmentSelected, { opacity: pressed ? .8 : 1 }]}><Text style={[s.segmentText, audience === x.key && { color: 'white' }]}>{x.label}</Text></Pressable>)}</View>
+      {audience === 'company' ? <>
       <View style={[s.row, !columns && s.vertical]}>
         <View style={[s.plan, { backgroundColor: '#f0fcf4', borderColor: '#a0e5bd' }]}>
           <Text style={[s.pill, { backgroundColor: green }]}>無料プラン</Text>
@@ -56,16 +59,20 @@ export default function PriceScreen() {
           { title: '採用したユーザーを試用期間中に評価する', limit: '試用期間内', body: '採用後は、試用期間中にユーザーの評価結果と評価内容を記載してください。', warnings: ['評価内容が未記入の場合、評価を完了できません。', '試用期間を超えた場合は割引対象外となります。'] },
         ].map((x, i) => <View key={x.title} style={s.condition}><View style={s.conditionHeader}><Text style={s.number}>0{i + 1}</Text><Text style={[s.body, { flex: 1, fontWeight: '800' }]}>{x.title}</Text></View><Text style={s.limit}>{x.limit}</Text><Text style={[s.body, { lineHeight: 25, marginVertical: 14 }]}>{x.body}</Text><View style={s.warning}>{x.warnings.map(w => <View key={w} style={s.warningRow}><Ionicons name="alert-circle" size={21} color="#ea6c00" /><Text style={s.warningText}>{w}</Text></View>)}</View></View>)}
       </View>
+      <Text style={s.heading}>割引額の計算方法</Text>
+      <View style={s.condition}><Text style={[s.body, { lineHeight: 26 }]}>応募対応と採用後の評価の達成率を、同じ重みで平均します。総合達成率50％以下は割引なし、100％で最大3,000円割引です。</Text><Text style={[s.body, { lineHeight: 26, marginTop: 12, fontWeight: '700' }]}>割引額 ＝ 3,000円 × max（0,（総合達成率 − 50％）÷ 50％）</Text><Text style={[s.body, { lineHeight: 25, marginTop: 12 }]}>応募は毎月15日から翌月15日未満を対象とし、期間終了から30日後に判定します。応募から30日以内に交渉終了した割合で計算します。30日を超えて交渉中の応募が残っている間は、応募対応の達成率を0％として計算します。</Text><Text style={[s.body, { lineHeight: 25, marginTop: 12 }]}>採用評価は対象期間内に試用期間が終了した人を集計します。評価結果と評価内容を試用期間内に記入した割合で計算します。対象が0件の項目は100％として扱います。</Text></View>
       <Text style={s.heading}>プラン比較</Text>
       <View style={s.table}><View style={s.tableRow}>{['機能', '無料プラン', '有料掲載プラン'].map((x,i) => <View key={x} style={[s.cell, { backgroundColor: i === 1 ? '#e8f8ed' : i === 2 ? '#e5f3ff' : '#f3f5f8' }]}><Text style={[s.cellText, { fontWeight: '800', color: i === 1 ? green : i === 2 ? blue : navy }]}>{x}</Text></View>)}</View>{comparison.map(row => <View style={s.tableRow} key={row[0]}>{row.map((x,i) => <View key={i} style={s.cell}><Text style={[s.cellText, i === 0 && { textAlign: 'left' }]}>{x}</Text></View>)}</View>)}</View>
       <Text style={s.heading}>よくあるご質問</Text>
       {questions.map(([q,a],i) => <View key={q} style={s.faq}><Pressable accessibilityRole="button" accessibilityState={{ expanded: opened[i] }} onPress={() => setOpened(v => v.map((x,j) => j === i ? !x : x))} style={s.question}><Text style={[s.body, { flex: 1, fontWeight: '800' }]}>{q}</Text><Ionicons name={opened[i] ? 'chevron-up' : 'chevron-down'} size={19} color={navy} /></Pressable>{opened[i] && <Text style={[s.body, { lineHeight: 25, marginTop: 8 }]}>{a}</Text>}</View>)}
-      <View style={[s.banner, !columns && s.vertical]}><Text style={[s.body, { fontSize: 22, fontWeight: '900', textAlign: 'center' }]}>採用の第一歩を、ここから。</Text><Action label="無料で求人を掲載する" /></View>
+      </> : <View style={[s.plan, s.userPlan]}><Text style={[s.pill, { backgroundColor: blue }]}>ユーザー向け無料プラン</Text><Text style={[s.price, { color: blue }]}>0<Text style={s.unit}>円</Text></Text><Text style={[s.body, s.center]}>ユーザーの利用料金は、いつでも0円です。</Text><View style={s.features}>{['求人検索・求人詳細の閲覧', '求人への応募', '企業とのチャット', '企業の評価'].map(x => <Feature key={x} color={blue}>{x}</Feature>)}</View><View style={{ height: 24 }} /><Action label="無料で登録する" /></View>}
+      <View style={[s.banner, !columns && s.vertical]}><Text style={[s.body, { fontSize: 22, fontWeight: '900', textAlign: 'center' }]}>{audience === 'company' ? '採用の第一歩を、ここから。' : '仕事探しの第一歩を、ここから。'}</Text><Action label={audience === 'company' ? '無料で求人を掲載する' : '無料で登録する'} /></View>
       <View style={s.footer}><View style={{ height: 58 }}><Logo /></View><Text style={s.small}>© GlobalWorkers</Text></View>
     </View>
   </ScrollView>;
 }
 const s = StyleSheet.create({
+  segment: { alignSelf: 'center', flexDirection: 'row', backgroundColor: '#eaf2ff', borderRadius: 13, padding: 4, marginBottom: 25, width: '100%', maxWidth: 400 }, segmentButton: { flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: 'center' }, segmentSelected: { backgroundColor: blue }, segmentText: { fontSize: 17, fontWeight: '800', color: navy }, userPlan: { flex: undefined, alignSelf: 'center', width: '100%', maxWidth: 560, minHeight: 0, backgroundColor: '#eef8ff', borderColor: '#9ed4ff' },
   page: { flex: 1, backgroundColor: '#fff' }, main: { width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 22, paddingBottom: 24 },
   breadcrumb: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 }, small: { fontSize: 12, color: '#647494' },
   hero: { alignItems: 'center', paddingVertical: 30, gap: 12 }, tag: { color: blue, backgroundColor: '#e5f4ff', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 22, fontWeight: '700' }, title: { fontSize: 38, color: navy, fontWeight: '900' },
