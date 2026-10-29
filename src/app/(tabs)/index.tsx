@@ -292,7 +292,7 @@ export default function HomeScreen() {
   const padding = desktop ? 28 : tablet ? 24 : 16;
   return (
     <SafeAreaView style={s.safe}>
-      <Header desktop={desktop} />
+      <Header />
       <ScrollView style={s.page} showsVerticalScrollIndicator={false}>
         <View style={[s.content, { paddingHorizontal: padding }]}>
           <View style={[s.hero, desktop && s.heroDesktop]}>

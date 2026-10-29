@@ -1,15 +1,18 @@
 import { COLORS } from "@/theme/colors";
-import { notify } from "@/utils/pathUtils";
-import { Image, Pressable, StyleSheet, View } from "react-native";
+import { router } from "expo-router";
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, View } from "react-native";
 
 export function Logo({
   backgroundColor = "transparent",
+  width = 200,
 }: {
   backgroundColor?: string;
+  width?: number;
 }) {
   return (
     <View style={s.logo}>
-      <Pressable key="logo" onPress={() => notify("top")} style={s.logoMark}>
+      <Pressable key="logo" accessibilityRole="button" accessibilityLabel="GlobalWorkers ホーム" onPress={() => router.push("/")} style={[s.logoMark, { width }]}>
         <Image
           source={require("@/assets/images/logo.svg")}
           style={{
@@ -18,7 +21,7 @@ export function Logo({
             borderRadius: 0,
             backgroundColor: backgroundColor,
           }}
-          resizeMode="contain"
+          contentFit="contain"
         />
       </Pressable>
     </View>
@@ -26,7 +29,7 @@ export function Logo({
 }
 
 const s = StyleSheet.create({
-  logo: { flexDirection: "row", alignItems: "center", gap: 10, height: "100%" },
+  logo: { flexDirection: "row", alignItems: "center", gap: 10, height: 58 },
   logoMark: {
     width: 200,
     height: 58,

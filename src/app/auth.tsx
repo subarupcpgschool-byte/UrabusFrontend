@@ -1,5 +1,5 @@
 import { AppTextInput } from "@/components/common/AppTextInput";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import AppPage from "@/components/layout/AppPage";
@@ -11,6 +11,7 @@ import { startGoogle } from "@/auth/google";
 export default function AuthPage() {
   const params = useLocalSearchParams<{ mode?: string }>();
   const [register, setRegister] = useState(params.mode === "register");
+  useEffect(() => { setRegister(params.mode === "register"); }, [params.mode]);
   const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState(""); const [name, setName] = useState("");
   const [visible, setVisible] = useState(false); const [busy, setBusy] = useState(false);

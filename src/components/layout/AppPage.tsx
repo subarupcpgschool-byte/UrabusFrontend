@@ -1,4 +1,4 @@
-import { useAuth } from "@/auth/AuthProvider";
+import { Header } from "@/components/common/Header";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -25,7 +25,7 @@ const menus = {
   user: [
     ["grid-outline", "ダッシュボード", "/"],
     ["document-text-outline", "応募履歴", "/user/applications"],
-    ["chatbubbles-outline", "メッセージ", "/chat/job/1"],
+    ["chatbubbles-outline", "メッセージ", "/messages"],
     ["person-outline", "経歴書", "/user/resume"],
   ],
   company: [
@@ -52,7 +52,7 @@ export default function AppPage({
   const showSidebar = role !== "public" && width >= 1024;
   return (
     <SafeAreaView style={s.safe}>
-      <Header compact={width < 760} />
+      <Header />
       <View style={s.shell}>
         {showSidebar && (
           <Sidebar
@@ -85,44 +85,6 @@ export default function AppPage({
   );
 }
 
-function Header({ compact }: { compact: boolean }) {
-  const { user } = useAuth();
-  return (
-    <View style={s.header}>
-      <View style={s.headerInner}>
-        <Pressable onPress={() => router.push("/" as never)} style={s.brand}>
-          <View style={s.logo}>
-            <Text style={s.logoText}>GW</Text>
-          </View>
-          <Text style={s.brandText}>GlobalWorkers</Text>
-        </Pressable>
-        {!compact && (
-          <View style={s.nav}>
-            <Nav label="求人を探す" path="/jobs" />
-            <Nav label="企業を探す" path="/companies" />
-            <Nav label="評価について" />
-            <Nav label="料金" />
-          </View>
-        )}
-        <View style={s.actions}>
-          <Ionicons name="notifications-outline" size={22} color={C.textSub} />
-          <Ionicons name="heart-outline" size={22} color={C.textSub} />
-          <Pressable accessibilityRole="button" onPress={() => router.push("/auth")} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <View style={s.avatar}><Text style={s.avatarText}>{user ? user.displayName.slice(0, 1) : "人"}</Text></View>
-            {!compact && <Text style={s.user}>{user ? user.displayName : "ログイン・登録"}</Text>}
-          </Pressable>
-        </View>
-      </View>
-    </View>
-  );
-}
-function Nav({ label, path }: { label: string; path?: string }) {
-  return (
-    <Pressable onPress={() => path && router.push(path as never)}>
-      <Text style={s.navText}>{label}</Text>
-    </Pressable>
-  );
-}
 function Sidebar({
   role,
   active,
@@ -160,49 +122,6 @@ function Sidebar({
 }
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.white },
-  header: {
-    backgroundColor: C.white,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
-  },
-  headerInner: {
-    width: "100%",
-    maxWidth: 1400,
-    minHeight: 68,
-    alignSelf: "center",
-    paddingHorizontal: 22,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  brand: { flexDirection: "row", alignItems: "center", gap: 9 },
-  logo: {
-    width: 37,
-    height: 37,
-    borderRadius: 9,
-    backgroundColor: C.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoText: { color: C.white, fontSize: 12, fontWeight: "900" },
-  brandText: { color: C.text, fontSize: 18, fontWeight: "800" },
-  nav: { flex: 1, flexDirection: "row", justifyContent: "center", gap: 30 },
-  navText: { color: C.text, fontSize: 13, fontWeight: "700" },
-  actions: {
-    marginLeft: "auto",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: C.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: C.primaryDark, fontWeight: "900" },
-  user: { color: C.text, fontSize: 12, fontWeight: "700" },
   shell: { flex: 1, flexDirection: "row", backgroundColor: C.background },
   sidebar: {
     width: 220,

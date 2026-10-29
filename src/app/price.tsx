@@ -15,7 +15,7 @@ const comparison = [
   ['条件達成による割引', '—', '最大3,000円'], ['採用成功による追加料金', '0円', '0円'],
 ];
 function Action({ label, color = blue }: { label: string; color?: string }) {
-  return <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/auth', params: { mode: 'register' } })} style={({ pressed, hovered }) => [s.action, { backgroundColor: color, opacity: pressed ? .75 : hovered ? .88 : 1 }]}><Text style={s.actionText}>{label}</Text><Ionicons name="chevron-forward" size={22} color="white" /></Pressable>;
+  return <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/auth', params: { mode: 'register' } })} style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [s.action, { backgroundColor: color, opacity: pressed ? .75 : hovered ? .88 : 1 }]}><Text style={s.actionText}>{label}</Text><Ionicons name="chevron-forward" size={22} color="white" /></Pressable>;
 }
 function Feature({ children, color }: { children: string; color: string }) {
   return <View style={s.feature}><Ionicons name="checkmark-circle" color={color} size={27} /><Text style={s.body}>{children}</Text></View>;
@@ -26,7 +26,7 @@ export default function PriceScreen() {
   const [audience, setAudience] = useState<'company' | 'user'>('company');
   const [opened, setOpened] = useState([true, true]);
   return <ScrollView style={s.page} contentContainerStyle={{ flexGrow: 1 }}>
-    <Header desktop={desktop} />
+    <Header />
     <View style={s.main}>
       <View style={s.breadcrumb}><Pressable onPress={() => router.push('/')}><Text style={s.small}>ホーム</Text></Pressable><Ionicons name="chevron-forward" size={13} color={navy} /><Text style={s.small}>料金体系</Text></View>
       <View style={s.hero}><Text style={s.tag}>{audience === 'company' ? '企業向け掲載プラン' : 'ユーザー向け利用プラン'}</Text><Text style={s.title}>料金体系</Text><Text style={[s.body, { textAlign: 'center', fontSize: 19 }]}>{audience === 'company' ? '中小企業の採用を、もっとシンプルに。' : '仕事探しを、もっとシンプルに。'}</Text></View>
