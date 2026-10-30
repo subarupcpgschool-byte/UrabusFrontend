@@ -1,3 +1,5 @@
+import { resolveMockAsset } from './mockAssets';
+import { MOCK_CSV } from './mockData';
 import type { DocumentPickerAsset } from 'expo-document-picker';
 import type { Attachment } from './WorkspaceProvider';
 function database(): Promise<IDBDatabase> { return new Promise((resolve,reject)=>{const request=indexedDB.open('globalworkers-message-files',1);request.onupgradeneeded=()=>request.result.createObjectStore('files');request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(new Error('添付ファイルを保存できません。'));}); }
@@ -8,6 +10,8 @@ export async function saveAttachment(asset: DocumentPickerAsset): Promise<Attach
  return {id,name:asset.name,uri:`indexeddb:${id}`,mime:asset.mimeType||blob.type||'application/octet-stream',size:asset.size||blob.size};
 }
 export async function resolveAttachment(attachment: Attachment): Promise<string> {
+ if(attachment.uri==='mock:csv')return URL.createObjectURL(new Blob([MOCK_CSV],{type:'text/csv;charset=utf-8'}));
+ if(attachment.uri.startsWith('mock:'))return resolveMockAsset(attachment.uri);
  if(!attachment.uri.startsWith('indexeddb:')) return attachment.uri;
  const db=await database();const blob=await new Promise<Blob>((resolve,reject)=>{const tx=db.transaction('files','readonly');const req=tx.objectStore('files').get(attachment.uri.slice(10));req.onsuccess=()=>req.result?resolve(req.result):reject(new Error('ファイルが見つかりません。'));req.onerror=()=>reject(new Error('ファイルを読み込めません。'));}).finally(()=>db.close());return URL.createObjectURL(blob);
 }
