@@ -23,9 +23,7 @@ export function Header({ desktop }: { desktop?: boolean }) {
   const { user, ready } = useAuth();
   const { width } = useWindowDimensions();
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const displayWidth = mounted ? width : 0;
+  const displayWidth = width;
   const wide = displayWidth >= 1200 && desktop !== false;
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<Panel | null>(null);
