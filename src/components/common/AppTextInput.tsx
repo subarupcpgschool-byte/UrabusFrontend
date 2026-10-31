@@ -18,9 +18,9 @@ export const AppTextInput = forwardRef<TextInput, TextInputProps>(function AppTe
     style={[
       style,
       { color: INPUT_THEME.textColor, fontSize: INPUT_THEME.fontSize, borderColor: INPUT_THEME.borderColor },
-      Platform.OS === 'web' && { outlineWidth: 0 },
-      editable === false && { opacity: INPUT_THEME.disabledOpacity },
+            editable === false && { opacity: INPUT_THEME.disabledOpacity },
       focused && INPUT_THEME.focusStyle,
+      Platform.OS === 'web' && { outlineWidth: 0 },
     ]}
   />;
 });

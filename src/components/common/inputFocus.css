@@ -1,0 +1,11 @@
+/* All editable Web controls, including React Native Web and third-party inputs. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[contenteditable]:not([contenteditable="false"]):focus-visible,
+[role="textbox"]:focus-visible,
+[role="searchbox"]:focus-visible,
+[role="combobox"]:focus-visible,
+[role="spinbutton"]:focus-visible {
+  outline: none !important;
+}
