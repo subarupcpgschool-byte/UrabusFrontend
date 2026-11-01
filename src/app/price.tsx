@@ -1,3 +1,4 @@
+import PageHeading from '@/components/layout/PageHeading';
 import { Header } from '@/components/common/Header';
 import { Logo } from '@/components/common/Logo';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +30,8 @@ export default function PriceScreen() {
     <Header />
     <View style={s.main}>
       <View style={s.breadcrumb}><Pressable onPress={() => router.push('/')}><Text style={s.small}>ホーム</Text></Pressable><Ionicons name="chevron-forward" size={13} color={navy} /><Text style={s.small}>料金体系</Text></View>
-      <View style={s.hero}><Text style={s.tag}>{audience === 'company' ? '企業向け掲載プラン' : 'ユーザー向け利用プラン'}</Text><Text style={s.title}>料金体系</Text><Text style={[s.body, { textAlign: 'center', fontSize: 19 }]}>{audience === 'company' ? '中小企業の採用を、もっとシンプルに。' : '仕事探しを、もっとシンプルに。'}</Text></View>
+      <PageHeading title="料金体系" eyebrow={audience==='company'?'企業向け掲載プラン':'ユーザー向け利用プラン'} subtitle={audience==='company'?'中小企業の採用を、もっとシンプルに。':'仕事探しを、もっとシンプルに。'}/>
+
       <View accessibilityRole="tablist" style={s.segment}>{([{ key: 'company', label: '企業' }, { key: 'user', label: 'ユーザー' }] as const).map(x => <Pressable key={x.key} accessibilityRole="tab" accessibilityState={{ selected: audience === x.key }} onPress={() => setAudience(x.key)} style={({ pressed }) => [s.segmentButton, audience === x.key && s.segmentSelected, { opacity: pressed ? .8 : 1 }]}><Text style={[s.segmentText, audience === x.key && { color: 'white' }]}>{x.label}</Text></Pressable>)}</View>
       {audience === 'company' ? <>
       <View style={[s.row, !columns && s.vertical]}>

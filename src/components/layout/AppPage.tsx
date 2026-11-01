@@ -1,8 +1,9 @@
+import PageHeading from './PageHeading';
 import { Header } from "@/components/common/Header";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import type { PropsWithChildren } from "react";
+import { useState, type PropsWithChildren } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -23,8 +24,9 @@ type Props = PropsWithChildren<{
 
 const menus = {
   user: [
+    ["person-circle-outline", "マイページ", "/mypage"],
     ["grid-outline", "ダッシュボード", "/"],
-    ["document-text-outline", "応募履歴", "/user/applications"],
+    ["document-text-outline", "応募状況", "/user/applications"],
     ["chatbubbles-outline", "メッセージ", "/messages"],
     ["person-outline", "経歴書", "/user/resume"],
   ],
@@ -49,6 +51,8 @@ export default function AppPage({
   children,
 }: Props) {
   const { width } = useWindowDimensions();
+  const [collapsed,setCollapsed]=useState(false);
+  const [mobileMenu,setMobileMenu]=useState(false);
   const showSidebar = role !== "public" && width >= 1024;
   return (
     <SafeAreaView style={s.safe}>
@@ -58,26 +62,13 @@ export default function AppPage({
           <Sidebar
             role={role as Exclude<AppRole, "public">}
             active={activeMenu}
+            collapsed={collapsed}
+            onToggle={()=>setCollapsed(v=>!v)}
           />
         )}
-        <ScrollView style={s.page} contentContainerStyle={s.content}>
-          <View style={s.titleRow}>
-            <View>
-              <Text style={s.title}>{title}</Text>
-              <Text style={s.subtitle}>{subtitle}</Text>
-            </View>
-            {role !== "public" && (
-              <View style={s.roleBadge}>
-                <Text style={s.roleText}>
-                  {role === "user"
-                    ? "一般ユーザー"
-                    : role === "company"
-                      ? "企業ユーザー"
-                      : "運営ユーザー"}
-                </Text>
-              </View>
-            )}
-          </View>
+        <ScrollView style={s.page} contentContainerStyle={[s.content,activeMenu==="応募状況"&&{maxWidth:1760},width<600&&{padding:12}]}>
+          {role!=="public"&&!showSidebar&&<View><Pressable accessibilityRole="button" accessibilityLabel="マイページメニュー" accessibilityState={{expanded:mobileMenu}} onPress={()=>setMobileMenu(v=>!v)} style={s.sideItem}><Ionicons name="menu-outline" size={22} color={C.primary}/><Text style={s.sideText}>メニュー</Text></Pressable>{mobileMenu&&menus[role].map(([icon,label,path])=><Pressable key={label} accessibilityRole="button" onPress={()=>{setMobileMenu(false);router.push(path as never);}} style={[s.sideItem,activeMenu===label&&s.sideActive]}><Ionicons name={icon} size={19} color={C.primary}/><Text style={s.sideText}>{label}</Text></Pressable>)}</View>}
+          <PageHeading title={title} subtitle={subtitle} trailing={role!=="public"?<View style={s.roleBadge}><Text style={s.roleText}>{role==="user"?"一般ユーザー":role==="company"?"企業ユーザー":"運営ユーザー"}</Text></View>:undefined}/>
           {children}
         </ScrollView>
       </View>
@@ -87,23 +78,26 @@ export default function AppPage({
 
 function Sidebar({
   role,
-  active,
+  active, collapsed, onToggle,
 }: {
   role: "user" | "company" | "operator";
   active: string;
+  collapsed: boolean; onToggle:()=>void;
 }) {
   return (
-    <View style={s.sidebar}>
-      <Text style={s.sideTitle}>
+    <View style={[s.sidebar,collapsed&&{width:68,padding:8}]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={collapsed?"メニューを展開":"メニューを縮小"} accessibilityState={{expanded:!collapsed}} onPress={onToggle} style={s.sideItem}><Ionicons name={collapsed?"chevron-forward-outline":"chevron-back-outline"} size={20} color={C.primary}/>{!collapsed&&<Text style={s.sideText}>縮小</Text>}</Pressable>
+      {!collapsed&&<Text style={s.sideTitle}>
         {role === "user"
           ? "マイページ"
           : role === "company"
             ? "企業管理"
             : "運営管理"}
-      </Text>
+      </Text>}
       {menus[role].map(([icon, label, path]) => (
         <Pressable
           key={label}
+          accessibilityRole="button" accessibilityLabel={label} accessibilityState={{selected:active===label}}
           onPress={() => router.push(path as never)}
           style={[s.sideItem, active === label && s.sideActive]}
         >
@@ -112,9 +106,9 @@ function Sidebar({
             size={19}
             color={active === label ? C.primary : C.textSub}
           />
-          <Text style={[s.sideText, active === label && { color: C.primary }]}>
+          {!collapsed&&<Text style={[s.sideText, active === label && { color: C.primary }]}>
             {label}
-          </Text>
+          </Text>}
         </Pressable>
       ))}
     </View>

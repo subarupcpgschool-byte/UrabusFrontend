@@ -1,3 +1,4 @@
+import PageHeading from '@/components/layout/PageHeading';
 import { useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
@@ -20,5 +21,5 @@ export default function AuthCallback() {
     if (params.error || !params.ticket || typeof params.ticket !== "string") { setError("Googleログインを完了できませんでした。手動登録済みの場合は先に確認メールを開いてから再試行してください。"); return; }
     void exchange(params.ticket).then(acceptSession).then(() => router.replace("/")).catch(e => setError(e instanceof Error ? e.message : "ログインに失敗しました。"));
   }, [ready, params.ticket, params.error, acceptSession]);
-  return <View style={{ flex: 1, padding: 28, gap: 20, alignItems: "center", justifyContent: "center" }}>{error ? <><Text accessibilityRole="alert" style={{ color: "#B42318", fontSize: 16 }}>{error}</Text><Pressable onPress={() => router.replace("/auth")}><Text style={{ color: "#208AEF", padding: 16 }}>ログイン画面へ戻る</Text></Pressable></> : <><ActivityIndicator size="large" /><Text>Googleアカウントを確認しています…</Text></>}</View>;
+  return <View style={{ flex: 1, padding: 28, gap: 20, alignItems: "center", justifyContent: "center" }}><PageHeading title="Googleアカウントの確認" subtitle="認証結果を確認しています。"/>{error ? <><Text accessibilityRole="alert" style={{ color: "#B42318", fontSize: 16 }}>{error}</Text><Pressable onPress={() => router.replace("/auth")}><Text style={{ color: "#208AEF", padding: 16 }}>ログイン画面へ戻る</Text></Pressable></> : <><ActivityIndicator size="large" /><Text>Googleアカウントを確認しています…</Text></>}</View>;
 }

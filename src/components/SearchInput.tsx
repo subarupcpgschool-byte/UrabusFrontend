@@ -1,5 +1,5 @@
 import { INPUT_THEME } from "@/theme/inputTheme";
-import { AppTextInput } from "@/components/common/AppTextInput";
+import { AppInput } from "@/components/form";
 import { COLORS } from "@/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, View } from "react-native";
@@ -14,7 +14,7 @@ export function SearchInput({ value, onChangeText, placeholder }: Props) {
   return (
     <View style={styles.wrap}>
       <Ionicons name="search-outline" size={22} color={COLORS.textMuted} />
-      <AppTextInput
+      <AppInput variant="plain"
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -36,11 +36,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  input: {
-    outlineWidth: 0,
-    flex: 1,
-    color: COLORS.text,
-    fontSize: 14,
-    paddingVertical: 10,
-  },
+  input: {outlineWidth: 0,flex: 1},
 });

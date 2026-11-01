@@ -1,9 +1,9 @@
-import { AppTextInput } from "@/components/common/AppTextInput";
+import { AppInput, AppSwitch, AppMultiSelect, AppSelect } from "@/components/form";
 import AppPage from "@/components/layout/AppPage";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
 import { AppButton, Panel, SectionTitle } from "@/components/ui/AppUI";
 import { useState } from "react";
-import { Alert, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 
 const initial = [
   {
@@ -30,6 +30,9 @@ const initial = [
 ];
 export default function OperatorSettingsPage() {
   const [rules, setRules] = useState(initial);
+  const [channels,setChannels]=useState(['メール','管理画面']);
+  const [accessRetention,setAccessRetention]=useState('90日');
+  const [errorRetention,setErrorRetention]=useState('180日');
   return (
     <AppPage
       title="運営設定"
@@ -55,7 +58,7 @@ export default function OperatorSettingsPage() {
             </View>
             <View style={s.condition}>
               <Text style={s.when}>しきい値</Text>
-              <AppTextInput
+              <AppInput
                 value={r.condition}
                 onChangeText={(v) =>
                   setRules((old) =>
@@ -67,7 +70,7 @@ export default function OperatorSettingsPage() {
               />
               <Text style={s.unit}>{r.unit} 以上</Text>
             </View>
-            <Switch
+            <AppSwitch accessibilityLabel={`${r.name}を有効にする`}
               value={r.enabled}
               onValueChange={(v) =>
                 setRules((old) =>
@@ -84,30 +87,25 @@ export default function OperatorSettingsPage() {
         <Panel style={s.card}>
           <SectionTitle>通知先</SectionTitle>
           <Text style={s.label}>運営メールアドレス</Text>
-          <AppTextInput
+          <AppInput
             defaultValue="operator@globalworkers.jp"
             style={s.fullInput}
           />
-          <Text style={s.label}>通知チャンネル</Text>
-          <View style={s.chips}>
-            <Text style={s.chip}>メール ✓</Text>
-            <Text style={s.chip}>管理画面 ✓</Text>
-            <Text style={s.chipOff}>Webhook</Text>
-          </View>
+          <AppMultiSelect label="通知チャンネル" options={['メール','管理画面','Webhook'].map(value=>({value,label:value}))} value={channels} onValueChange={setChannels}/>
         </Panel>
         <Panel style={s.card}>
           <SectionTitle>監視データ保持期間</SectionTitle>
           <Text style={s.label}>アクセスログ</Text>
-          <AppTextInput defaultValue="90日" style={s.fullInput} />
+          <AppSelect accessibilityLabel="アクセスログの保持期間" value={accessRetention} onValueChange={setAccessRetention} options={["30日","90日","180日","365日"].map(value=>({value,label:value}))}/>
           <Text style={s.label}>エラーログ</Text>
-          <AppTextInput defaultValue="180日" style={s.fullInput} />
+          <AppSelect accessibilityLabel="エラーログの保持期間" value={errorRetention} onValueChange={setErrorRetention} options={["30日","90日","180日","365日"].map(value=>({value,label:value}))}/>
         </Panel>
       </View>
       <View style={s.actions}>
         <AppButton
           label="変更を破棄"
           outline
-          onPress={() => setRules(initial)}
+          onPress={() => {setRules(initial);setChannels(['メール','管理画面']);setAccessRetention('90日');setErrorRetention('180日');}}
         />
         <AppButton
           label="設定を保存"
@@ -137,27 +135,12 @@ const s = StyleSheet.create({
   meta: { color: C.textMuted, fontSize: 10, marginTop: 3 },
   condition: { flexDirection: "row", alignItems: "center", gap: 7 },
   when: { color: C.textSub, fontSize: 11 },
-  input: {
-    width: 72,
-    minHeight: 38,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 7,
-    paddingHorizontal: 9,
-    color: C.text,
-  },
+  input: {width: 72,minHeight: 38},
   unit: { width: 55, color: C.textSub, fontSize: 11 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 13 },
   card: { flex: 1, minWidth: 300 },
   label: { color: C.textSub, fontSize: 11, fontWeight: "700" },
-  fullInput: {
-    minHeight: 42,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 7,
-    paddingHorizontal: 10,
-    color: C.text,
-  },
+  fullInput: {minHeight: 42},
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     backgroundColor: C.primarySoft,

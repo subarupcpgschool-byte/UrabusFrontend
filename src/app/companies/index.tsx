@@ -1,3 +1,4 @@
+import { companyHref } from '@/features/account/companyNavigation';
 import { useMapResults } from "@/components/search/useMapResults";
 import CompanySearchCard from "@/components/search/CompanySearchCard";
 import SearchFilterPanel from "@/components/search/SearchFilterPanel";
@@ -63,12 +64,7 @@ export default function CompanySearchPage() {
               <CompanySearchCard
                 key={item.id}
                 item={item}
-                onPressDetail={() =>
-                  Alert.alert(
-                    item.companyName,
-                    "企業詳細画面へ遷移するイベントです。",
-                  )
-                }
+                onPressDetail={() => router.push(companyHref(item))}
                 onPressJobs={() => router.push("/jobs" as never)}
               />
             ))}

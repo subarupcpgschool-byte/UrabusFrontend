@@ -1,4 +1,5 @@
-import { AppTextInput } from "@/components/common/AppTextInput";
+import PageHeading from '@/components/layout/PageHeading';
+import { AppInput, AppTag } from "@/components/form";
 import { router } from "expo-router";
 import { Button } from "@/components/common/Button";
 import { Header } from "@/components/common/Header";
@@ -74,7 +75,7 @@ function Search({ mobile }: { mobile: boolean }) {
     <View style={[s.search, mobile && s.searchMobile]}>
       <View style={s.searchField}>
         <Ionicons name="search" size={20} color={C.sub} />
-        <AppTextInput
+        <AppInput variant="plain"
           value={keyword} onChangeText={setKeyword}
           placeholder="職種・スキル・企業名"
           style={s.input}
@@ -83,7 +84,7 @@ function Search({ mobile }: { mobile: boolean }) {
       <View style={[s.divider, mobile && s.dividerMobile]} />
       <View style={s.searchField}>
         <Ionicons name="location-outline" size={21} color={C.sub} />
-        <AppTextInput
+        <AppInput variant="plain"
           value={location} onChangeText={setLocation}
           placeholder="勤務地・リモート"
           style={s.input}
@@ -212,11 +213,7 @@ function JobCard({ job }: { job: Job }) {
       </View>
       <View style={s.tags}>
         {job.tags.map((x, i) => (
-          <View key={x} style={[s.tag, i === 1 && s.tagPurple]}>
-            <Text style={[s.tagText, i === 1 && { color: "#7357C8" }]}>
-              {x}
-            </Text>
-          </View>
+          <AppTag key={x} label={x} style={i===1?{backgroundColor:'#F1EDFF'}:undefined}/>
         ))}
       </View>
       <View style={s.jobButtons}>
@@ -298,13 +295,7 @@ export default function HomeScreen() {
           <View style={[s.hero, desktop && s.heroDesktop]}>
             <View style={[s.heroCopy, desktop && { flex: 1 }]}>
               <Text style={s.badge}>採用成功報酬 0円</Text>
-              <Text style={[s.heroTitle, desktop && s.heroTitleDesktop]}>
-                評価でつながる、{"\n"}
-                <Text style={s.accent}>直接雇用</Text>の新しいかたち。
-              </Text>
-              <Text style={s.heroText}>
-                求人掲載から直接チャット、採用後の従業員・勤怠管理まで。信頼できる評価をもとに、企業と働く人が直接つながります。
-              </Text>
+              <PageHeading title={<>評価でつながる、{"\n"}<Text style={{color:C.blue}}>直接雇用</Text>の新しいかたち。</>} subtitle="求人掲載から直接チャット、採用後の従業員・勤怠管理まで。信頼できる評価をもとに、企業と働く人が直接つながります。"/>
               <Search mobile={!tablet} />
               <View style={s.metrics}>
                 {[
@@ -575,8 +566,7 @@ const s = StyleSheet.create({
     gap: 9,
     paddingHorizontal: 13,
   },
-  input: {
-    outlineWidth: 0, flex: 1, color: C.text, fontSize: 14 },
+  input: {outlineWidth: 0,flex: 1},
   divider: { width: 1, height: 32, backgroundColor: C.border },
   dividerMobile: { width: "100%", height: 1 },
   searchButton: {

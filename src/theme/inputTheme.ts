@@ -5,6 +5,14 @@ export const INPUT_THEME = {
   borderColor: '#DDE6F1',
   fontSize: 14,
   disabledOpacity: 0.55,
+  backgroundColor: '#FFFFFF',
+  primaryColor: '#2563EB',
+  selectedBackground: '#EAF2FF',
+  errorColor: '#B42318',
+  borderRadius: 8,
+  minHeight: 44,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
   // 必要なら { borderColor: '#2563EB' } などに変更できます。
   focusStyle: {} as import('react-native').TextStyle,
 };

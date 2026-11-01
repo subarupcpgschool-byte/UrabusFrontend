@@ -5,6 +5,7 @@ import { router, usePathname, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Logo } from './Logo';
+import { WORKSPACE_MOCK_ENABLED } from '@/features/workspace/mockData';
 
 type Panel = '通知' | 'お気に入り' | 'メッセージ';
 type Item = { label: string; path?: Href; panel?: Panel };
@@ -12,6 +13,7 @@ const publicItems: Item[] = [
   { label: '求人を探す', path: '/jobs' }, { label: '企業を探す', path: '/companies' },
   { label: '評価について', path: '/reviews' }, { label: '料金', path: '/price' },
   { label: 'ご利用ガイド', path: '/guide' },
+  ...(WORKSPACE_MOCK_ENABLED ? [{ label: 'マイページ', path: '/mypage' as Href }] : []),
 ];
 const memberItems: Item[] = [
   { label: '求人を探す', path: '/jobs' }, { label: '企業を探す', path: '/companies' },
@@ -55,7 +57,7 @@ export function Header({ desktop }: { desktop?: boolean }) {
         {!ready ? <View accessibilityLabel="ログイン状態を確認中" style={s.loading}><ActivityIndicator color={C.blue} /></View> : user ? <>
           {icon('notifications-outline', '通知')}
           {wide && icon('heart-outline', 'お気に入り')}
-          <Pressable accessibilityRole="button" accessibilityLabel={`${user.displayName}のアカウント`} onPress={() => navigate('/auth')} style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) => [s.account, (hovered || pressed) && s.soft]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`${user.displayName}のアカウント`} onPress={() => navigate('/mypage')} style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) => [s.account, (hovered || pressed) && s.soft]}>
             <View style={s.avatar}><Text style={s.initial}>{Array.from(user.displayName.trim())[0] || 'U'}</Text></View>
             {(wide || displayWidth >= 600) && <Text numberOfLines={1} style={s.name}>{user.displayName}</Text>}
           </Pressable>
@@ -67,7 +69,7 @@ export function Header({ desktop }: { desktop?: boolean }) {
       </View>
     </View>
     {!wide && ready && !user && <View style={s.mobileAuth}><Pressable accessibilityRole="button" onPress={() => navigate('/auth')} style={s.iconText}><Text style={s.login}>ログイン</Text></Pressable><Pressable accessibilityRole="button" onPress={() => navigate({ pathname: '/auth', params: { mode: 'register' } })} style={s.register}><Text style={s.registerText}>新規登録</Text></Pressable></View>}
-    {!wide && open && <View style={s.mobileMenu}>{links(true)}{user && <Pressable accessibilityRole="button" onPress={() => navigate('/auth')} style={s.mobileItem}><Text style={s.navText} numberOfLines={1}>{user.displayName} ／ アカウント</Text></Pressable>}</View>}
+    {!wide && open && <View style={s.mobileMenu}>{links(true)}{user && <Pressable accessibilityRole="button" onPress={() => navigate('/mypage')} style={s.mobileItem}><Text style={s.navText} numberOfLines={1}>{user.displayName} ／ マイページ</Text></Pressable>}</View>}
     <Modal visible={panel !== null} transparent animationType="fade" onRequestClose={() => setPanel(null)}>
       <View style={s.overlay}><Pressable accessibilityRole="button" accessibilityLabel="閉じる" style={StyleSheet.absoluteFill} onPress={() => setPanel(null)} /><View accessibilityViewIsModal style={s.dialog}>
         <View style={s.dialogHeading}><Text accessibilityRole="header" style={s.dialogTitle}>{panel}</Text><Pressable accessibilityRole="button" accessibilityLabel="閉じる" onPress={() => setPanel(null)} style={s.icon}><Ionicons name="close" size={24} color={C.navy} /></Pressable></View>
