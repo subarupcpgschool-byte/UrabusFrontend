@@ -1,3 +1,4 @@
+import { EvaluationProvider } from '@/features/evaluations/EvaluationProvider';
 import { AccountProvider } from '@/features/account/AccountProvider';
 import InputFocusStyles from "@/components/common/InputFocusStyles";
 import { WorkspaceProvider } from "@/features/workspace/WorkspaceProvider";
@@ -12,6 +13,7 @@ export default function RootLayout() {
       <InputFocusStyles />
       <WorkspaceProvider>
       <AccountProvider>
+      <EvaluationProvider>
       <AppReadyGate>
       <StatusBar style="dark" />
       <Stack
@@ -29,6 +31,7 @@ export default function RootLayout() {
         <Stack.Screen name="companies/index" />
       </Stack>
       </AppReadyGate>
+      </EvaluationProvider>
       </AccountProvider>
       </WorkspaceProvider>
     </AuthProvider>
