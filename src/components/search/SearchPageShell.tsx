@@ -1,4 +1,4 @@
-import PageHeading from '@/components/layout/PageHeading';
+
 import { Header } from "@/components/common/Header";
 import type { PropsWithChildren } from "react";
 import {
@@ -30,7 +30,7 @@ export default function SearchPageShell({
         contentContainerStyle={s.pageContent}
         showsVerticalScrollIndicator={false}
       >
-        <PageHeading title={title} subtitle={subtitle} style={{marginBottom:20}}/>
+        
         {children}
       </ScrollView>
     </SafeAreaView>

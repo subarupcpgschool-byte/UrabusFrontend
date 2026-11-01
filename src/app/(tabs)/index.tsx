@@ -1,4 +1,4 @@
-import PageHeading from '@/components/layout/PageHeading';
+
 import { AppInput, AppTag } from "@/components/form";
 import { router } from "expo-router";
 import { Button } from "@/components/common/Button";
@@ -295,7 +295,7 @@ export default function HomeScreen() {
           <View style={[s.hero, desktop && s.heroDesktop]}>
             <View style={[s.heroCopy, desktop && { flex: 1 }]}>
               <Text style={s.badge}>採用成功報酬 0円</Text>
-              <PageHeading title={<>評価でつながる、{"\n"}<Text style={{color:C.blue}}>直接雇用</Text>の新しいかたち。</>} subtitle="求人掲載から直接チャット、採用後の従業員・勤怠管理まで。信頼できる評価をもとに、企業と働く人が直接つながります。"/>
+              
               <Search mobile={!tablet} />
               <View style={s.metrics}>
                 {[

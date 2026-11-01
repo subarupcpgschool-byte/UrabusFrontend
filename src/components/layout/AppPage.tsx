@@ -1,4 +1,4 @@
-import PageHeading from './PageHeading';
+
 import { Header } from "@/components/common/Header";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -68,7 +68,7 @@ export default function AppPage({
         )}
         <ScrollView style={s.page} contentContainerStyle={[s.content,activeMenu==="応募状況"&&{maxWidth:1760},width<600&&{padding:12}]}>
           {role!=="public"&&!showSidebar&&<View><Pressable accessibilityRole="button" accessibilityLabel="マイページメニュー" accessibilityState={{expanded:mobileMenu}} onPress={()=>setMobileMenu(v=>!v)} style={s.sideItem}><Ionicons name="menu-outline" size={22} color={C.primary}/><Text style={s.sideText}>メニュー</Text></Pressable>{mobileMenu&&menus[role].map(([icon,label,path])=><Pressable key={label} accessibilityRole="button" onPress={()=>{setMobileMenu(false);router.push(path as never);}} style={[s.sideItem,activeMenu===label&&s.sideActive]}><Ionicons name={icon} size={19} color={C.primary}/><Text style={s.sideText}>{label}</Text></Pressable>)}</View>}
-          <PageHeading title={title} subtitle={subtitle} trailing={role!=="public"?<View style={s.roleBadge}><Text style={s.roleText}>{role==="user"?"一般ユーザー":role==="company"?"企業ユーザー":"運営ユーザー"}</Text></View>:undefined}/>
+          
           {children}
         </ScrollView>
       </View>
