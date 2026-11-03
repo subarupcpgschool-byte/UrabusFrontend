@@ -1,4 +1,3 @@
-import ApplicationsWorkspace from '@/features/applications/ApplicationsWorkspace';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import AppPage from '@/components/layout/AppPage';
@@ -10,7 +9,7 @@ import { ReceivedReviews } from '@/features/account/ReviewPanels';
 import { Tabs } from '@/features/account/Tabs';
 import MessageWorkspace from '@/features/workspace/MessageWorkspace';
 
-const options=[{value:'profile',label:'プロフィール'},{value:'messages',label:'メッセージ'},{value:'received',label:'受けた評価'},{value:'reviews',label:'評価'}];
+const options=[{value:'profile',label:'プロフィール'},{value:'messages',label:'メッセージ'},{value:'received',label:'受けた評価'}];
 export default function MyPage(){
   const {tab}=useLocalSearchParams<{tab?:string}>();
   const current=options.some(o=>o.value===tab)?tab!:'profile';
@@ -23,7 +22,6 @@ export default function MyPage(){
       <View style={current==='profile'?undefined:{display:'none'}}><ProfilePanel/></View>
       {current==='messages'&&<MessageWorkspace/>}
       {current==='received'&&<ReceivedReviews/>}
-      {current==='reviews'&&<ApplicationsWorkspace mode="ratings" embedded/>}
     </>}
   </AppPage>;
 }

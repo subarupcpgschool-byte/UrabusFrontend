@@ -27,6 +27,7 @@ const menus = {
     ["person-circle-outline", "マイページ", "/mypage"],
     ["grid-outline", "ダッシュボード", "/"],
     ["document-text-outline", "選考・オファー状況", "/user/applications"],
+    ["star-outline", "評価", "/user/evaluations"],
     ["chatbubbles-outline", "メッセージ", "/messages"],
     ["person-outline", "経歴書", "/user/resume"],
   ],
@@ -66,7 +67,7 @@ export default function AppPage({
             onToggle={()=>setCollapsed(v=>!v)}
           />
         )}
-        <ScrollView style={s.page} contentContainerStyle={[s.content,activeMenu==="選考・オファー状況"&&{maxWidth:1760},width<600&&{padding:12}]}>
+        <ScrollView style={s.page} contentContainerStyle={[s.content,(activeMenu==="選考・オファー状況"||activeMenu==="評価")&&{maxWidth:1760},width<600&&{padding:12}]}>
           {role!=="public"&&!showSidebar&&<View><Pressable accessibilityRole="button" accessibilityLabel="マイページメニュー" accessibilityState={{expanded:mobileMenu}} onPress={()=>setMobileMenu(v=>!v)} style={s.sideItem}><Ionicons name="menu-outline" size={22} color={C.primary}/><Text style={s.sideText}>メニュー</Text></Pressable>{mobileMenu&&menus[role].map(([icon,label,path])=><Pressable key={label} accessibilityRole="button" onPress={()=>{setMobileMenu(false);router.push(path as never);}} style={[s.sideItem,activeMenu===label&&s.sideActive]}><Ionicons name={icon} size={19} color={C.primary}/><Text style={s.sideText}>{label}</Text></Pressable>)}</View>}
           
           {children}

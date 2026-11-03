@@ -14,14 +14,14 @@ const groups=[
 ];
 const scores=[{label:'未選択',value:'0'},...Array.from({length:9},(_,i)=>{const n=1+i*.5;return{label:`${n.toFixed(1)} / 5.0`,value:String(n)};})];
 const date=(iso:string)=>new Date(iso).toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo'});
-export function EvaluationModal({application,visible,onClose}:{application:Application;visible:boolean;onClose:()=>void}){
+export function EvaluationForm({application,onComplete,onCancel}:{application:Application;onComplete?:()=>void;onCancel?:()=>void}){
  const {submit,records,now,ready}=useEvaluations();const [draft,setDraft]=useState(emptyDraft),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const existing=records.find(r=>r.applicationId===application.id);const available=ready&&canEvaluate(application,existing,now);
  function change(key:keyof EvaluationDraft,field:'score'|'choices'|'comment',value:number|string[]|string){setDraft(old=>({...old,[key]:{...old[key],[field]:value}}));setError('');}
- async function send(){if(busy||!available)return;const problem=validateDraft(draft);if(problem){setError(problem);return;}setBusy(true);setError('');try{await submit(application.id,draft);onClose();}catch(e){setError(e instanceof Error?e.message:'評価を保存できませんでした。');}finally{setBusy(false);}}
+ async function send(){if(busy||!available)return;const problem=validateDraft(draft);if(problem){setError(problem);return;}setBusy(true);setError('');try{await submit(application.id,draft);onComplete?.();}catch(e){setError(e instanceof Error?e.message:'評価を保存できませんでした。');}finally{setBusy(false);}}
  const deadline=deadlineFor(application);
- return <Modal transparent visible={visible} onRequestClose={()=>{if(!busy)onClose();}} animationType="fade"><View style={s.overlay}><ScrollView style={s.modal} keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:2}}><Panel>
-  <View style={s.row}><View style={{flex:1}}><SectionTitle>企業・案件への評価</SectionTitle><Text style={s.meta}>{application.company} ／ {application.title}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="評価を閉じる" disabled={busy} onPress={onClose} style={s.close}><Text>×</Text></Pressable></View>
+ return <Panel>
+  <View style={s.row}><View style={{flex:1}}><SectionTitle>企業・案件への評価</SectionTitle><Text style={s.meta}>{application.company} ／ {application.title}</Text></View>{onCancel&&<Pressable accessibilityRole="button" accessibilityLabel="評価を閉じる" disabled={busy} onPress={onCancel} style={s.close}><Text>×</Text></Pressable>}</View>
   <Text style={s.meta}>5.0 最優良企業 ／ 4.0以上 優良企業 ／ 3.0以上 通常企業 ／ 2.0以下 注意企業</Text>
   {deadline&&<Text style={s.meta}>評価期限：{date(deadline)}（内定から3か月）</Text>}
   <Text style={s.info}>対応・案件説明は点数とアンケートまたはコメントを回答してください。仕事内容が未回答なら5.0で計算します。</Text>
@@ -29,22 +29,27 @@ export function EvaluationModal({application,visible,onClose}:{application:Appli
   {draft.response.score>0&&draft.description.score>0&&<Text style={s.total}>総合評価：{calculateTotal(draft).toFixed(1)} / 5.0</Text>}
   <Text style={s.meta}>画面確認用の評価として端末内に保存します。保存後は変更できません。相手側への反映待ちは15〜30日です。</Text>
   {!available&&<Text style={s.error}>評価済み、評価対象外、または評価期限が終了しています。</Text>}{!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
-  <View style={s.row}><AppButton label="閉じる" outline onPress={()=>{if(!busy)onClose();}}/><AppButton label={busy?'保存中…':'評価を送信'} onPress={()=>void send()}/></View>
- </Panel></ScrollView></View></Modal>;
+  <View style={s.row}>{onCancel&&<AppButton label="閉じる" outline onPress={()=>{if(!busy)onCancel();}}/>}<AppButton label={busy?'保存中…':'評価を送信'} onPress={()=>void send()}/></View>
+ </Panel>;
+}
+
+export function EvaluationModal({application,visible,onClose}:{application:Application;visible:boolean;onClose:()=>void}){
+ return <Modal transparent visible={visible} onRequestClose={onClose} animationType="fade"><View style={s.overlay}><ScrollView style={s.modal} keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:2}}><EvaluationForm application={application} onComplete={onClose} onCancel={onClose}/></ScrollView></View></Modal>;
 }
 
 export function EvaluationDetail({application}:{application:Application|undefined}){
- const {records,ready,error,now}=useEvaluations();const [open,setOpen]=useState(false);
+ const {records,ready,error,now}=useEvaluations();
  if(!application)return <Panel><View style={s.empty}><SectionTitle>評価内容が表示されます</SectionTitle><BodyText>左の一覧からやり取りを選択してください。</BodyText></View></Panel>;
  const record=records.find(r=>r.applicationId===application.id),deadline=deadlineFor(application);
+ if(ready&&canEvaluate(application,record,now))return <EvaluationForm key={application.id} application={application}/>;
  return <View style={{gap:14}}><Panel><SectionTitle>{application.company}</SectionTitle><BodyText>{application.title}</BodyText>
   {!ready?<BodyText>{error||'評価を読み込み中…'}</BodyText>:record?<>
    <Text style={s.total}>{record.total.toFixed(1)} / 5.0　{ratingLabel(record.total)}</Text><Text style={s.info}>{record.mode==='automatic'?'期限終了による自動評価（4.5）':'あなたが記入した評価'}</Text>
    <Text style={s.meta}>{now>=Date.parse(record.publishAt)?'相手側への反映期間に到達しました。':'相手側への反映待ち（評価から15〜30日）'}</Text><Text style={s.meta}>評価日：{date(record.submittedAt)}</Text>
    {record.answers&&groups.map(g=><View key={g.key} style={s.group}><Text style={s.label}>{g.label}：{record.answers![g.key].score.toFixed(1)}</Text>{record.answers![g.key].choices.map(c=><Text key={c} style={s.meta}>{c}</Text>)}<BodyText>{record.answers![g.key].comment||'コメントなし'}</BodyText></View>)}
-  </>:canEvaluate(application,undefined,now)?<><Text style={s.meta}>評価期限：{deadline?date(deadline):'—'}</Text><AppButton label="この企業・案件を評価する" onPress={()=>setOpen(true)}/></>:<BodyText>{deadline&&now>=Date.parse(deadline)?'評価期限が終了しました。対象の未評価は自動評価になります。':'内定・内定辞退の状態になった場合に評価できます。'}</BodyText>}
+  </>:canEvaluate(application,undefined,now)?<><Text style={s.meta}>評価期限：{deadline?date(deadline):'—'}</Text></>:<BodyText>{deadline&&now>=Date.parse(deadline)?'評価期限が終了しました。対象の未評価は自動評価になります。':'内定・内定辞退の状態になった場合に評価できます。'}</BodyText>}
  </Panel><Text style={s.meta}>5.0 最優良企業／4.0〜4.9 優良企業／3.0〜3.9 通常企業／2.1〜2.9 要確認／2.0以下 注意企業</Text>
- <EvaluationModal key={application.id} application={application} visible={open} onClose={()=>setOpen(false)}/></View>;
+</View>;
 }
 export function EvaluationButton({application,onPress}:{application:Application;onPress:()=>void}){
  const {records,ready,now}=useEvaluations();if(!ready||!canEvaluate(application,records.find(r=>r.applicationId===application.id),now))return null;
