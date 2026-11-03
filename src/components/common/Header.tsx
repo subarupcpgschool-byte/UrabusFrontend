@@ -9,6 +9,7 @@ import { WORKSPACE_MOCK_ENABLED } from '@/features/workspace/mockData';
 
 type Panel = '通知' | 'お気に入り' | 'メッセージ';
 type Item = { label: string; path?: Href; panel?: Panel };
+const companyPreview: Item[] = WORKSPACE_MOCK_ENABLED ? [{ label: '企業管理', path: '/company' }] : [];
 const publicItems: Item[] = [
   { label: '求人を探す', path: '/jobs' }, { label: '企業を探す', path: '/companies' },
   { label: '評価について', path: '/reviews' }, { label: '料金', path: '/price' },
@@ -30,7 +31,7 @@ export function Header({ desktop }: { desktop?: boolean }) {
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<Panel | null>(null);
   useEffect(() => { setOpen(false); setPanel(null); }, [pathname, user?.id]);
-  const items = user ? memberItems : publicItems;
+  const items = [...(user ? memberItems : publicItems), ...companyPreview];
   const navigate = (path: Href) => { setOpen(false); setPanel(null); router.push(path); };
   const select = (item: Item) => {
     setOpen(false);

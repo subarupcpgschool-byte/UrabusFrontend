@@ -32,7 +32,8 @@ const menus = {
     ["person-outline", "経歴書", "/user/resume"],
   ],
   company: [
-    ["grid-outline", "ダッシュボード", "/"],
+    ["grid-outline", "ダッシュボード", "/company"],
+    ["people-outline", "応募・選考管理", "/company/applications"],
     ["briefcase-outline", "求人管理", "/company/jobs"],
     ["search-outline", "人材検索", "/company/talent"],
     ["business-outline", "企業・権限", "/company/settings"],

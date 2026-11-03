@@ -1,4 +1,4 @@
-import { AppInput, AppCheckbox } from "@/components/form";
+import { AppInput, AppCheckbox, AppRadioGroup } from "@/components/form";
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
@@ -7,11 +7,17 @@ import { Panel } from "@/components/ui/AppUI";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
 import { authRequest, type AuthSession } from "@/auth/api";
 import { useAuth } from "@/auth/AuthProvider";
-import { startGoogle } from "@/auth/google";
+import { startGoogle, type RegistrationAccountType } from "@/auth/google";
+const accountTypes = [
+  { label: "一般ユーザー", value: "GENERAL" },
+  { label: "企業", value: "COMPANY" },
+];
+
 export default function AuthPage() {
   const params = useLocalSearchParams<{ mode?: string }>();
   const [register, setRegister] = useState(params.mode === "register");
   useEffect(() => { setRegister(params.mode === "register"); }, [params.mode]);
+  const [accountType, setAccountType] = useState<RegistrationAccountType | "">("");
   const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState(""); const [name, setName] = useState("");
   const [visible, setVisible] = useState(false); const [busy, setBusy] = useState(false);
@@ -26,10 +32,11 @@ export default function AuthPage() {
     validEmail();
     if (!password) throw new Error("パスワードを入力してください。");
     if (register) {
+      if (!accountType) throw new Error("登録区分を選択してください。");
       if (!name.trim()) throw new Error("お名前を入力してください。");
       if (password.length < 8) throw new Error("パスワードは8文字以上で入力してください。");
       if (password !== confirm) throw new Error("確認用パスワードが一致しません。");
-      const result = await authRequest<{ message: string }>("/register", { email: email.trim(), password, displayName: name.trim() });
+      const result = await authRequest<{ message: string }>("/register", { email: email.trim(), password, displayName: name.trim(), accountType });
       setPassword(""); setConfirm(""); setMessage(result.message);
     } else {
       await acceptSession(await authRequest<AuthSession>("/login", { email: email.trim(), password }));
@@ -37,7 +44,8 @@ export default function AuthPage() {
     }
   }
   async function google() {
-    const ticket = await startGoogle();
+    if (register && !accountType) throw new Error("登録区分を選択してください。");
+    const ticket = await startGoogle(register && accountType ? accountType : undefined);
     if (ticket) { router.replace({ pathname: "/auth-callback", params: { ticket } }); }
   }
   const button = (label: string, onPress: () => void, outline = false) => <Pressable accessibilityRole="button" disabled={busy || !ready} onPress={onPress} style={({ pressed }) => [s.button, outline && s.outline, (pressed || busy || !ready) && { opacity: 0.6 }]}><Text style={[s.buttonText, outline && { color: C.text }]}>{label}</Text></Pressable>;
@@ -48,8 +56,14 @@ export default function AuthPage() {
       {button("トップ画面へ", () => router.replace("/"))}{button("ログアウト", () => void run(logout), true)}
     </> : <>
       <Text style={s.title}>{register ? "無料ユーザー登録" : "アカウントへログイン"}</Text>
-      {button(register ? "Googleで登録する" : "Googleでログイン", () => void run(google), true)}
-      <Text style={s.divider}>またはメールアドレスで{register ? "登録" : "ログイン"}</Text>
+      {register && <AppRadioGroup label="登録区分" required options={accountTypes}
+        value={accountType} onValueChange={value => {
+          if (value === "GENERAL" || value === "COMPANY") setAccountType(value);
+        }} disabled={busy} />}
+      {(!register || !!accountType) && <>
+        {button(register ? "Googleで登録する" : "Googleでログイン", () => void run(google), true)}
+        <Text style={s.divider}>またはメールアドレスで{register ? "登録" : "ログイン"}</Text>
+      </>}
       {register && <AppInput label="お名前" required accessibilityLabel="お名前" value={name} onChangeText={setName} editable={!busy} maxLength={100} placeholder="山田 太郎" style={s.input} />}
       <AppInput label="メールアドレス" required accessibilityLabel="メールアドレス" value={email} onChangeText={setEmail} editable={!busy} maxLength={254} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" placeholder="example@example.jp" style={s.input} />
       <AppInput label="パスワード" required accessibilityLabel="パスワード" value={password} onChangeText={setPassword} editable={!busy} secureTextEntry={!visible} autoCapitalize="none" autoCorrect={false} autoComplete={register ? "new-password" : "current-password"} placeholder={register ? "8文字以上" : "パスワード"} style={s.input} />
@@ -57,7 +71,7 @@ export default function AuthPage() {
       <AppCheckbox label="パスワードを表示" checked={visible} onValueChange={setVisible} disabled={busy}/>
       {register && <Text style={s.info}>登録後、確認メールのリンクを開くと承認が完了します。承認後にログインできます。</Text>}
       {button(busy ? "処理中…" : register ? "確認メールを送信" : "ログイン", () => void run(submit))}
-      <Pressable disabled={busy} onPress={() => { setRegister(v => !v); setPassword(""); setConfirm(""); setMessage(""); setError(""); }}><Text style={s.link}>{register ? "ログイン画面へ戻る" : "アカウントを作成する"}</Text></Pressable>
+      <Pressable disabled={busy} onPress={() => { setRegister(v => !v); setAccountType(""); setPassword(""); setConfirm(""); setMessage(""); setError(""); }}><Text style={s.link}>{register ? "ログイン画面へ戻る" : "アカウントを作成する"}</Text></Pressable>
       <Pressable disabled={busy} onPress={() => void run(async () => { validEmail(); setMessage((await authRequest<{ message: string }>("/resend", { email: email.trim() })).message); })}><Text style={s.link}>確認メールを再送する</Text></Pressable>
     </>}
     {!!message && <Text accessibilityLiveRegion="polite" style={s.success}>{message}</Text>}
