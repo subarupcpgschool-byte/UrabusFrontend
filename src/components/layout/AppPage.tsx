@@ -37,6 +37,7 @@ const menus = {
     ["briefcase-outline", "求人管理", "/company/jobs"],
     ["search-outline", "人材検索", "/company/talent"],
     ["business-outline", "企業・権限", "/company/settings"],
+    ["people-circle-outline", "従業員管理", "/company/employees"],
   ],
   operator: [
     ["grid-outline", "ダッシュボード", "/"],

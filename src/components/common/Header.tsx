@@ -31,7 +31,7 @@ export function Header({ desktop }: { desktop?: boolean }) {
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<Panel | null>(null);
   useEffect(() => { setOpen(false); setPanel(null); }, [pathname, user?.id]);
-  const items = [...(user ? memberItems : publicItems), ...companyPreview];
+  const items = [...(user ? memberItems : publicItems), ...(user?.accountType === "COMPANY" || user?.accountType === "EMPLOYEE" ? [{ label: "企業管理", path: "/company" as Href }] : companyPreview)];
   const navigate = (path: Href) => { setOpen(false); setPanel(null); router.push(path); };
   const select = (item: Item) => {
     setOpen(false);

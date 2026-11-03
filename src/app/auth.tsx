@@ -18,6 +18,7 @@ export default function AuthPage() {
   const [register, setRegister] = useState(params.mode === "register");
   useEffect(() => { setRegister(params.mode === "register"); }, [params.mode]);
   const [accountType, setAccountType] = useState<RegistrationAccountType | "">("");
+  const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState(""); const [name, setName] = useState("");
   const [visible, setVisible] = useState(false); const [busy, setBusy] = useState(false);
@@ -36,7 +37,7 @@ export default function AuthPage() {
       if (!name.trim()) throw new Error("お名前を入力してください。");
       if (password.length < 8) throw new Error("パスワードは8文字以上で入力してください。");
       if (password !== confirm) throw new Error("確認用パスワードが一致しません。");
-      const result = await authRequest<{ message: string }>("/register", { email: email.trim(), password, displayName: name.trim(), accountType });
+      const result = await authRequest<{ message: string }>("/register", { email: email.trim(), password, displayName: name.trim(), accountType, businessName: accountType === "COMPANY" ? businessName.trim() || undefined : undefined });
       setPassword(""); setConfirm(""); setMessage(result.message);
     } else {
       await acceptSession(await authRequest<AuthSession>("/login", { email: email.trim(), password }));
@@ -45,7 +46,7 @@ export default function AuthPage() {
   }
   async function google() {
     if (register && !accountType) throw new Error("登録区分を選択してください。");
-    const ticket = await startGoogle(register && accountType ? accountType : undefined);
+    const ticket = await startGoogle(register && accountType ? accountType : undefined, businessName.trim());
     if (ticket) { router.replace({ pathname: "/auth-callback", params: { ticket } }); }
   }
   const button = (label: string, onPress: () => void, outline = false) => <Pressable accessibilityRole="button" disabled={busy || !ready} onPress={onPress} style={({ pressed }) => [s.button, outline && s.outline, (pressed || busy || !ready) && { opacity: 0.6 }]}><Text style={[s.buttonText, outline && { color: C.text }]}>{label}</Text></Pressable>;
@@ -60,6 +61,11 @@ export default function AuthPage() {
         value={accountType} onValueChange={value => {
           if (value === "GENERAL" || value === "COMPANY") setAccountType(value);
         }} disabled={busy} />}
+      {register && accountType === "COMPANY" && <>
+        <AppInput label="屋号・法人名（任意）" value={businessName} onChangeText={setBusinessName}
+          editable={!busy} maxLength={100} placeholder="例　すばる商店" />
+        <Text style={s.info}>事業を始めている方は屋号または法人名を登録できます。従業員の登録にはこの情報が必要です。</Text>
+      </>}
       {(!register || !!accountType) && <>
         {button(register ? "Googleで登録する" : "Googleでログイン", () => void run(google), true)}
         <Text style={s.divider}>またはメールアドレスで{register ? "登録" : "ログイン"}</Text>
@@ -71,7 +77,7 @@ export default function AuthPage() {
       <AppCheckbox label="パスワードを表示" checked={visible} onValueChange={setVisible} disabled={busy}/>
       {register && <Text style={s.info}>登録後、確認メールのリンクを開くと承認が完了します。承認後にログインできます。</Text>}
       {button(busy ? "処理中…" : register ? "確認メールを送信" : "ログイン", () => void run(submit))}
-      <Pressable disabled={busy} onPress={() => { setRegister(v => !v); setAccountType(""); setPassword(""); setConfirm(""); setMessage(""); setError(""); }}><Text style={s.link}>{register ? "ログイン画面へ戻る" : "アカウントを作成する"}</Text></Pressable>
+      <Pressable disabled={busy} onPress={() => { setRegister(v => !v); setAccountType(""); setBusinessName(""); setPassword(""); setConfirm(""); setMessage(""); setError(""); }}><Text style={s.link}>{register ? "ログイン画面へ戻る" : "アカウントを作成する"}</Text></Pressable>
       <Pressable disabled={busy} onPress={() => void run(async () => { validEmail(); setMessage((await authRequest<{ message: string }>("/resend", { email: email.trim() })).message); })}><Text style={s.link}>確認メールを再送する</Text></Pressable>
     </>}
     {!!message && <Text accessibilityLiveRegion="polite" style={s.success}>{message}</Text>}

@@ -4,9 +4,10 @@ import * as WebBrowser from "expo-web-browser";
 import { API_BASE } from "./api";
 export type RegistrationAccountType = "GENERAL" | "COMPANY";
 
-export async function startGoogle(accountType?: RegistrationAccountType): Promise<string | null> {
+export async function startGoogle(accountType?: RegistrationAccountType, businessName?: string): Promise<string | null> {
   const registrationQuery = accountType ? `&mode=register&accountType=${encodeURIComponent(accountType)}` : "";
-  const url = `${API_BASE}/api/platform-auth/google/start?platform=${Platform.OS === "web" ? "web" : "native"}${registrationQuery}`;
+  const businessQuery = accountType === "COMPANY" && businessName ? `&businessName=${encodeURIComponent(businessName)}` : "";
+  const url = `${API_BASE}/api/platform-auth/google/start?platform=${Platform.OS === "web" ? "web" : "native"}${registrationQuery}${businessQuery}`;
   if (Platform.OS === "web") { window.location.assign(url); return null; }
   const redirect = Linking.createURL("auth-callback");
   const result = await WebBrowser.openAuthSessionAsync(url, redirect);
