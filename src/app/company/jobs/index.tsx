@@ -1,20 +1,40 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import AppPage from '@/components/layout/AppPage';
 import { AppCheckbox, AppInput, AppSelect, AppTextArea } from '@/components/form';
 import { AppButton, BodyText, Panel, SectionTitle } from '@/components/ui/AppUI';
 import { authRequest } from '@/auth/api';
 import { useAuth } from '@/auth/AuthProvider';
+import { RecruitmentArticle, RecruitmentArticleEditor, articleHtml, MAX_ARTICLE_HTML, type RecruitmentEditorHandle } from '@/features/company/RecruitmentArticle';
 
 const path = '/company-recruitments';
 const labels = {
   title: '募集タイトル', kind: '募集区分', employment: '雇用形態',
-  location: '勤務地', compensation: '給与・報酬', description: '仕事内容', requirements: '応募条件',
+  location: '勤務地', compensation: '給与・報酬', description: '旧形式の仕事内容', requirements: '応募条件', startDate: '開始日', endDate: '終了日', hidden: '非表示', blocks: '旧形式の募集内容', articleHtml: '募集内容',
 };
 const emptyDraft = {
-  title: '', kind: 'JOB', employment: '正社員', location: '', compensation: '', description: '', requirements: '',
+  title: '', kind: 'JOB', employment: '正社員', location: '', compensation: '', description: '', requirements: '', startDate: '', endDate: '', hidden: false, articleHtml: '',
 };
 type Draft = typeof emptyDraft;
+type TextField = Exclude<keyof Draft, 'hidden' | 'blocks'>;
+function readDraft(document: string): Draft {
+  const saved = JSON.parse(document) as Partial<Draft> & Parameters<typeof articleHtml>[0];
+  const { blocks, ...fields } = saved;
+  return { ...emptyDraft, ...fields, startDate: saved.startDate ?? '', endDate: saved.endDate ?? '',
+    hidden: saved.hidden ?? false, articleHtml: articleHtml({ ...fields, blocks }) };
+}
+function validDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith('0000')) return false;
+  const date = new Date(value + 'T00:00:00Z');
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+function visibility(draft: Draft) {
+  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  if (draft.hidden) return '非表示';
+  if (validDate(draft.startDate) && draft.startDate > today) return '開始前';
+  if (validDate(draft.endDate) && draft.endDate < today) return '終了';
+  return '期間内';
+}
 type Job = { id: string; document: string; deleted_at: string | null; can_edit: boolean };
 type Employee = { id: string; display_name: string; can_create: boolean; edit_all: boolean };
 type Overview = { jobs: Job[]; employees: Employee[]; canCreate: boolean; owner: boolean };
@@ -34,6 +54,8 @@ function RecruitmentManager({ token }: { token: string }) {
   const [data, setData] = useState<Overview | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [initialArticle, setInitialArticle] = useState('');
+  const editorRef = useRef<RecruitmentEditorHandle>(null);
   const [grants, setGrants] = useState<Grant[] | null>(null);
   const [history, setHistory] = useState<History[] | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -41,6 +63,7 @@ function RecruitmentManager({ token }: { token: string }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const job = data?.jobs.find(row => row.id === selected);
+  const saved = job ? readDraft(job.document) : null;
   const request = <T,>(route = '', body?: unknown) => authRequest<T>(path + route, body, token);
 
   async function refresh() {
@@ -76,9 +99,20 @@ function RecruitmentManager({ token }: { token: string }) {
 
   async function save() {
     if (!draft) return;
-    const input = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, value.trim()])) as Draft;
-    if (!input.title || !input.location || !input.compensation || !input.description) {
-      throw new Error('募集タイトル、勤務地、給与・報酬、仕事内容を入力してください。');
+    if (!editorRef.current) throw new Error('エディタの読み込みが完了してから保存してください。');
+    const html = await editorRef.current.getHTML();
+    const input = { ...draft, title: draft.title.trim(), location: draft.location.trim(),
+      compensation: draft.compensation.trim(), requirements: draft.requirements.trim(),
+      startDate: draft.startDate.trim(), endDate: draft.endDate.trim(), articleHtml: html, description: '' };
+    if (!input.title || !input.location || !input.compensation) {
+      throw new Error('募集タイトル、勤務地、給与・報酬を入力してください。');
+    }
+    if (html.length > MAX_ARTICLE_HTML) throw new Error('募集内容が長すぎます。内容を短くしてください。');
+    if ([input.startDate, input.endDate].some(date => date && !validDate(date))) {
+      throw new Error('開始日と終了日は YYYY-MM-DD 形式で正しい日付を入力してください。');
+    }
+    if (input.startDate && input.endDate && input.startDate > input.endDate) {
+      throw new Error('終了日は開始日以降にしてください。');
     }
     const result = await request<{ id: string }>(job ? `/${job.id}/edit` : '', input);
     setDraft(null);
@@ -93,7 +127,7 @@ function RecruitmentManager({ token }: { token: string }) {
     await refresh();
   }
 
-  const setField = (key: keyof Draft, value: string) =>
+  const setField = (key: TextField, value: string) =>
     setDraft(previous => previous ? { ...previous, [key]: value } : previous);
 
   return <>
@@ -106,11 +140,12 @@ function RecruitmentManager({ token }: { token: string }) {
         {data.canCreate && <AppButton label="募集を作成" onPress={() => {
           if (busy) return;
           open(null);
+          setInitialArticle('');
           setDraft({ ...emptyDraft });
         }} />}
         {data.jobs.length === 0 && <BodyText>閲覧できる募集はありません。</BodyText>}
         {data.jobs.map(item => <AppButton key={item.id} outline={item.id !== selected}
-          label={`${item.deleted_at ? '［削除済み］' : ''}${(JSON.parse(item.document) as Draft).title}`}
+          label={`${item.deleted_at ? '［削除済み］' : ''}${readDraft(item.document).title}${item.deleted_at ? '' : `［${visibility(readDraft(item.document))}］`}`}
           onPress={() => open(item.id)} />)}
       </Panel>
       {draft ? <Panel>
@@ -122,18 +157,44 @@ function RecruitmentManager({ token }: { token: string }) {
           options={['正社員', '契約社員', '業務委託', 'アルバイト・パート', 'ボランティア'].map(value => ({ value, label: value }))} />
         {(['title', 'location', 'compensation'] as const).map(key => <AppInput key={key} label={labels[key]}
           value={draft[key]} editable={!busy} required maxLength={120} onChangeText={value => setField(key, value)} />)}
-        <AppTextArea label={labels.description} value={draft.description} editable={!busy} required maxLength={8000}
-          onChangeText={value => setField('description', value)} />
+        <SectionTitle>募集期間と表示設定</SectionTitle>
+        <BodyText>日付は日本時間です。開始日が空欄なら開始制限なし、終了日が空欄なら無期限です。</BodyText>
+        <AppInput label="開始日（任意）" placeholder="YYYY-MM-DD" value={draft.startDate}
+          maxLength={10} editable={!busy} onChangeText={value => setField('startDate', value)} />
+        <AppInput label="終了日（任意）" placeholder="YYYY-MM-DD" value={draft.endDate}
+          maxLength={10} editable={!busy} onChangeText={value => setField('endDate', value)} />
+        <AppCheckbox label="非表示にする" checked={draft.hidden} disabled={busy}
+          onValueChange={hidden => setDraft(previous => previous ? { ...previous, hidden } : previous)} />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 16 }}>
+          <View style={{ flex: 1, minWidth: 250 }}>
+            <SectionTitle>募集内容</SectionTitle>
+            <RecruitmentArticleEditor initialHtml={initialArticle} disabled={busy} editorRef={editorRef}
+              onChange={html => setDraft(previous => previous ? { ...previous, articleHtml: html } : previous)} />
+          </View>
+          <View style={{ flex: 1, minWidth: 250 }}>
+            <Panel>
+              <SectionTitle>リアルタイムプレビュー</SectionTitle>
+              <Text accessibilityRole="header" style={{ fontSize: 23, fontWeight: '700' }}>{draft.title || '募集タイトル'}</Text>
+              <BodyText>{visibility(draft)} ／ {draft.startDate || '開始制限なし'} 〜 {draft.endDate || '無期限'}</BodyText>
+              <RecruitmentArticle html={draft.articleHtml} />
+            </Panel>
+          </View>
+        </View>
         <AppTextArea label={labels.requirements} value={draft.requirements} editable={!busy} maxLength={4000}
           onChangeText={value => setField('requirements', value)} />
         <AppButton label={busy ? '保存中…' : '保存する'} onPress={() => void run(save)} />
         <AppButton label="キャンセル" outline onPress={() => { if (!busy) setDraft(null); }} />
-      </Panel> : job && <Panel>
-        <SectionTitle>{(JSON.parse(job.document) as Draft).title}</SectionTitle>
-        {Object.entries(JSON.parse(job.document) as Draft).filter(([key]) => key !== 'title').map(([key, value]) =>
-          <BodyText key={key}>{labels[key as keyof Draft]}　{key === 'kind' ? (value === 'JOB' ? '求人' : '企業の募集') : value || '—'}</BodyText>)}
+      </Panel> : job && saved && <Panel>
+        <SectionTitle>{saved.title}</SectionTitle>
+        <BodyText>{visibility(saved)} ／ {saved.startDate || '開始制限なし'} 〜 {saved.endDate || '無期限'}</BodyText>
+        <RecruitmentArticle html={saved.articleHtml} />
+        {(['kind', 'employment', 'location', 'compensation', 'requirements'] as const).map(key =>
+          <BodyText key={key}>{labels[key]}　{key === 'kind' ? (saved.kind === 'JOB' ? '求人' : '企業の募集') : saved[key] || '—'}</BodyText>)}
         {!job.deleted_at && job.can_edit && <AppButton label="編集" onPress={() => {
-          if (!busy) setDraft(JSON.parse(job.document) as Draft);
+          if (!busy) {
+            setInitialArticle(saved.articleHtml);
+            setDraft(saved);
+          }
         }} />}
         {!job.deleted_at && data.owner && <>
           <AppButton label="従業員の閲覧・編集権限" outline onPress={() => void run(async () =>
@@ -203,12 +264,24 @@ function HistoryEntry({ row }: { row: History }) {
   const actionLabel = { CREATE: '作成', EDIT: '編集', DELETE: '削除', ACCESS: '求人別権限の変更' };
   const before = row.before_value ? JSON.parse(row.before_value) : {};
   const after = row.after_value ? JSON.parse(row.after_value) : {};
-  const keys = Object.keys(labels) as (keyof Draft)[];
+  const keys = Object.keys(labels) as (keyof typeof labels)[];
   const label = actionLabel[row.action as keyof typeof actionLabel] ?? row.action;
   return <View style={{ gap: 4, paddingVertical: 8 }}>
     <Text>{label} ／ {row.actor_name} ／ {new Date(row.changed_at).toLocaleString('ja-JP')}</Text>
     {row.action === 'ACCESS' ? <BodyText>{row.before_value} → {row.after_value}</BodyText> :
-      keys.filter(key => before[key] !== after[key]).map(key =>
-        <BodyText key={key}>{labels[key]}　{before[key] ?? '—'} → {after[key] ?? '—'}</BodyText>)}
+      keys.filter(key => JSON.stringify(before[key]) !== JSON.stringify(after[key])).map(key =>
+        key === 'articleHtml' ? <View key={key} style={{ gap: 8 }}>
+          <BodyText>募集内容（変更前）</BodyText><RecruitmentArticle html={historyValue(before[key])} />
+          <BodyText>募集内容（変更後）</BodyText><RecruitmentArticle html={historyValue(after[key])} />
+        </View> : <BodyText key={key}>{labels[key]}　{historyValue(before[key])} → {historyValue(after[key])}</BodyText>)}
   </View>;
+}
+
+function historyValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.map((block: { kind: string; bold: boolean; text: string; url: string }) => [block.kind, block.bold ? '太字' : '', block.text, block.url]
+      .filter(Boolean).join(' / ')).join(' | ') || '—';
+  }
+  if (typeof value === 'boolean') return value ? 'はい' : 'いいえ';
+  return typeof value === 'string' && value ? value : '—';
 }
