@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { Text, View, useWindowDimensions } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import AppPage from '@/components/layout/AppPage';
-import { AppCheckbox, AppInput, AppSelect, AppTextArea } from '@/components/form';
+import { AppCheckbox, AppDatePicker, AppInput, AppSelect, AppTextArea } from '@/components/form';
 import { AppButton, BodyText, Panel, SectionTitle } from '@/components/ui/AppUI';
 import { API_BASE, authRequest } from '@/auth/api';
 import { useAuth } from '@/auth/AuthProvider';
 import { RecruitmentArticle, RecruitmentArticleEditor, articleHtml, MAX_ARTICLE_HTML, type RecruitmentEditorHandle } from '@/features/company/RecruitmentArticle';
 
+import { RecruitmentDetailPreview } from '@/features/company/RecruitmentDetailPreview';
+import { pickArticleCss } from '@/features/company/pickArticleCss';
+
 const path = '/company-recruitments';
 const labels = {
   title: '募集タイトル', kind: '募集区分', employment: '雇用形態',
-  location: '勤務地', compensation: '給与・報酬', description: '旧形式の仕事内容', requirements: '応募条件', startDate: '開始日', endDate: '終了日', hidden: '非表示', blocks: '旧形式の募集内容', articleHtml: '募集内容',
+  location: '勤務地', compensation: '給与・報酬', description: '旧形式の仕事内容', requirements: '応募条件', startDate: '開始日', endDate: '終了日', hidden: '非表示', blocks: '旧形式の募集内容', articleHtml: '募集内容', articleCss: '記事個別CSS',
 };
 const emptyDraft = {
-  title: '', kind: 'JOB', employment: '正社員', location: '', compensation: '', description: '', requirements: '', startDate: '', endDate: '', hidden: false, articleHtml: '',
+  title: '', kind: 'JOB', employment: '正社員', location: '', compensation: '', description: '', requirements: '', startDate: '', endDate: '', hidden: false, articleHtml: '', articleCss: '',
 };
 type Draft = typeof emptyDraft;
 type TextField = Exclude<keyof Draft, 'hidden' | 'blocks'>;
@@ -21,7 +24,7 @@ function readDraft(document: string): Draft {
   const saved = JSON.parse(document) as Partial<Draft> & Parameters<typeof articleHtml>[0];
   const { blocks, ...fields } = saved;
   return { ...emptyDraft, ...fields, startDate: saved.startDate ?? '', endDate: saved.endDate ?? '',
-    hidden: saved.hidden ?? false, articleHtml: articleHtml({ ...fields, blocks }) };
+    hidden: saved.hidden ?? false, articleCss: saved.articleCss ?? '', articleHtml: articleHtml({ ...fields, blocks }) };
 }
 function validDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith('0000')) return false;
@@ -37,7 +40,7 @@ function visibility(draft: Draft) {
 }
 type Job = { id: string; document: string; deleted_at: string | null; can_edit: boolean };
 type Employee = { id: string; display_name: string; can_create: boolean; edit_all: boolean };
-type Overview = { jobs: Job[]; employees: Employee[]; canCreate: boolean; owner: boolean };
+type Overview = { jobs: Job[]; employees: Employee[]; canCreate: boolean; owner: boolean; commonCss?: string };
 type Grant = { employeeId: string; canView: boolean; canEdit: boolean };
 type History = { actor_name: string; action: string; before_value: string | null; after_value: string | null; changed_at: string };
 
@@ -45,17 +48,21 @@ export default function CompanyJobsPage() {
   const { token, user, ready } = useAuth();
   const allowed = user?.accountType === 'COMPANY' || user?.accountType === 'EMPLOYEE';
   return <AppPage title="求人作成・管理" subtitle="" role="company" activeMenu="求人管理">
-    {!ready ? <BodyText>読み込み中…</BodyText> : token && allowed ? <RecruitmentManager key={token} token={token} /> :
+    {!ready ? <BodyText>読み込み中…</BodyText> : token && allowed ? <RecruitmentManager key={token} token={token} companyName={user.businessName || (user.accountType === 'COMPANY' ? user.displayName : null)} /> :
       <Panel><BodyText>企業アカウントまたは所属企業の従業員アカウントでログインしてください。</BodyText></Panel>}
   </AppPage>;
 }
 
-function RecruitmentManager({ token }: { token: string }) {
+function RecruitmentManager({ token, companyName }: { token: string; companyName?: string | null }) {
   const [data, setData] = useState<Overview | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [previewOpen, setPreviewOpen] = useState(true);
-  const { width } = useWindowDimensions();
+  const [formWidth, setFormWidth] = useState(0);
+  const desktop = Platform.OS === 'web' && formWidth >= 840;
+  const compact = Platform.OS === 'web' && formWidth >= 460;
+  const fieldRow = { flexDirection: compact ? 'row' : 'column', flexWrap: 'wrap', gap: 10 } as const;
+  const fieldCell = compact ? { flexGrow: 1, flexBasis: 170, minWidth: 0 } : undefined;
   const [initialArticle, setInitialArticle] = useState('');
   const editorRef = useRef<RecruitmentEditorHandle>(null);
   const [grants, setGrants] = useState<Grant[] | null>(null);
@@ -112,6 +119,12 @@ function RecruitmentManager({ token }: { token: string }) {
     }
   }
 
+  async function saveCommonCss(css: string) {
+    const result = await request<{ css: string }>('/article-style', { css });
+    setData(previous => previous ? { ...previous, commonCss: result.css } : previous);
+    setNotice(css ? '共通CSSを更新しました。' : '共通CSSを解除しました。');
+  }
+
   async function save() {
     if (!draft) return;
     if (!editorRef.current) throw new Error('エディタの読み込みが完了してから保存してください。');
@@ -150,6 +163,16 @@ function RecruitmentManager({ token }: { token: string }) {
     {!!notice && <Text accessibilityLiveRegion="polite">{notice}</Text>}
     {!data ? <Panel><BodyText>{error ? '募集を取得できませんでした。' : '読み込み中…'}</BodyText>
       {error && <AppButton label="再読み込み" onPress={() => void run(refresh)} />}</Panel> : <>
+      {data.owner && <Panel>
+        <SectionTitle>全記事の共通CSS</SectionTitle>
+        <BodyText>この企業の求人・企業募集記事の本文に適用します。UTF-8の .css ファイル（32KBまで）を選択してください。</BodyText>
+        <BodyText>{data.commonCss ? '適用中' : '未設定'}</BodyText>
+        <AppButton label={data.commonCss ? '共通CSSを差し替え' : '共通CSSをアップロード'} outline onPress={() => void run(async () => {
+          const css = await pickArticleCss();
+          if (css !== null) await saveCommonCss(css);
+        })} />
+        {!!data.commonCss && <AppButton label="共通CSSを解除" outline onPress={() => void run(() => saveCommonCss(''))} />}
+      </Panel>}
       <Panel>
         <SectionTitle>求人・企業募集一覧</SectionTitle>
         {data.canCreate && <AppButton label="募集を作成" onPress={() => {
@@ -165,46 +188,61 @@ function RecruitmentManager({ token }: { token: string }) {
       </Panel>
       {draft ? <Panel>
         <SectionTitle>{job ? '募集を編集' : '求人・企業募集を作成'}</SectionTitle>
-        <AppSelect label={labels.kind} value={draft.kind} disabled={busy} onValueChange={value => setField('kind', value)}
-          options={[{ label: '求人', value: 'JOB' }, { label: '企業の募集', value: 'COMPANY_RECRUITMENT' }]} />
-        <AppSelect label={labels.employment} value={draft.employment} disabled={busy}
-          onValueChange={value => setField('employment', value)}
-          options={['正社員', '契約社員', '業務委託', 'アルバイト・パート', 'ボランティア'].map(value => ({ value, label: value }))} />
-        {(['title', 'location', 'compensation'] as const).map(key => <AppInput key={key} label={labels[key]}
-          value={draft[key]} editable={!busy} required maxLength={120} onChangeText={value => setField(key, value)} />)}
-        <SectionTitle>募集期間と表示設定</SectionTitle>
-        <BodyText>日付は日本時間です。開始日が空欄なら開始制限なし、終了日が空欄なら無期限です。</BodyText>
-        <AppInput label="開始日（任意）" placeholder="YYYY-MM-DD" value={draft.startDate}
-          maxLength={10} editable={!busy} onChangeText={value => setField('startDate', value)} />
-        <AppInput label="終了日（任意）" placeholder="YYYY-MM-DD" value={draft.endDate}
-          maxLength={10} editable={!busy} onChangeText={value => setField('endDate', value)} />
-        <AppCheckbox label="非表示にする" checked={draft.hidden} disabled={busy}
-          onValueChange={hidden => setDraft(previous => previous ? { ...previous, hidden } : previous)} />
-        <View style={{ flexDirection: width >= 1050 ? 'row' : 'column', alignItems: 'stretch', gap: 16 }}>
-          <View style={{ flex: 3, minWidth: 0, gap: 8 }}>
+        <View onLayout={event => setFormWidth(event.nativeEvent.layout.width)}
+          style={{ flexDirection: desktop ? 'row' : 'column', gap: 16 }}>
+          <View style={[{ minWidth: 0, gap: 10 }, desktop && { flex: 3 }]}>
+            <View style={fieldRow}>
+              <AppSelect containerStyle={fieldCell} label={labels.kind} value={draft.kind} disabled={busy} onValueChange={value => setField('kind', value)}
+                options={[{ label: '求人', value: 'JOB' }, { label: '企業の募集', value: 'COMPANY_RECRUITMENT' }]} />
+              <AppSelect containerStyle={fieldCell} label={labels.employment} value={draft.employment} disabled={busy}
+              onValueChange={value => setField('employment', value)}
+                options={['正社員', '契約社員', '業務委託', 'アルバイト・パート', 'ボランティア'].map(value => ({ value, label: value }))} />
+            </View>
+            <AppInput label={labels.title} value={draft.title} editable={!busy} required maxLength={120}
+              onChangeText={value => setField('title', value)} />
+            <View style={fieldRow}>
+              {(['location', 'compensation'] as const).map(key => <AppInput key={key} label={labels[key]}
+                containerStyle={fieldCell} value={draft[key]} editable={!busy} required maxLength={120}
+                onChangeText={value => setField(key, value)} />)}
+            </View>
+            <SectionTitle>募集期間と表示設定</SectionTitle>
+            <BodyText>日付は日本時間です。開始日が空欄なら開始制限なし、終了日が空欄なら無期限です。</BodyText>
+            <View style={fieldRow}>
+              <AppDatePicker containerStyle={fieldCell} label="開始日（任意）" value={draft.startDate} disabled={busy}
+                onValueChange={value => setField('startDate', value)} />
+              <AppDatePicker containerStyle={fieldCell} label="終了日（任意）" value={draft.endDate} disabled={busy}
+                onValueChange={value => setField('endDate', value)} />
+            </View>
+            <AppCheckbox label="非表示にする" checked={draft.hidden} disabled={busy}
+              onValueChange={hidden => setDraft(previous => previous ? { ...previous, hidden } : previous)} />
+            <SectionTitle>この記事の個別CSS</SectionTitle>
+            <BodyText>{draft.articleCss ? '設定済み' : '未設定'} ／ 記事の保存時に確定します。同じ優先度では個別CSSが共通CSSに優先します。</BodyText>
+            <AppButton label={draft.articleCss ? '個別CSSを差し替え' : '個別CSSをアップロード'} outline onPress={() => void run(async () => {
+              const css = await pickArticleCss();
+              if (css !== null) setField('articleCss', css);
+            })} />
+            {!!draft.articleCss && <AppButton label="個別CSSを解除" outline onPress={() => {
+              if (!busy) setField('articleCss', '');
+            }} />}
             <SectionTitle>募集内容</SectionTitle>
             <AppButton label={previewOpen ? 'プレビューを非表示' : 'プレビューを表示'} outline
               onPress={() => setPreviewOpen(open => !open)} />
             <RecruitmentArticleEditor initialHtml={initialArticle} disabled={working} editorRef={editorRef} uploadImage={uploadImage}
               onChange={html => setDraft(previous => previous ? { ...previous, articleHtml: html } : previous)} />
+            <AppTextArea label={labels.requirements} value={draft.requirements} editable={!busy} maxLength={4000}
+              onChangeText={value => setField('requirements', value)} />
+            <AppButton label={uploading ? '画像をアップロード中…' : working ? '保存中…' : '保存する'} onPress={() => void run(save)} />
+            <AppButton label="キャンセル" outline onPress={() => { if (!busy) setDraft(null); }} />
           </View>
-          {previewOpen && <View style={{ flex: 2, minWidth: 0 }}>
-            <Panel>
-              <SectionTitle>リアルタイムプレビュー</SectionTitle>
-              <Text accessibilityRole="header" style={{ fontSize: 23, fontWeight: '700' }}>{draft.title || '募集タイトル'}</Text>
-              <BodyText>{visibility(draft)} ／ {draft.startDate || '開始制限なし'} 〜 {draft.endDate || '無期限'}</BodyText>
-              <RecruitmentArticle html={draft.articleHtml} />
-            </Panel>
+          {previewOpen && <View style={[{ minWidth: 0 }, desktop && { flex: 2 }]}>
+            <RecruitmentDetailPreview draft={draft} companyName={companyName}
+              commonCss={data.commonCss} visibility={visibility(draft)} />
           </View>}
         </View>
-        <AppTextArea label={labels.requirements} value={draft.requirements} editable={!busy} maxLength={4000}
-          onChangeText={value => setField('requirements', value)} />
-        <AppButton label={uploading ? '画像をアップロード中…' : working ? '保存中…' : '保存する'} onPress={() => void run(save)} />
-        <AppButton label="キャンセル" outline onPress={() => { if (!busy) setDraft(null); }} />
       </Panel> : job && saved && <Panel>
         <SectionTitle>{saved.title}</SectionTitle>
         <BodyText>{visibility(saved)} ／ {saved.startDate || '開始制限なし'} 〜 {saved.endDate || '無期限'}</BodyText>
-        <RecruitmentArticle html={saved.articleHtml} />
+        <RecruitmentArticle html={saved.articleHtml} commonCss={data.commonCss} articleCss={saved.articleCss} />
         {(['kind', 'employment', 'location', 'compensation', 'requirements'] as const).map(key =>
           <BodyText key={key}>{labels[key]}　{key === 'kind' ? (saved.kind === 'JOB' ? '求人' : '企業の募集') : saved[key] || '—'}</BodyText>)}
         {!job.deleted_at && job.can_edit && <AppButton label="編集" onPress={() => {

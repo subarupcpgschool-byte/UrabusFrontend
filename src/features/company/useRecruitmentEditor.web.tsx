@@ -3,6 +3,7 @@ import type {} from '@tiptap/extension-image';
 import { useEffect, useMemo, type RefObject } from 'react';
 import { EditorContent, PlaceholderBridge, TenTapStartKit, useEditor } from '@10play/tentap-editor/web';
 
+import { editArticleBlock, type ArticleBlockHtml } from './recruitmentBlockHtml';
 import { recruitmentEditorCss, recruitmentPlaceholder } from './recruitmentEditorStyle';
 
 export type RecruitmentEditorHandle = { getHTML: () => Promise<string> };
@@ -29,6 +30,7 @@ export function useRecruitmentEditor(
   useEffect(() => { webEditor?.setEditable(!disabled, false); }, [disabled, webEditor]);
 
   const editor = useMemo(() => webEditor && ({
+    editBlock: async (block?: ArticleBlockHtml, source?: string) => editArticleBlock(webEditor, block, source),
     getHTML: async () => webEditor.getHTML(),
     toggleBold: () => webEditor.chain().focus().toggleBold().run(),
     toggleItalic: () => webEditor.chain().focus().toggleItalic().run(),

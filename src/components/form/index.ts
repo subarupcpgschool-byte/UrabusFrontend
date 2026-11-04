@@ -4,3 +4,4 @@ export { AppSelect, type AppSelectProps } from './AppSelect';
 export { AppCheckbox, AppRadioGroup, AppMultiSelect, AppTag, type ChoiceOption } from './AppChoice';
 export { AppTagInput, type AppTagInputProps } from './AppTagInput';
 export { AppSwitch } from './AppSwitch';
+export { AppDatePicker } from './AppDatePicker';

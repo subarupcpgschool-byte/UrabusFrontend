@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/auth/AuthProvider';
-import { AppInput, AppTextArea, AppSelect, AppTagInput } from '@/components/form';
+import { AppDatePicker, AppInput, AppTextArea, AppSelect, AppTagInput } from '@/components/form';
 import { AppButton, Panel, SectionTitle } from '@/components/ui/AppUI';
 import { useAccount } from './AccountProvider';
 import { profileError, type Profile } from './data';
@@ -25,7 +25,7 @@ export default function ProfilePanel() {
     <Panel><SectionTitle>基本プロフィール</SectionTitle><Text style={s.hint}>氏名と生年月日は必須です。住所は市区町村まで入力してください。</Text>
       <View style={s.grid}><AppInput label="姓" required {...field('familyName')} maxLength={50} containerStyle={s.cell}/><AppInput label="名" required {...field('givenName')} maxLength={50} containerStyle={s.cell}/></View>
       <View style={s.grid}><AppInput label="姓（カナ）" {...field('familyKana')} maxLength={50} containerStyle={s.cell}/><AppInput label="名（カナ）" {...field('givenKana')} maxLength={50} containerStyle={s.cell}/></View>
-      <View style={s.grid}><AppInput label="生年月日" required placeholder="1990-01-01" {...field('birthDate')} maxLength={10} containerStyle={s.cell}/><AppInput label="住所（市区町村まで）" {...field('city')} maxLength={100} containerStyle={s.cell}/></View>
+      <View style={s.grid}><AppDatePicker label="生年月日" required value={draft.birthDate} onValueChange={v => change('birthDate', v)} disabled={busy} containerStyle={s.cell}/><AppInput label="住所（市区町村まで）" {...field('city')} maxLength={100} containerStyle={s.cell}/></View>
       <View style={s.grid}><AppInput label="電話番号（任意）" keyboardType="phone-pad" {...field('phone')} maxLength={25} containerStyle={s.cell}/><AppInput label="事業名（任意）" {...field('businessName')} maxLength={100} containerStyle={s.cell}/></View>
       {user && <AppInput label="登録メールアドレス" value={user.email} editable={false} hint="メールアドレスは認証情報から表示しています。"/>}
       <AppSelect label="移動手段" value={draft.transport} onValueChange={v => change('transport', v)} disabled={busy} options={['未選択','車','バイク','公共交通','自転車','徒歩'].map((label,i) => ({ label, value: i === 0 ? '' : label }))}/>

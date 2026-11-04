@@ -4,7 +4,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getDocumentAsync } from 'expo-document-picker';
 import { RecruitmentPreviewFrame } from './RecruitmentPreviewFrame';
 import { useRecruitmentEditor, type RecruitmentEditorHandle } from './useRecruitmentEditor';
-import { AppInput } from '@/components/form';
+import type { ArticleBlockHtml } from './recruitmentBlockHtml';
+import { AppInput, AppTextArea } from '@/components/form';
 
 export type { RecruitmentEditorHandle } from './useRecruitmentEditor';
 
@@ -43,8 +44,11 @@ export function articleHtml(saved: { articleHtml?: string; blocks?: LegacyBlock[
   }).join('');
 }
 
-function documentHtml(html: string) {
-  const initial = JSON.stringify(html).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+function scriptValue(value: string) {
+  return JSON.stringify(value).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+}
+
+function documentHtml(html: string, commonCss: string, articleCss: string) {
   return `<!doctype html><html lang="ja"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-article'; style-src 'unsafe-inline'; img-src https: http:; base-uri 'none'; form-action 'none'">
@@ -72,18 +76,48 @@ function sanitize(value){
  }
  return template.innerHTML;
 }
-editor.innerHTML=sanitize(${initial});
+editor.innerHTML=sanitize(${scriptValue(html)});
+
+function applyCss(source) {
+ if (!source || typeof CSSStyleSheet === 'undefined' || typeof CSSStyleSheet.prototype.replaceSync !== 'function') return;
+ const sheet = new CSSStyleSheet();
+ sheet.replaceSync(source);
+ const formatting = /^(color|background-color|font(-[a-z-]+)?|line-height|letter-spacing|word-spacing|white-space|overflow-wrap|word-break|text-(align|indent|transform|decoration(-[a-z-]+)?|shadow)|margin(-[a-z-]+)?|padding(-[a-z-]+)?|border(-[a-z-]+)?|box-shadow|list-style-(type|position)|(?:min-|max-)?(?:width|height)|object-fit|vertical-align)$/;
+ function clean(rules) {
+  return Array.from(rules, rule => {
+   if (rule.type === CSSRule.MEDIA_RULE) {
+    return '@media ' + rule.conditionText + '{' + clean(rule.cssRules) + '}';
+   }
+   if (rule.type !== CSSRule.STYLE_RULE) return '';
+   for (const name of Array.from(rule.style)) {
+    const value = rule.style.getPropertyValue(name);
+    if (!formatting.test(name) || name.startsWith('border-image') || value.includes(String.fromCharCode(92)) ||
+        /(?:url|src|image|paint|var|attr|expression)\\s*\\(/i.test(value)) {
+     rule.style.removeProperty(name);
+    }
+   }
+   return rule.selectorText + '{' + rule.style.cssText + '}';
+  }).join('');
+ }
+ const style = document.createElement('style');
+ style.textContent = clean(sheet.cssRules);
+ document.head.appendChild(style);
+}
+applyCss(${scriptValue(commonCss)});
+applyCss(${scriptValue(articleCss)});
 document.addEventListener('click',event=>{if(event.target.closest('a'))event.preventDefault()});
 </script></html>`;
 }
 
-export function RecruitmentArticle({ html }: { html: string }) {
+export function RecruitmentArticle({ html, commonCss = '', articleCss = '' }: {
+  html: string; commonCss?: string; articleCss?: string;
+}) {
   const [preview, setPreview] = useState(html);
   useEffect(() => {
     const timer = setTimeout(() => setPreview(html), 180);
     return () => clearTimeout(timer);
   }, [html]);
-  return <RecruitmentPreviewFrame html={documentHtml(preview)} />;
+  return <RecruitmentPreviewFrame html={documentHtml(preview, commonCss, articleCss)} />;
 }
 
 export function RecruitmentArticleEditor({ initialHtml, disabled, onChange, editorRef, uploadImage }: {
@@ -101,6 +135,28 @@ export function RecruitmentArticleEditor({ initialHtml, disabled, onChange, edit
   const [linkText, setLinkText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  const [htmlBlock, setHtmlBlock] = useState<ArticleBlockHtml | null>(null);
+  const [htmlSource, setHtmlSource] = useState('');
+
+  async function openBlockHtml() {
+    if (!editor) return;
+    await applyInsert(async () => {
+      const block = await editor.editBlock();
+      setHtmlSource(block.original);
+      setHtmlBlock(block);
+    });
+  }
+
+  async function applyBlockHtml() {
+    if (!editor || !htmlBlock) return;
+    await applyInsert(async () => {
+      if (htmlSource !== htmlBlock.original) {
+        await editor.editBlock(htmlBlock, htmlSource);
+        onChangeRef.current(await editor.getHTML());
+      }
+      setHtmlBlock(null);
+    });
+  }
 
   function changeInsert(mode: typeof insert) {
     setInsert(mode);
@@ -111,9 +167,12 @@ export function RecruitmentArticleEditor({ initialHtml, disabled, onChange, edit
 
 
   useEffect(() => {
-    editorRef.current = editor;
+    editorRef.current = editor && { getHTML: async () => {
+      if (htmlBlock || submittingRef.current) throw new Error('ブロックの編集を確定してから保存してください。');
+      return editor.getHTML();
+    } };
     return () => { editorRef.current = null; };
-  }, [editor, editorRef]);
+  }, [editor, editorRef, htmlBlock]);
 
   const tools = [
     ['太字', 'format-bold', () => editor?.toggleBold()],
@@ -193,12 +252,14 @@ export function RecruitmentArticleEditor({ initialHtml, disabled, onChange, edit
     });
   }
 
-  const inactive = disabled || !editor || submitting;
+  const inactive = disabled || !editor || submitting || !!htmlBlock;
   return <View style={styles.panel}>
     <View style={styles.toolbar}>
       <EditorIcon label={blocksOpen ? 'ブロック一覧を閉じる' : 'ブロックを追加'}
         icon={blocksOpen ? 'close' : 'plus'} disabled={inactive} active={blocksOpen}
         onPress={() => setBlocksOpen(open => !open)} />
+      <EditorIcon label="選択したブロックをHTMLで編集" icon="code-tags" disabled={inactive}
+        onPress={() => void openBlockHtml()} />
       <View style={styles.divider} />
       {tools.map(([label, icon, action]) => <EditorIcon key={label}
         label={label} icon={icon} disabled={inactive} onPress={action} />)}
@@ -230,7 +291,18 @@ export function RecruitmentArticleEditor({ initialHtml, disabled, onChange, edit
         <EditorIcon label="キャンセル" icon="close" disabled={submitting} onPress={() => changeInsert(null)} />
       </View>
     </View>}
-    <View style={styles.surface}>{surface}</View>
+    {htmlBlock && <View style={styles.urlForm}>
+      <AppTextArea label="選択したブロックのHTML" value={htmlSource} onChangeText={setHtmlSource}
+        editable={!disabled && !submitting} maxLength={MAX_ARTICLE_HTML} autoCapitalize="none" autoCorrect={false} />
+      <View style={styles.urlActions}>
+        <EditorIcon label="HTMLを反映してビジュアルに戻る" icon="check"
+          disabled={disabled || submitting} onPress={() => void applyBlockHtml()} />
+        <EditorIcon label="HTML編集を取り消す" icon="close" disabled={submitting}
+          onPress={() => { setHtmlBlock(null); setError(''); }} />
+      </View>
+    </View>}
+    {!insert && !!error && <Text accessibilityRole="alert">{error}</Text>}
+    <View style={[styles.surface, htmlBlock && { display: 'none' }]}>{surface}</View>
   </View>;
 }
 
