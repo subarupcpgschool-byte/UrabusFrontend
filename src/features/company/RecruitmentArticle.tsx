@@ -1,6 +1,12 @@
-import { createElement, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { Platform, View } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { getDocumentAsync } from 'expo-document-picker';
+import { RecruitmentPreviewFrame } from './RecruitmentPreviewFrame';
+import { useRecruitmentEditor, type RecruitmentEditorHandle } from './useRecruitmentEditor';
+import { AppInput } from '@/components/form';
+
+export type { RecruitmentEditorHandle } from './useRecruitmentEditor';
 
 type LegacyBlock = { kind: string; text: string; url: string; bold: boolean };
 export const MAX_ARTICLE_HTML = 200_000;
@@ -37,9 +43,7 @@ export function articleHtml(saved: { articleHtml?: string; blocks?: LegacyBlock[
   }).join('');
 }
 
-export type RecruitmentEditorHandle = { getHTML: () => Promise<string> };
-
-function documentHtml(html: string, edit: boolean) {
+function documentHtml(html: string) {
   const initial = JSON.stringify(html).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
   return `<!doctype html><html lang="ja"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -50,12 +54,7 @@ img{max-width:100%;height:auto}#body{min-height:200px;padding:8px;border-radius:
 [contenteditable]{border:1px solid #cad8e9}#toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 button{font:inherit;background:#eef5ff;border:1px solid #cad8e9;border-radius:6px;color:#18334f;padding:4px 8px}
 </style>
-<div id="toolbar" ${edit ? '' : 'hidden style="display:none"'}>
-<button data-command="bold">太字</button><button data-command="italic">斜体</button>
-<button data-command="underline">下線</button><button data-command="heading">見出し</button>
-<button data-command="insertUnorderedList">箇条書き</button><button data-command="insertOrderedList">番号付き</button>
-<button data-command="image">画像URL</button></div>
-<div id="body" ${edit ? 'contenteditable="true" role="textbox" aria-multiline="true" aria-label="募集内容"' : ''}></div>
+<div id="body"></div>
 <script nonce="article">
 const editor=document.getElementById('body');
 const tags=new Set('P DIV BR STRONG B EM I U S STRIKE DEL BLOCKQUOTE H1 H2 H3 H4 H5 H6 UL OL LI A IMG PRE CODE'.split(' '));
@@ -74,64 +73,8 @@ function sanitize(value){
  return template.innerHTML;
 }
 editor.innerHTML=sanitize(${initial});
-function send(){
- const value=JSON.stringify({type:'recruitment-html',html:sanitize(editor.innerHTML)});
- if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(value);else parent.postMessage(value,'*');
-}
-editor.addEventListener('input',send);
-editor.addEventListener('paste',event=>{
- event.preventDefault();
- document.execCommand('insertText',false,event.clipboardData?.getData('text/plain')||'');send();
-});
 document.addEventListener('click',event=>{if(event.target.closest('a'))event.preventDefault()});
-editor.addEventListener('drop',event=>event.preventDefault());
-document.querySelectorAll('[data-command]').forEach(button=>{
- button.onmousedown=event=>event.preventDefault();
- button.onclick=()=>{
-  const cmd=button.dataset.command;
-  if(cmd==='image'){
-   const src=url(prompt('画像の公開URL')||'');
-   if(src){editor.focus();document.execCommand('insertImage',false,src)}
-  }else{
-   editor.focus();
-   if(cmd==='heading')document.execCommand('formatBlock',false,'h2');else document.execCommand(cmd,false,null);
-  }
-  send();
- };
-});
 </script></html>`;
-}
-
-function ArticleFrame({ html, editable = false, onChange }: {
-  html: string; editable?: boolean; onChange?: (html: string) => void;
-}) {
-  const frame = useRef<HTMLIFrameElement>(null);
-  const source = useMemo(() => ({ html: documentHtml(html, editable) }), [html, editable]);
-  function receive(raw: unknown) {
-    if (typeof raw !== 'string' || !onChange) return;
-    try {
-      const message = JSON.parse(raw);
-      if (message.type === 'recruitment-html' && typeof message.html === 'string') onChange(message.html);
-    } catch { /* Ignore unrelated bridge messages. */ }
-  }
-  useEffect(() => {
-    if (Platform.OS !== 'web' || !editable) return;
-    const listener = (event: MessageEvent) => {
-      if (event.source === frame.current?.contentWindow) receive(event.data);
-    };
-    window.addEventListener('message', listener);
-    return () => window.removeEventListener('message', listener);
-  }, [editable, onChange]);
-  if (Platform.OS === 'web') return createElement('iframe', {
-    ref: frame, title: editable ? '募集内容エディタ' : '募集内容プレビュー', srcDoc: source.html,
-    sandbox: editable ? 'allow-scripts allow-modals' : 'allow-scripts',
-    style: { width: '100%', height: editable ? 350 : 280, border: 0 },
-  });
-  return <View style={{ height: editable ? 350 : 280 }}>
-    <WebView source={source} originWhitelist={['*']} onMessage={event => receive(event.nativeEvent.data)}
-      onShouldStartLoadWithRequest={request => request.url === 'about:blank'}
-      allowFileAccess={false} mixedContentMode="never" />
-  </View>;
 }
 
 export function RecruitmentArticle({ html }: { html: string }) {
@@ -140,22 +83,201 @@ export function RecruitmentArticle({ html }: { html: string }) {
     const timer = setTimeout(() => setPreview(html), 180);
     return () => clearTimeout(timer);
   }, [html]);
-  return <ArticleFrame html={preview} />;
+  return <RecruitmentPreviewFrame html={documentHtml(preview)} />;
 }
 
-export function RecruitmentArticleEditor({ initialHtml, disabled, onChange, editorRef }: {
+export function RecruitmentArticleEditor({ initialHtml, disabled, onChange, editorRef, uploadImage }: {
   initialHtml: string; disabled: boolean; onChange: (html: string) => void;
   editorRef: RefObject<RecruitmentEditorHandle | null>;
+  uploadImage: (data: FormData) => Promise<string>;
 }) {
-  const latest = useRef(initialHtml);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const { editor, surface } = useRecruitmentEditor(initialHtml, disabled, onChangeRef);
+  const [insert, setInsert] = useState<'image' | 'link' | null>(null);
+  const [blocksOpen, setBlocksOpen] = useState(false);
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState('');
+  const [linkText, setLinkText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+
+  function changeInsert(mode: typeof insert) {
+    setInsert(mode);
+    setUrl('');
+    setLinkText('');
+    setError('');
+  }
+
+
   useEffect(() => {
-    editorRef.current = { getHTML: async () => latest.current };
+    editorRef.current = editor;
     return () => { editorRef.current = null; };
-  }, [editorRef]);
-  return <View pointerEvents={disabled ? 'none' : 'auto'}>
-    <ArticleFrame html={initialHtml} editable onChange={html => {
-      latest.current = html;
-      onChange(html);
-    }} />
+  }, [editor, editorRef]);
+
+  const tools = [
+    ['太字', 'format-bold', () => editor?.toggleBold()],
+    ['斜体', 'format-italic', () => editor?.toggleItalic()],
+    ['下線', 'format-underline', () => editor?.toggleUnderline()],
+    ['リンク', 'link-variant', () => changeInsert('link')],
+    ['元に戻す', 'undo', () => editor?.undo()],
+    ['やり直す', 'redo', () => editor?.redo()],
+  ] as const;
+
+  const blocks = [
+    ['段落を追加', 'format-paragraph', '<p></p>'],
+    ['見出しを追加', 'format-header-2', '<h2></h2>'],
+    ['箇条書きを追加', 'format-list-bulleted', '<ul><li><p></p></li></ul>'],
+    ['番号付きリストを追加', 'format-list-numbered', '<ol><li><p></p></li></ol>'],
+    ['引用を追加', 'format-quote-close', '<blockquote><p></p></blockquote>'],
+  ] as const;
+
+  async function applyInsert(action: () => Promise<void>) {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    setError('');
+    try {
+      await action();
+      changeInsert(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '挿入できませんでした。');
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  }
+
+  async function insertUrl() {
+    if (!editor) return;
+    await applyInsert(async () => {
+      const safe = webUrl(url.trim());
+      if (!safe) throw new Error('HTTPまたはHTTPSのURLを入力してください。');
+      if (insert === 'image') {
+        editor.setImage(safe);
+      } else if (linkText.trim()) {
+        editor.insertContent(`<a href="${escapeHtml(safe)}">${escapeHtml(linkText.trim())}</a>`);
+      } else {
+        if (!(await editor.getSelectedText()).trim()) {
+          throw new Error('表示名を入力するか、本文のリンクにしたい文字を選択してください。');
+        }
+        editor.setLink(safe);
+      }
+    });
+  }
+
+  async function chooseImage() {
+    if (!editor) return;
+    await applyInsert(async () => {
+      const result = await getDocumentAsync({
+        type: ['image/jpeg', 'image/png'], copyToCacheDirectory: true, base64: false,
+      });
+      const file = result.assets?.[0];
+      if (!file) return;
+      try {
+        if (file.size !== undefined && file.size > 5 * 1024 * 1024) {
+          throw new Error('画像は5MB以内にしてください。');
+        }
+        const form = new FormData();
+        if (file.file) {
+          form.append('image', file.file);
+        } else {
+          form.append('image', {
+            uri: file.uri, name: file.name, type: file.mimeType || 'application/octet-stream',
+          } as unknown as Blob);
+        }
+        editor.setImage(await uploadImage(form));
+      } finally {
+        if (file.file && file.uri.startsWith('blob:')) URL.revokeObjectURL(file.uri);
+      }
+    });
+  }
+
+  const inactive = disabled || !editor || submitting;
+  return <View style={styles.panel}>
+    <View style={styles.toolbar}>
+      <EditorIcon label={blocksOpen ? 'ブロック一覧を閉じる' : 'ブロックを追加'}
+        icon={blocksOpen ? 'close' : 'plus'} disabled={inactive} active={blocksOpen}
+        onPress={() => setBlocksOpen(open => !open)} />
+      <View style={styles.divider} />
+      {tools.map(([label, icon, action]) => <EditorIcon key={label}
+        label={label} icon={icon} disabled={inactive} onPress={action} />)}
+    </View>
+    {blocksOpen && <View style={styles.blockPicker}>
+      {blocks.map(([label, icon, html]) => <EditorIcon key={label}
+        label={label} icon={icon} disabled={inactive} onPress={() => {
+          editor?.insertContent(html);
+          setBlocksOpen(false);
+        }} />)}
+      <EditorIcon label="画像を追加" icon="image-outline" disabled={inactive} onPress={() => {
+        changeInsert('image');
+        setBlocksOpen(false);
+      }} />
+    </View>}
+    {insert && <View style={styles.urlForm}>
+      {insert === 'image' && <Pressable accessibilityRole="button" disabled={inactive}
+        style={[styles.uploadButton, inactive && styles.disabledIcon]} onPress={() => void chooseImage()}>
+        <MaterialCommunityIcons name="upload" size={20} color="#18334F" />
+        <Text style={styles.uploadText}>端末から画像を選ぶ（JPEG・PNG、5MBまで）</Text>
+      </Pressable>}
+      {insert === 'link' && <AppInput label="リンクの表示名（任意）" value={linkText} onChangeText={setLinkText}
+        placeholder="空欄なら選択中の文字を使う" maxLength={240} editable={!inactive} />}
+      <AppInput label={insert === 'image' ? '画像の公開URL' : 'リンクURL'} value={url} onChangeText={setUrl}
+        editable={!inactive} maxLength={2048} autoCapitalize="none" keyboardType="url" />
+      {!!error && <Text accessibilityRole="alert">{error}</Text>}
+      <View style={styles.urlActions}>
+        <EditorIcon label="挿入" icon="check" disabled={inactive} onPress={insertUrl} />
+        <EditorIcon label="キャンセル" icon="close" disabled={submitting} onPress={() => changeInsert(null)} />
+      </View>
+    </View>}
+    <View style={styles.surface}>{surface}</View>
   </View>;
 }
+
+function EditorIcon({ label, icon, onPress, disabled, active }: {
+  label: string;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  onPress: () => void;
+  disabled?: boolean;
+  active?: boolean;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const showLabel = !disabled && (hovered || focused);
+
+  return <View style={showLabel && styles.tooltipAnchor}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label}
+      accessibilityState={{ disabled, expanded: active }} disabled={disabled}
+      onHoverIn={() => setHovered(true)} onHoverOut={() => setHovered(false)}
+      onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+      onPress={onPress} style={({ pressed }) => [
+        styles.icon, (active || pressed || showLabel) && styles.activeIcon, disabled && styles.disabledIcon,
+      ]}>
+      <MaterialCommunityIcons name={icon} size={21} color="#18334F" />
+    </Pressable>
+    {showLabel && <View pointerEvents="none" accessible={false} style={styles.tooltip}>
+      <Text numberOfLines={1} style={styles.tooltipText}>{label}</Text>
+    </View>}
+  </View>;
+}
+
+const styles = StyleSheet.create({
+  panel: { borderWidth: 1, borderColor: '#CAD8E9', borderRadius: 10, backgroundColor: '#FFF' },
+  toolbar: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, padding: 6, zIndex: 3,
+    borderBottomWidth: 1, borderBottomColor: '#E0E8F3' },
+  divider: { width: 1, backgroundColor: '#CAD8E9', marginHorizontal: 5, marginVertical: 8 },
+  blockPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, padding: 6, zIndex: 2,
+    backgroundColor: '#F1F6FD', borderBottomWidth: 1, borderBottomColor: '#E0E8F3' },
+  icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
+  activeIcon: { backgroundColor: '#DFECFC' },
+  disabledIcon: { opacity: 0.45 },
+  tooltipAnchor: { zIndex: 1 },
+  tooltip: { position: 'absolute', top: 46, left: 0, width: 164, alignItems: 'flex-start' },
+  tooltipText: { color: '#FFF', backgroundColor: '#18334F', paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 4, fontSize: 12 },
+  urlForm: { padding: 10, gap: 6, zIndex: 1 },
+  uploadButton: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 9, backgroundColor: '#E9F2FE', borderRadius: 6 },
+  uploadText: { flex: 1, color: '#18334F', fontWeight: '600' },
+  urlActions: { flexDirection: 'row', gap: 4 },
+  surface: { height: 390, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, overflow: 'hidden' },
+});

@@ -2,13 +2,14 @@ export const API_BASE = (process.env.EXPO_PUBLIC_API_BASE_URL || "http://localho
 export type AuthUser = { id: string; email: string; displayName: string; emailVerified: boolean; googleLinked: boolean; accountType?: "GENERAL" | "COMPANY" | "EMPLOYEE"; businessName?: string | null; companyOwnerId?: string | null };
 export type AuthSession = { accessToken: string; tokenType: string; expiresAt: string; user: AuthUser };
 export async function authRequest<T>(path: string, body?: unknown, token?: string): Promise<T> {
+  const multipart = body instanceof FormData;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20000);
   try {
     const response = await fetch(`${API_BASE}/api/platform-auth${path}`, {
       method: body === undefined ? "GET" : "POST",
-      headers: { ...(body === undefined ? {} : { "Content-Type": "application/json" }), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body), signal: controller.signal,
+      headers: { ...(body === undefined || multipart ? {} : { "Content-Type": "application/json" }), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: multipart ? body : body === undefined ? undefined : JSON.stringify(body), signal: controller.signal,
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.message || "処理できませんでした。しばらくしてから再試行してください。");

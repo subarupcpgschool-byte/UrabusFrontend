@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, useWindowDimensions } from 'react-native';
 import AppPage from '@/components/layout/AppPage';
 import { AppCheckbox, AppInput, AppSelect, AppTextArea } from '@/components/form';
 import { AppButton, BodyText, Panel, SectionTitle } from '@/components/ui/AppUI';
-import { authRequest } from '@/auth/api';
+import { API_BASE, authRequest } from '@/auth/api';
 import { useAuth } from '@/auth/AuthProvider';
 import { RecruitmentArticle, RecruitmentArticleEditor, articleHtml, MAX_ARTICLE_HTML, type RecruitmentEditorHandle } from '@/features/company/RecruitmentArticle';
 
@@ -54,12 +54,16 @@ function RecruitmentManager({ token }: { token: string }) {
   const [data, setData] = useState<Overview | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(true);
+  const { width } = useWindowDimensions();
   const [initialArticle, setInitialArticle] = useState('');
   const editorRef = useRef<RecruitmentEditorHandle>(null);
   const [grants, setGrants] = useState<Grant[] | null>(null);
   const [history, setHistory] = useState<History[] | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [working, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const busy = working || uploading;
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const job = data?.jobs.find(row => row.id === selected);
@@ -95,6 +99,17 @@ function RecruitmentManager({ token }: { token: string }) {
     setGrants(null);
     setHistory(null);
     setDeleteConfirm(false);
+  }
+
+  async function uploadImage(data: FormData) {
+    setUploading(true);
+    try {
+      if (job) data.append('jobId', job.id);
+      const result = await request<{ path: string }>('/images', data);
+      return API_BASE + result.path;
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function save() {
@@ -165,24 +180,26 @@ function RecruitmentManager({ token }: { token: string }) {
           maxLength={10} editable={!busy} onChangeText={value => setField('endDate', value)} />
         <AppCheckbox label="非表示にする" checked={draft.hidden} disabled={busy}
           onValueChange={hidden => setDraft(previous => previous ? { ...previous, hidden } : previous)} />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 16 }}>
-          <View style={{ flex: 1, minWidth: 250 }}>
+        <View style={{ flexDirection: width >= 1050 ? 'row' : 'column', alignItems: 'stretch', gap: 16 }}>
+          <View style={{ flex: 3, minWidth: 0, gap: 8 }}>
             <SectionTitle>募集内容</SectionTitle>
-            <RecruitmentArticleEditor initialHtml={initialArticle} disabled={busy} editorRef={editorRef}
+            <AppButton label={previewOpen ? 'プレビューを非表示' : 'プレビューを表示'} outline
+              onPress={() => setPreviewOpen(open => !open)} />
+            <RecruitmentArticleEditor initialHtml={initialArticle} disabled={working} editorRef={editorRef} uploadImage={uploadImage}
               onChange={html => setDraft(previous => previous ? { ...previous, articleHtml: html } : previous)} />
           </View>
-          <View style={{ flex: 1, minWidth: 250 }}>
+          {previewOpen && <View style={{ flex: 2, minWidth: 0 }}>
             <Panel>
               <SectionTitle>リアルタイムプレビュー</SectionTitle>
               <Text accessibilityRole="header" style={{ fontSize: 23, fontWeight: '700' }}>{draft.title || '募集タイトル'}</Text>
               <BodyText>{visibility(draft)} ／ {draft.startDate || '開始制限なし'} 〜 {draft.endDate || '無期限'}</BodyText>
               <RecruitmentArticle html={draft.articleHtml} />
             </Panel>
-          </View>
+          </View>}
         </View>
         <AppTextArea label={labels.requirements} value={draft.requirements} editable={!busy} maxLength={4000}
           onChangeText={value => setField('requirements', value)} />
-        <AppButton label={busy ? '保存中…' : '保存する'} onPress={() => void run(save)} />
+        <AppButton label={uploading ? '画像をアップロード中…' : working ? '保存中…' : '保存する'} onPress={() => void run(save)} />
         <AppButton label="キャンセル" outline onPress={() => { if (!busy) setDraft(null); }} />
       </Panel> : job && saved && <Panel>
         <SectionTitle>{saved.title}</SectionTitle>
