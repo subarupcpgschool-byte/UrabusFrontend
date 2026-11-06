@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 import AppPage from '@/components/layout/AppPage';
-import { AppCheckbox, AppDatePicker, AppInput, AppSelect, AppTextArea } from '@/components/form';
+import { AppCheckbox, AppDatePicker, AppSearchableDropdown, AppInput, AppSelect } from '@/components/form';
 import { AppButton, BodyText, Panel, SectionTitle } from '@/components/ui/AppUI';
 import { API_BASE, authRequest } from '@/auth/api';
 import { useAuth } from '@/auth/AuthProvider';
@@ -9,6 +9,9 @@ import { RecruitmentArticle, RecruitmentArticleEditor, articleHtml, MAX_ARTICLE_
 
 import { RecruitmentDetailPreview } from '@/features/company/RecruitmentDetailPreview';
 import { pickArticleCss } from '@/features/company/pickArticleCss';
+
+import { CompensationInput } from '@/features/company/CompensationInput';
+import { choices, prefectures, requirementOptions } from '@/features/company/recruitmentOptions';
 
 const path = '/company-recruitments';
 const labels = {
@@ -135,6 +138,12 @@ function RecruitmentManager({ token, companyName }: { token: string; companyName
     if (!input.title || !input.location || !input.compensation) {
       throw new Error('募集タイトル、勤務地、給与・報酬を入力してください。');
     }
+    if (/^(年収|月給|時給) /.test(input.compensation) &&
+        (!/^(年収|月給|時給) [0-9]+(?:\.[0-9]{1,2})?(万円|円)$/.test(input.compensation) ||
+         Number(input.compensation.replace(/[^0-9.]/g, '')) <= 0)) {
+      throw new Error('金額には0より大きい数値を入力してください。');
+    }
+    if (input.requirements.length > 4000) throw new Error('応募条件が長すぎます。選択数を減らしてください。');
     if (html.length > MAX_ARTICLE_HTML) throw new Error('募集内容が長すぎます。内容を短くしてください。');
     if ([input.startDate, input.endDate].some(date => date && !validDate(date))) {
       throw new Error('開始日と終了日は YYYY-MM-DD 形式で正しい日付を入力してください。');
@@ -200,11 +209,11 @@ function RecruitmentManager({ token, companyName }: { token: string; companyName
             </View>
             <AppInput label={labels.title} value={draft.title} editable={!busy} required maxLength={120}
               onChangeText={value => setField('title', value)} />
-            <View style={fieldRow}>
-              {(['location', 'compensation'] as const).map(key => <AppInput key={key} label={labels[key]}
-                containerStyle={fieldCell} value={draft[key]} editable={!busy} required maxLength={120}
-                onChangeText={value => setField(key, value)} />)}
-            </View>
+            <AppSearchableDropdown label={labels.location} required disabled={busy} value={draft.location ? [draft.location] : []}
+              options={choices([...new Set([...prefectures, ...(draft.location ? [draft.location] : [])])])}
+              onValueChange={values => setField('location', values[0] || '')} />
+            <SectionTitle>給与・報酬</SectionTitle>
+            <CompensationInput value={draft.compensation} disabled={busy} onChange={value => setField('compensation', value)} />
             <SectionTitle>募集期間と表示設定</SectionTitle>
             <BodyText>日付は日本時間です。開始日が空欄なら開始制限なし、終了日が空欄なら無期限です。</BodyText>
             <View style={fieldRow}>
@@ -229,8 +238,10 @@ function RecruitmentManager({ token, companyName }: { token: string; companyName
               onPress={() => setPreviewOpen(open => !open)} />
             <RecruitmentArticleEditor initialHtml={initialArticle} disabled={working} editorRef={editorRef} uploadImage={uploadImage}
               onChange={html => setDraft(previous => previous ? { ...previous, articleHtml: html } : previous)} />
-            <AppTextArea label={labels.requirements} value={draft.requirements} editable={!busy} maxLength={4000}
-              onChangeText={value => setField('requirements', value)} />
+            <AppSearchableDropdown label={labels.requirements} multiple disabled={busy}
+              value={draft.requirements.split('\n').filter(Boolean)}
+              options={choices([...new Set([...requirementOptions, ...draft.requirements.split('\n').filter(Boolean)])])}
+              onValueChange={values => setField('requirements', values.join('\n'))} />
             <AppButton label={uploading ? '画像をアップロード中…' : working ? '保存中…' : '保存する'} onPress={() => void run(save)} />
             <AppButton label="キャンセル" outline onPress={() => { if (!busy) setDraft(null); }} />
           </View>

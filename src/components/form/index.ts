@@ -5,3 +5,4 @@ export { AppCheckbox, AppRadioGroup, AppMultiSelect, AppTag, type ChoiceOption }
 export { AppTagInput, type AppTagInputProps } from './AppTagInput';
 export { AppSwitch } from './AppSwitch';
 export { AppDatePicker } from './AppDatePicker';
+export { AppSearchableDropdown } from './AppSearchableDropdown';
