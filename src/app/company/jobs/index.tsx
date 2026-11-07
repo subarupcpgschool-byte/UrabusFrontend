@@ -209,7 +209,7 @@ function RecruitmentManager({ token, companyName }: { token: string; companyName
             </View>
             <AppInput label={labels.title} value={draft.title} editable={!busy} required maxLength={120}
               onChangeText={value => setField('title', value)} />
-            <AppSearchableDropdown label={labels.location} required disabled={busy} value={draft.location ? [draft.location] : []}
+            <AppSearchableDropdown label={labels.location} allowCreate maxOptionLength={120} required disabled={busy} value={draft.location ? [draft.location] : []}
               options={choices([...new Set([...prefectures, ...(draft.location ? [draft.location] : [])])])}
               onValueChange={values => setField('location', values[0] || '')} />
             <SectionTitle>給与・報酬</SectionTitle>
@@ -238,7 +238,7 @@ function RecruitmentManager({ token, companyName }: { token: string; companyName
               onPress={() => setPreviewOpen(open => !open)} />
             <RecruitmentArticleEditor initialHtml={initialArticle} disabled={working} editorRef={editorRef} uploadImage={uploadImage}
               onChange={html => setDraft(previous => previous ? { ...previous, articleHtml: html } : previous)} />
-            <AppSearchableDropdown label={labels.requirements} multiple disabled={busy}
+            <AppSearchableDropdown label={labels.requirements} allowCreate maxOptionLength={240} multiple disabled={busy}
               value={draft.requirements.split('\n').filter(Boolean)}
               options={choices([...new Set([...requirementOptions, ...draft.requirements.split('\n').filter(Boolean)])])}
               onValueChange={values => setField('requirements', values.join('\n'))} />

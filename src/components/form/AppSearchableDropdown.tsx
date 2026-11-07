@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { INPUT_THEME as T } from '@/theme/inputTheme';
 import { AppFormField, type FieldProps } from './AppFormField';
@@ -7,50 +7,118 @@ import { AppInput } from './AppInput';
 import type { ChoiceOption } from './AppChoice';
 
 export type AppSearchableDropdownProps = FieldProps & {
-  options: ChoiceOption[]; value: string[]; onValueChange: (value: string[]) => void;
-  multiple?: boolean; placeholder?: string; disabled?: boolean; accessibilityLabel?: string;
+  options: ChoiceOption[];
+  value: string[];
+  onValueChange: (value: string[]) => void;
+  allowCreate?: boolean;
+  maxOptionLength?: number;
+  multiple?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+  accessibilityLabel?: string;
 };
 
-/** A modal choice list shared by Web, iOS and Android. */
-export function AppSearchableDropdown({ options, value, onValueChange, multiple = false, placeholder = '選択してください', disabled = false, accessibilityLabel, ...field }: AppSearchableDropdownProps) {
-  const [open, setOpen] = useState(false);
+export function AppSearchableDropdown({
+  options, value, onValueChange, allowCreate = false, maxOptionLength = 120,
+  multiple = false, placeholder = '入力して検索', disabled = false, accessibilityLabel, ...field
+}: AppSearchableDropdownProps) {
+  const [active, setActive] = useState(false);
   const [query, setQuery] = useState('');
-  const close = () => { setOpen(false); };
-  useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
-  const selected = options.filter(o => value.includes(o.value)).map(o => o.label).join('、');
+  const [created, setCreated] = useState<string[]>([]);
+  const input = useRef<TextInput>(null);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function keepOpen() {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    setActive(true);
+  }
+  function closeAfterBlur() {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    blurTimer.current = setTimeout(() => setActive(false), 200);
+  }
+  useEffect(() => () => { if (blurTimer.current) clearTimeout(blurTimer.current); }, []);
+  useEffect(() => {
+    if (disabled) {
+      setActive(false);
+      setQuery('');
+    }
+  }, [disabled]);
+
   const normalize = (text: string) => text.normalize('NFKC').toLocaleLowerCase().trim();
-  const filtered = options.filter(o => normalize(o.label).includes(normalize(query)));
-  const name = accessibilityLabel ?? field.label ?? placeholder;
+  const allOptions: ChoiceOption[] = [...options, ...[...new Set([...created, ...value])]
+    .filter(v => !options.some(o => o.value === v)).map(v => ({ label: v, value: v }))];
+  const candidate = query.trim().replace(/\s+/g, ' ');
+  const searching = active && !disabled && candidate.length > 0;
+  const filtered = allOptions.filter(o => normalize(o.label).includes(normalize(candidate)));
+  const canCreate = allowCreate && candidate.length > 0 && candidate.length <= maxOptionLength &&
+    !allOptions.some(o => normalize(o.label) === normalize(candidate) || normalize(o.value) === normalize(candidate));
+  const name = accessibilityLabel ?? field.label ?? '選択肢';
+
+  function select(option: ChoiceOption) {
+    if (disabled || option.disabled) return;
+    onValueChange(multiple
+      ? value.includes(option.value) ? value.filter(v => v !== option.value) : [...value, option.value]
+      : [option.value]);
+    setQuery('');
+    input.current?.focus();
+  }
+
+  function addOption() {
+    if (disabled || !canCreate) return;
+    setCreated(previous => [...new Set([...previous, candidate])]);
+    select({ value: candidate, label: candidate });
+  }
+
   return <AppFormField {...field}>
-    <Pressable accessibilityRole="button" accessibilityLabel={name} accessibilityValue={{ text: selected || placeholder }} accessibilityState={{ expanded: open, disabled }}
-      disabled={disabled} onPress={() => { setQuery(''); setOpen(true); }} style={[s.control, Platform.OS === 'web' && { outlineWidth: 0 }, !!field.error && { borderColor: T.errorColor }, disabled && { opacity: T.disabledOpacity }]}>
-      <Text style={[s.value, !selected && { color: T.placeholderColor }]}>{selected || placeholder}</Text><Ionicons name={open ? "chevron-up" : "chevron-down"} size={20} color={T.textColor} style={s.arrow} />
-    </Pressable>
-    <Modal transparent visible={open && !disabled} animationType="fade" onRequestClose={close}>
-      <View style={s.backdrop}>
-        <Pressable accessibilityLabel="選択をキャンセル" accessibilityRole="button" onPress={close} style={StyleSheet.absoluteFill} />
-        <View accessibilityViewIsModal style={s.dialog}>
-          <View style={s.heading}><Text accessibilityRole="header" style={s.title}>{name}</Text><Pressable accessibilityRole="button" accessibilityLabel="閉じる" onPress={close} style={s.close}><Ionicons name="close" size={28} color={T.textColor} /></Pressable></View>
-          <AppInput accessibilityLabel="選択肢を検索" placeholder="キーワードで検索" value={query} onChangeText={setQuery} autoFocus />
-          <ScrollView style={s.list} keyboardShouldPersistTaps="handled"><View accessibilityRole={multiple ? undefined : "radiogroup"} accessibilityLabel={name}>
-            {filtered.length === 0 && <Text style={s.empty}>選択肢がありません</Text>}
-            {filtered.map(o => <Pressable key={o.value} accessibilityRole={multiple ? "checkbox" : "radio"} accessibilityLabel={o.label} aria-checked={value.includes(o.value)} accessibilityState={{ checked: value.includes(o.value), disabled: !!o.disabled }} disabled={o.disabled}
-              onPress={() => { if (multiple) onValueChange(value.includes(o.value) ? value.filter(v => v !== o.value) : [...value, o.value]);
-                else { onValueChange([o.value]); close(); } }} style={[s.option, value.includes(o.value) && s.active, o.disabled && { opacity: T.disabledOpacity }]}>
-              <Text style={s.value}>{o.label}</Text>{value.includes(o.value) && <Ionicons name="checkmark" size={22} color={T.primaryColor} />}
-            </Pressable>)}
-          </View></ScrollView>
-          {multiple && <Pressable accessibilityRole="button" accessibilityLabel="選択を完了" style={s.close} onPress={close}><Ionicons name="checkmark" size={28} color={T.primaryColor} /></Pressable>}
-        </View>
-      </View>
-    </Modal>
+    {!!value.length && <View style={s.tags}>
+      {value.map(v => <View key={v} style={s.tag}>
+        <Text style={s.text}>{allOptions.find(o => o.value === v)?.label ?? v}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={`${name}の「${v}」を解除`}
+          disabled={disabled} onPress={() => onValueChange(value.filter(item => item !== v))}
+          style={s.remove}>
+          <Ionicons name="close" size={20} color={T.textColor} />
+        </Pressable>
+      </View>)}
+    </View>}
+    <AppInput ref={input} accessibilityLabel={name} placeholder={placeholder}
+      value={query} onChangeText={text => { setQuery(text); keepOpen(); }}
+      onFocus={keepOpen} onBlur={closeAfterBlur} disabled={disabled}
+      maxLength={maxOptionLength} autoCapitalize="none" autoCorrect={false}
+      onKeyPress={event => { if (event.nativeEvent.key === 'Escape') setActive(false); }} />
+    {searching && <View style={s.dropdown}>
+      <ScrollView style={s.list} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+        {filtered.map(option => <Pressable key={option.value} accessibilityRole={multiple ? 'checkbox' : 'radio'}
+          accessibilityLabel={option.label} aria-checked={value.includes(option.value)}
+          accessibilityState={{ checked: value.includes(option.value), disabled: !!option.disabled }}
+          disabled={option.disabled} onFocus={keepOpen} onBlur={closeAfterBlur}
+          onPress={() => select(option)}
+          style={[s.option, value.includes(option.value) && s.selected, option.disabled && s.disabled]}>
+          <Text style={s.text}>{option.label}</Text>
+          {value.includes(option.value) && <Ionicons name="checkmark" size={22} color={T.primaryColor} />}
+        </Pressable>)}
+        {canCreate && <Pressable accessibilityRole="button" accessibilityLabel={`「${candidate}」を新規追加`}
+          onFocus={keepOpen} onBlur={closeAfterBlur} onPress={addOption} style={s.option}>
+          <Ionicons name="add-circle-outline" size={22} color={T.primaryColor} />
+          <Text style={s.text}>「{candidate}」を新規追加</Text>
+        </Pressable>}
+        {!filtered.length && !canCreate && <Text style={[s.text, s.empty]}>該当する候補がありません</Text>}
+      </ScrollView>
+    </View>}
   </AppFormField>;
 }
+
 const s = StyleSheet.create({
-  control: { minHeight: T.minHeight, borderRadius: T.borderRadius, borderWidth: 1, borderColor: T.borderColor, backgroundColor: T.backgroundColor, paddingHorizontal: T.paddingHorizontal, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  value: { color: T.textColor, fontSize: T.fontSize, flexShrink: 1 }, arrow: { marginLeft: 'auto' },
-  backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,.35)', alignItems: 'center', justifyContent: 'center', padding: 20 },
-  dialog: { width: '100%', maxWidth: 460, maxHeight: '80%', borderRadius: 14, backgroundColor: T.backgroundColor, padding: 16 },
-  heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }, title: { color: T.textColor, fontSize: 16, fontWeight: '700', flex: 1 }, close: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  list: { flexGrow: 0 }, option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 8, gap: 10 }, active: { backgroundColor: T.selectedBackground }, empty: { padding: 12, color: T.placeholderColor },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tag: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 10,
+    borderRadius: 8, backgroundColor: T.selectedBackground, maxWidth: '100%' },
+  remove: { minWidth: 36, minHeight: 36, alignItems: 'center', justifyContent: 'center' },
+  dropdown: { borderWidth: 1, borderColor: T.borderColor, borderRadius: T.borderRadius,
+    backgroundColor: T.backgroundColor, overflow: 'hidden' },
+  list: { maxHeight: 220 },
+  option: { minHeight: 44, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8,
+    justifyContent: 'space-between' },
+  text: { color: T.textColor, fontSize: T.fontSize, flexShrink: 1 },
+  selected: { backgroundColor: T.selectedBackground },
+  disabled: { opacity: T.disabledOpacity },
+  empty: { padding: 12 },
 });
