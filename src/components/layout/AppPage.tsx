@@ -2,7 +2,7 @@
 import { Header } from "@/components/common/Header";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { useState, type PropsWithChildren } from "react";
 import {
   Pressable,
@@ -20,6 +20,7 @@ type Props = PropsWithChildren<{
   subtitle: string;
   role?: AppRole;
   activeMenu?: string;
+  onNavigate?: (path: Href) => void;
 }>;
 
 const menus = {
@@ -52,6 +53,7 @@ export default function AppPage({
   role = "public",
   activeMenu = "",
   children,
+  onNavigate = path => router.push(path),
 }: Props) {
   const { width } = useWindowDimensions();
   const [collapsed,setCollapsed]=useState(false);
@@ -59,18 +61,19 @@ export default function AppPage({
   const showSidebar = role !== "public" && width >= 1024;
   return (
     <SafeAreaView style={s.safe}>
-      <Header />
+      <Header onNavigate={onNavigate} />
       <View style={s.shell}>
         {showSidebar && (
           <Sidebar
             role={role as Exclude<AppRole, "public">}
             active={activeMenu}
             collapsed={collapsed}
+            onNavigate={onNavigate}
             onToggle={()=>setCollapsed(v=>!v)}
           />
         )}
         <ScrollView style={s.page} contentContainerStyle={[s.content,(activeMenu==="選考・オファー状況"||activeMenu==="評価")&&{maxWidth:1760},width<600&&{padding:12}]}>
-          {role!=="public"&&!showSidebar&&<View><Pressable accessibilityRole="button" accessibilityLabel="マイページメニュー" accessibilityState={{expanded:mobileMenu}} onPress={()=>setMobileMenu(v=>!v)} style={s.sideItem}><Ionicons name="menu-outline" size={22} color={C.primary}/><Text style={s.sideText}>メニュー</Text></Pressable>{mobileMenu&&menus[role].map(([icon,label,path])=><Pressable key={label} accessibilityRole="button" onPress={()=>{setMobileMenu(false);router.push(path as never);}} style={[s.sideItem,activeMenu===label&&s.sideActive]}><Ionicons name={icon} size={19} color={C.primary}/><Text style={s.sideText}>{label}</Text></Pressable>)}</View>}
+          {role!=="public"&&!showSidebar&&<View><Pressable accessibilityRole="button" accessibilityLabel="マイページメニュー" accessibilityState={{expanded:mobileMenu}} onPress={()=>setMobileMenu(v=>!v)} style={s.sideItem}><Ionicons name="menu-outline" size={22} color={C.primary}/><Text style={s.sideText}>メニュー</Text></Pressable>{mobileMenu&&menus[role].map(([icon,label,path])=><Pressable key={label} accessibilityRole="button" onPress={()=>{setMobileMenu(false);onNavigate(path);}} style={[s.sideItem,activeMenu===label&&s.sideActive]}><Ionicons name={icon} size={19} color={C.primary}/><Text style={s.sideText}>{label}</Text></Pressable>)}</View>}
           
           {children}
         </ScrollView>
@@ -81,11 +84,11 @@ export default function AppPage({
 
 function Sidebar({
   role,
-  active, collapsed, onToggle,
+  active, collapsed, onToggle, onNavigate,
 }: {
   role: "user" | "company" | "operator";
   active: string;
-  collapsed: boolean; onToggle:()=>void;
+  collapsed: boolean; onToggle:()=>void; onNavigate:(path: Href)=>void;
 }) {
   return (
     <View style={[s.sidebar,collapsed&&{width:68,padding:8}]}>
@@ -101,7 +104,7 @@ function Sidebar({
         <Pressable
           key={label}
           accessibilityRole="button" accessibilityLabel={label} accessibilityState={{selected:active===label}}
-          onPress={() => router.push(path as never)}
+          onPress={() => onNavigate(path)}
           style={[s.sideItem, active === label && s.sideActive]}
         >
           <Ionicons

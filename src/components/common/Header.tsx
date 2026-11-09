@@ -22,7 +22,7 @@ const memberItems: Item[] = [
 ];
 
 /** All public/search/management screens share authentication and navigation here. */
-export function Header({ desktop }: { desktop?: boolean }) {
+export function Header({ desktop, onNavigate = path => router.push(path) }: { desktop?: boolean; onNavigate?: (path: Href) => void }) {
   const { user, ready } = useAuth();
   const { width } = useWindowDimensions();
   const pathname = usePathname();
@@ -32,7 +32,7 @@ export function Header({ desktop }: { desktop?: boolean }) {
   const [panel, setPanel] = useState<Panel | null>(null);
   useEffect(() => { setOpen(false); setPanel(null); }, [pathname, user?.id]);
   const items = [...(user ? memberItems : publicItems), ...(user?.accountType === "COMPANY" || user?.accountType === "EMPLOYEE" ? [{ label: "企業管理", path: "/company" as Href }] : companyPreview)];
-  const navigate = (path: Href) => { setOpen(false); setPanel(null); router.push(path); };
+  const navigate = (path: Href) => { setOpen(false); setPanel(null); onNavigate(path); };
   const select = (item: Item) => {
     setOpen(false);
     if (item.path) navigate(item.path);
@@ -52,7 +52,7 @@ export function Header({ desktop }: { desktop?: boolean }) {
   });
   return <View style={s.header}>
     <View style={[s.inner, displayWidth < 480 && { paddingHorizontal: 12 }]}>
-      <Logo width={displayWidth < 480 ? 145 : 200} />
+      <Logo onHome={() => navigate('/')} width={displayWidth < 480 ? 145 : 200} />
       {wide && <View style={s.nav}>{links(false)}</View>}
       <View style={s.actions}>
         {!ready ? <View accessibilityLabel="ログイン状態を確認中" style={s.loading}><ActivityIndicator color={C.blue} /></View> : user ? <>

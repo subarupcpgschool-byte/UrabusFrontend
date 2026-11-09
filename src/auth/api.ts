@@ -1,5 +1,5 @@
 export const API_BASE = (process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:8080").replace(/\/$/, "");
-export type AuthUser = { id: string; email: string; displayName: string; emailVerified: boolean; googleLinked: boolean; accountType?: "GENERAL" | "COMPANY" | "EMPLOYEE"; businessName?: string | null; companyOwnerId?: string | null };
+export type AuthUser = { id: string; email: string; displayName: string; emailVerified: boolean; googleLinked: boolean; accountType?: "GENERAL" | "COMPANY" | "EMPLOYEE"; businessName?: string | null; companyOwnerId?: string | null; employeeNumber?: string | null; familyName?: string | null; givenName?: string | null; gender?: string | null; createdAt?: string | null };
 export type AuthSession = { accessToken: string; tokenType: string; expiresAt: string; user: AuthUser };
 export async function authRequest<T>(path: string, body?: unknown, token?: string): Promise<T> {
   const multipart = body instanceof FormData;

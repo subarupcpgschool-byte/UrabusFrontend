@@ -41,8 +41,8 @@ function visibility(draft: Draft) {
   if (validDate(draft.endDate) && draft.endDate < today) return '終了';
   return '期間内';
 }
-type Job = { id: string; document: string; deleted_at: string | null; can_edit: boolean };
-type Employee = { id: string; display_name: string; can_create: boolean; edit_all: boolean };
+type Job = { id: string; document: string; deleted_at: string | null; can_edit: boolean; can_delete?: boolean };
+type Employee = { id: string; display_name: string; can_create: boolean; edit_all: boolean; role_managed?: boolean };
 type Overview = { jobs: Job[]; employees: Employee[]; canCreate: boolean; owner: boolean; commonCss?: string };
 type Grant = { employeeId: string; canView: boolean; canEdit: boolean };
 type History = { actor_name: string; action: string; before_value: string | null; after_value: string | null; changed_at: string };
@@ -262,9 +262,9 @@ function RecruitmentManager({ token, companyName }: { token: string; companyName
             setDraft(saved);
           }
         }} />}
-        {!job.deleted_at && data.owner && <>
-          <AppButton label="従業員の閲覧・編集権限" outline onPress={() => void run(async () =>
-            setGrants(await request<Grant[]>(`/${job.id}/access`)))} />
+        {!job.deleted_at && data.owner && <AppButton label="従業員の閲覧・編集権限" outline onPress={() => void run(async () =>
+            setGrants(await request<Grant[]>(`/${job.id}/access`)))} />}
+        {!job.deleted_at && (job.can_delete ?? data.owner) && <>
           <AppButton label={deleteConfirm ? '削除を確定する' : '削除'} danger onPress={() => {
             if (busy) return;
             if (!deleteConfirm) { setDeleteConfirm(true); return; }
@@ -315,10 +315,12 @@ function RecruitmentManager({ token, companyName }: { token: string; companyName
         <SectionTitle>従業員の作成・全件編集権限</SectionTitle>
         {data.employees.map(employee => <View key={employee.id} style={{ gap: 8 }}>
           <BodyText>{employee.display_name}</BodyText>
+          {employee.role_managed ? <BodyText>この従業員の権限は「企業・権限」の役割一覧で変更できます。</BodyText> : <>
           <AppCheckbox label="求人・企業募集の作成" checked={employee.can_create} disabled={busy}
             onValueChange={value => void run(() => saveRole(employee, value, employee.edit_all))} />
           <AppCheckbox label="自社の全求人・募集の編集" checked={employee.edit_all} disabled={busy || !employee.can_create}
             onValueChange={value => void run(() => saveRole(employee, employee.can_create, value))} />
+          </>}
         </View>)}
         {data.employees.length === 0 && <BodyText>従業員管理から従業員を登録してください。</BodyText>}
       </Panel>}

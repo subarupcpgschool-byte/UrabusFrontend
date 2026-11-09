@@ -1,3 +1,4 @@
+import { CompanyPermissionBoundary } from '@/features/company/CompanyPermissionBoundary';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -8,7 +9,7 @@ import { companyApplications } from '@/features/company/demoApplications';
 
 const statusOptions = ['すべて', '未確認', '選考中', '面談', '内定'].map(value => ({ value, label: value }));
 
-export default function CompanyApplicationsPage() {
+function CompanyApplicationsPageContent() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [selection, setSelection] = useState<string | undefined>(id);
   const [status, setStatus] = useState('すべて');
@@ -52,3 +53,5 @@ const styles = StyleSheet.create({
   selected: { backgroundColor: '#F2F7FF', borderColor: '#2563EB' },
   name: { color: '#183455', fontSize: 14, fontWeight: '800' },
 });
+
+export default function CompanyApplicationsPage() { return <CompanyPermissionBoundary permission="applicants" title="応募・選考管理"><CompanyApplicationsPageContent /></CompanyPermissionBoundary>; }

@@ -6,13 +6,15 @@ import { Pressable, StyleSheet, View } from "react-native";
 export function Logo({
   backgroundColor = "transparent",
   width = 200,
+  onHome = () => router.push("/"),
 }: {
   backgroundColor?: string;
   width?: number;
+  onHome?: () => void;
 }) {
   return (
     <View style={s.logo}>
-      <Pressable key="logo" accessibilityRole="button" accessibilityLabel="GlobalWorkers ホーム" onPress={() => router.push("/")} style={[s.logoMark, { width }]}>
+      <Pressable key="logo" accessibilityRole="button" accessibilityLabel="GlobalWorkers ホーム" onPress={onHome} style={[s.logoMark, { width }]}>
         <Image
           source={require("@/assets/images/logo.svg")}
           style={{

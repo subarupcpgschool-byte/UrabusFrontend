@@ -5,6 +5,7 @@ type AuthContextValue = {
   user: AuthUser | null; token: string | null; ready: boolean;
   acceptSession: (session: AuthSession) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 };
 const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -36,7 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     revision.current++;
     await writeToken(null); setToken(null); setUser(null);
   }
-  return <AuthContext.Provider value={{ user, token, ready, acceptSession, logout }}>{children}</AuthContext.Provider>;
+  async function refreshUser() {
+    if (!token) return;
+    const rev = revision.current;
+    const current = await authRequest<AuthUser>("/me", undefined, token);
+    if (revision.current === rev) setUser(current);
+  }
+  return <AuthContext.Provider value={{ user, token, ready, acceptSession, logout, refreshUser }}>{children}</AuthContext.Provider>;
 }
 export function useAuth() {
   const auth = useContext(AuthContext); if (!auth) throw new Error("AuthProviderが必要です。"); return auth;
