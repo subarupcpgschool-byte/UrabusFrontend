@@ -4,6 +4,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useAuth } from '@/auth/AuthProvider';
 import { authRequest } from '@/auth/api';
 import { AppInput, AppSelect } from '@/components/form';
+import { AppIconButton } from '@/components/ui/AppIconButton';
 import { BodyText, Panel, SectionTitle } from '@/components/ui/AppUI';
 import { levelLabel, noPermissions, permissionColumns, permissionOptions, type Flags, type PermissionLevel } from './companyPermissions';
 
@@ -15,9 +16,9 @@ type Form = { kind: 'role'; name: string; permissions: Flags } | { kind: 'positi
 const equalRole = (a: Role, b: Role) => a.name === b.name && a.permissions.scout === b.permissions.scout && permissionColumns.every(([key]) => a.permissions[key] === b.permissions[key]);
 const message = (e: unknown) => e instanceof Error ? e.message : '処理できませんでした。';
 
-export function ManagementButton({ label, onPress, disabled = false, primary = false, compact = false, accessibilityLabel }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean; compact?: boolean; accessibilityLabel?: string }) {
+export function ManagementButton({ label, onPress, disabled = false, primary = false, accessibilityLabel }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean; accessibilityLabel?: string }) {
   return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} disabled={disabled} accessibilityState={{ disabled }} onPress={onPress}
-    style={({ pressed }) => [s.button, compact && s.compactButton, primary && s.primary, (disabled || pressed) && s.dim]}><Text style={[s.buttonText, primary && s.white]}>{label}</Text></Pressable>;
+    style={({ pressed }) => [s.button, primary && s.primary, (disabled || pressed) && s.dim]}><Text style={[s.buttonText, primary && s.white]}>{label}</Text></Pressable>;
 }
 function Checkbox({ label, checked, disabled, onChange }: { label: string; checked: boolean; disabled: boolean; onChange: () => void }) {
   return <Pressable accessibilityRole="checkbox" accessibilityLabel={label} accessibilityState={{ checked, disabled }} aria-checked={checked} disabled={disabled} onPress={onChange}
@@ -132,10 +133,13 @@ export default function CompanyManagement({ onDirtyChange, onEmployees }: Manage
   }
   if (!ready || loading) return <Panel><BodyText>社員・権限を読み込み中…</BodyText></Panel>;
   if (!data) return <Panel>{!!error && <Text accessibilityRole="alert" style={s.error}>{error}</Text>}<BodyText>社員・役職・役割の管理には社員管理または権限管理の許可が必要です。</BodyText>{token && <View style={s.actions}><ManagementButton label="再読み込み" onPress={() => setRevision(value => value + 1)} /></View>}</Panel>;
-  const canManageRoles = data.permissions.roles >= 2;
-  const canManageEmployees = data.permissions.employees >= 2;
-  const showRoles = data.permissions.roles >= 1;
-  const showPositions = data.permissions.employees >= 1;
+  const isCompanyOwner = user?.accountType === 'COMPANY';
+  const roleManagementLevel = isCompanyOwner ? 3 : data.permissions?.roles ?? 0;
+  const employeeManagementLevel = isCompanyOwner ? 3 : data.permissions?.employees ?? 0;
+  const canManageRoles = roleManagementLevel >= 2;
+  const canManageEmployees = employeeManagementLevel >= 2;
+  const showRoles = roleManagementLevel >= 1;
+  const showPositions = employeeManagementLevel >= 1;
   const narrowTable = tableWidth < 540;
   const roleWidth = narrowTable ? 108 : 168;
   const actionWidth = narrowTable ? 78 : 108;
@@ -166,12 +170,19 @@ export default function CompanyManagement({ onDirtyChange, onEmployees }: Manage
         <Text style={s.memberName}>{position.name}</Text>
         <View style={s.actions}>
           {canManageEmployees && <ManagementButton label={`${position.name}を編集`} disabled={!!busy} onPress={() => open({ kind: 'position', ...position })} />}
-          {data.permissions.employees === 3 && <ManagementButton label="削除" disabled={!!busy} onPress={() => openConfirmation({ kind: 'deletePosition', item: position })} />}
+          {employeeManagementLevel === 3 && <ManagementButton label="削除" disabled={!!busy} onPress={() => openConfirmation({ kind: 'deletePosition', item: position })} />}
         </View>
       </View>)}
     </Panel>}
     {showRoles && <Panel>
-      <View style={s.header}><SectionTitle>役割一覧</SectionTitle>{canManageRoles && <ManagementButton label="作成＋" primary disabled={!!busy} onPress={() => open({ kind: 'role', name: '', permissions: { ...noPermissions } })} />}</View>
+      <View style={s.header}>
+        <SectionTitle>役割一覧</SectionTitle>
+        {canManageRoles && <ManagementButton label="役割を作成" primary disabled={!!busy}
+          onPress={() => open({ kind: 'role', name: '', permissions: { ...noPermissions } })} />}
+      </View>
+      <BodyText>OWNER は企業ユーザーに自動適用される固定の役割です。従業員に付与する権限は、作成した役割や「採用担当」「閲覧専用」の行で設定します。</BodyText>
+      {canManageRoles && !data.roles.some(role => !role.fixed) &&
+        <BodyText>編集できる役割がありません。「役割を作成」から従業員用の役割を追加してください。</BodyText>}
       <BodyText>中央を横スクロールして権限を設定できます。黄色の行には未保存の変更があります。</BodyText>
       <View style={s.fixedTable} onLayout={event => setTableWidth(event.nativeEvent.layout.width)}>
         <View style={[s.fixedColumn, { width: roleWidth }]}>
@@ -179,8 +190,8 @@ export default function CompanyManagement({ onDirtyChange, onEmployees }: Manage
           {data.roles.map(original => {
             const role = drafts[original.id] || original;
             return <View key={role.id} style={[s.roleCell, s.leftCell, !equalRole(role, original) && s.changed]}>
-              {role.fixed ? <Text style={s.memberName}>{role.name}（固定）</Text> :
-                <AppInput accessibilityLabel={`${original.name}の役割名`} value={role.name} maxLength={100}
+              {role.fixed ? <Text style={[s.memberName, s.centerText]}>{role.name}（固定）</Text> :
+                <AppInput accessibilityLabel={`${original.name}の役割名`} value={role.name} maxLength={100} style={s.centerText}
                   editable={canManageRoles && !busy} onChangeText={name => setRoleDraft(role, { name })} />}
             </View>;
           })}
@@ -193,14 +204,18 @@ export default function CompanyManagement({ onDirtyChange, onEmployees }: Manage
             </View>
             {data.roles.map(original => {
               const role = drafts[original.id] || original;
-              const disabled = role.fixed || !canManageRoles || !!busy;
+              const disabled = !canManageRoles || !!busy;
               return <View key={role.id} style={[s.roleCell, s.permissionRow, !equalRole(role, original) && s.changed]}>
                 {permissionColumns.map(([key, label]) => <View key={key} style={s.permissionCell}>
-                  <AppSelect accessibilityLabel={`${original.name}：${label}`} value={String(role.permissions[key])}
-                    options={permissionOptions} disabled={disabled} onValueChange={value => setRoleDraft(role, { permissions: { ...role.permissions, [key]: Number(value) as PermissionLevel } })} />
+                  {role.fixed ? <Text style={s.tableLabel}>{levelLabel(role.permissions[key])}</Text> :
+                    <AppSelect align="center" accessibilityLabel={`${original.name}：${label}`} value={String(role.permissions[key])}
+                      options={permissionOptions} disabled={disabled} onValueChange={value => setRoleDraft(role, { permissions: { ...role.permissions, [key]: Number(value) as PermissionLevel } })} />}
                 </View>)}
-                <View style={s.permissionCell}><Checkbox label={`${original.name}：スカウト`} checked={role.permissions.scout} disabled={disabled}
-                  onChange={() => setRoleDraft(role, { permissions: { ...role.permissions, scout: !role.permissions.scout } })} /></View>
+                <View style={s.permissionCell}>
+                  {role.fixed ? <Text style={s.tableLabel}>{role.permissions.scout ? '許可' : 'アクセス不可'}</Text> :
+                    <Checkbox label={`${original.name}：スカウト`} checked={role.permissions.scout} disabled={disabled}
+                      onChange={() => setRoleDraft(role, { permissions: { ...role.permissions, scout: !role.permissions.scout } })} />}
+                </View>
               </View>;
             })}
           </View>
@@ -211,10 +226,15 @@ export default function CompanyManagement({ onDirtyChange, onEmployees }: Manage
             const role = drafts[original.id] || original;
             const dirty = !equalRole(role, original);
             return <View key={role.id} style={[s.roleCell, s.operationCell, dirty && s.changed]}>
-              <ManagementButton label="更新" primary compact disabled={!canManageRoles || role.fixed || !!busy || !dirty || !role.name.trim()}
-                accessibilityLabel={`${original.name}を更新`} onPress={() => openConfirmation({ kind: 'update', previous: original, next: role })} />
-              {data.permissions.roles === 3 && !role.fixed && <ManagementButton label="削除" compact disabled={!!busy || dirty}
-                accessibilityLabel={`${original.name}を削除`} onPress={() => openConfirmation({ kind: 'deleteRole', item: original })} />}
+              {role.fixed ? <Text style={s.tableLabel}>－</Text> :
+                <View style={[s.roleActions, narrowTable && s.stackedActions]}>
+                  <AppIconButton icon="save-outline" label={`${original.name}を更新`}
+                    tooltip="変更内容を確認して更新" disabled={!canManageRoles || !!busy || !dirty || !role.name.trim()}
+                    onPress={() => openConfirmation({ kind: 'update', previous: original, next: role })} />
+                  {roleManagementLevel === 3 && <AppIconButton icon="trash-outline" tone="danger"
+                    label={`${original.name}を削除`} tooltip="役割を削除" disabled={!!busy || dirty}
+                    onPress={() => openConfirmation({ kind: 'deleteRole', item: original })} />}
+                </View>}
             </View>;
           })}
         </View>
@@ -288,9 +308,11 @@ const s = StyleSheet.create({
   operationCell: { paddingHorizontal: 6, gap: 4, borderLeftWidth: 1, borderColor: '#DCE5EF' },
   permissionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' },
   permissionCell: { width: 184, paddingHorizontal: 8 },
-  tableLabel: { color: '#183455', fontSize: 13, fontWeight: '700' },
-  compactButton: { minWidth: 0, minHeight: 44, paddingHorizontal: 6 },
-  checkTarget: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, check: { width: 24, height: 24, borderRadius: 4, borderWidth: 2, borderColor: '#7890AA', backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' }, checked: { borderColor: '#1857B4', backgroundColor: '#1857B4' },
+  tableLabel: { color: '#183455', fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  centerText: { textAlign: 'center' },
+  roleActions: { flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' },
+  stackedActions: { flexDirection: 'column' },
+  checkTarget: { alignSelf: 'center', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, check: { width: 24, height: 24, borderRadius: 4, borderWidth: 2, borderColor: '#7890AA', backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' }, checked: { borderColor: '#1857B4', backgroundColor: '#1857B4' },
   pending: { fontSize: 11, color: '#875E00', fontWeight: '700' }, rowError: { fontSize: 13, color: '#B42318', padding: 12 }, error: { color: '#B42318', fontSize: 13 }, success: { color: '#187344' },
   pager: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 12 },
   backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,.4)', padding: 16, alignItems: 'center', justifyContent: 'center' },

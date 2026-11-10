@@ -20,17 +20,18 @@ type SortKey = 'employeeNumber' | 'displayName' | 'createdAt';
 export default function EmployeePage() {
   const { user, token, ready } = useAuth();
   const permission = useCompanyPermission('employees');
-  const allowed = permission.allowed && !!token && (user?.accountType !== 'COMPANY' || !!user.businessName);
+  const allowed = permission.allowed && !!token;
   return <AppPage title="従業員管理" subtitle="" role="company" activeMenu="従業員管理">
     {!ready || !permission.ready ? <BodyText>読み込み中…</BodyText> : allowed && user && token ?
       <EmployeeManager key={token} user={user} token={token} level={permission.level} /> :
-      <Panel><SectionTitle>従業員管理</SectionTitle><BodyText>屋号・法人名を登録した企業アカウント、または社員管理権限のある従業員で利用できます。</BodyText>
+      <Panel><SectionTitle>従業員管理</SectionTitle><BodyText>企業アカウント、または社員管理権限のある従業員で利用できます。</BodyText>
         {!user && <Link href="/auth">ログインする</Link>}
       </Panel>}
   </AppPage>;
 }
 
 function EmployeeManager({ user, token, level }: { user: AuthUser; token: string; level: number }) {
+  const needsBusinessName = user.accountType === 'COMPANY' && !user.businessName?.trim();
   const [items, setItems] = useState<AuthUser[] | null>(null);
   const [query, setQuery] = useState('');
   const [pageSize, setPageSize] = useState('10');
@@ -187,11 +188,12 @@ function EmployeeManager({ user, token, level }: { user: AuthUser; token: string
     {!mode && !!notice && <Text accessibilityLiveRegion="polite">{notice}</Text>}
     <Panel>
       <View style={s.row}><SectionTitle>従業員一覧</SectionTitle>
-        {level >= 2 && <View style={s.createButton}><AppButton label="作成＋" onPress={() => {
+        {level >= 2 && !needsBusinessName && <View style={s.createButton}><AppButton label="作成＋" onPress={() => {
           if (busy || items === null) return;
           setForm(emptyForm); setSelected(null); setMode('create'); setError(''); setNotice('');
         }} /></View>}
       </View>
+      {needsBusinessName && <BodyText>従業員を作成するには、「企業・権限」の企業プロフィールで屋号・法人名を登録してください。</BodyText>}
       <View style={s.toolbar}>
         <AppInput label="名前・従業員番号で検索" value={query} onChangeText={value => { setQuery(value); setPage(1); }} containerStyle={s.searchField} />
         <AppSelect label="表示件数" value={pageSize} options={options(['10', '20', '50'])}

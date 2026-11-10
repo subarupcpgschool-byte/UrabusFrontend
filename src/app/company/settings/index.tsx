@@ -116,6 +116,7 @@ export default function CompanySettingsPage() {
     <View style={s.top}>
       <Panel style={s.profile}>
         <SectionTitle>企業プロフィール</SectionTitle>
+        {isOwner && <BodyText>適用中の権限　OWNER（すべての権限）</BodyText>}
         {!ready || loading ? <BodyText>読み込み中…</BodyText> : !allowed || !token ?
           <><BodyText>企業アカウントまたは所属従業員のアカウントでログインしてください。</BodyText>{!user && <Link href="/auth">ログインする</Link>}</> : profile ? <>
             <Text style={s.name}>{display(profile.businessName)}</Text>

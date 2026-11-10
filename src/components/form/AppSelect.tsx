@@ -7,11 +7,11 @@ import type { ChoiceOption } from './AppChoice';
 
 export type AppSelectProps = FieldProps & {
   options: ChoiceOption[]; value: string; onValueChange: (value: string) => void;
-  placeholder?: string; disabled?: boolean; accessibilityLabel?: string;
+  placeholder?: string; disabled?: boolean; accessibilityLabel?: string; align?: 'center';
 };
 
 /** A modal choice list shared by Web, iOS and Android. */
-export function AppSelect({ options, value, onValueChange, placeholder = '選択してください', disabled = false, accessibilityLabel, ...field }: AppSelectProps) {
+export function AppSelect({ options, value, onValueChange, placeholder = '選択してください', disabled = false, accessibilityLabel, align, ...field }: AppSelectProps) {
   const [open, setOpen] = useState(false);
   const close = () => { setOpen(false); };
   useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
@@ -19,8 +19,8 @@ export function AppSelect({ options, value, onValueChange, placeholder = '選択
   const name = accessibilityLabel ?? field.label ?? placeholder;
   return <AppFormField {...field}>
     <Pressable accessibilityRole="button" accessibilityLabel={name} accessibilityValue={{ text: selected?.label ?? placeholder }} accessibilityState={{ expanded: open, disabled }}
-      disabled={disabled} onPress={() => setOpen(true)} style={[s.control, Platform.OS === 'web' && { outlineWidth: 0 }, !!field.error && { borderColor: T.errorColor }, disabled && { opacity: T.disabledOpacity }]}>
-      <Text style={[s.value, !selected && { color: T.placeholderColor }]}>{selected?.label ?? placeholder}</Text><Ionicons name={open ? "chevron-up" : "chevron-down"} size={20} color={T.textColor} style={s.arrow} />
+      disabled={disabled} onPress={() => setOpen(true)} style={[s.control, align === 'center' && s.centerControl, Platform.OS === 'web' && { outlineWidth: 0 }, !!field.error && { borderColor: T.errorColor }, disabled && { opacity: T.disabledOpacity }]}>
+      <Text style={[s.value, align === 'center' && s.centerValue, !selected && { color: T.placeholderColor }]}>{selected?.label ?? placeholder}</Text><Ionicons name={open ? "chevron-up" : "chevron-down"} size={20} color={T.textColor} style={align === 'center' ? undefined : s.arrow} />
     </Pressable>
     <Modal transparent visible={open && !disabled} animationType="fade" onRequestClose={close}>
       <View style={s.backdrop}>
@@ -41,6 +41,7 @@ export function AppSelect({ options, value, onValueChange, placeholder = '選択
 }
 const s = StyleSheet.create({
   control: { minHeight: T.minHeight, borderRadius: T.borderRadius, borderWidth: 1, borderColor: T.borderColor, backgroundColor: T.backgroundColor, paddingHorizontal: T.paddingHorizontal, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  centerControl: { justifyContent: 'center', gap: 5 }, centerValue: { textAlign: 'center' },
   value: { color: T.textColor, fontSize: T.fontSize, flexShrink: 1 }, arrow: { marginLeft: 'auto' },
   backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,.35)', alignItems: 'center', justifyContent: 'center', padding: 20 },
   dialog: { width: '100%', maxWidth: 460, maxHeight: '80%', borderRadius: 14, backgroundColor: T.backgroundColor, padding: 16 },
