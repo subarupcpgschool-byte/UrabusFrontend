@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
+import LoadingLogo from './LoadingLogo';
 
 // A code-driven ellipse keeps the orbit crisp on web and native screens.
 const inputRange = Array.from({ length: 65 }, (_, i) => i / 64);
@@ -9,7 +9,7 @@ const trail = Array.from({ length: 12 }, (_, i) => ({
   y: inputRange.map(t => 63 * Math.sin(t * Math.PI * 2 - i * .035)),
 }));
 
-export default function OrbitLoadingScreen() {
+export default function OrbitLoadingScreen({ onLogoReady }: { onLogoReady?: () => void }) {
   const phase = useRef(new Animated.Value(0)).current;
   const [reduceMotion, setReduceMotion] = useState<boolean | null>(null);
   const { width } = useWindowDimensions();
@@ -36,9 +36,11 @@ export default function OrbitLoadingScreen() {
 
   return <View style={s.shell} accessibilityRole="progressbar" accessibilityLabel="画面を読み込んでいます">
     <View style={[s.scene, { transform: [{ scale }] }]}>
-      <View style={s.halo}/>
-      <View style={s.orbit}/>
-      <Image source={require('../../../assets/images/loading-logo.png')} style={s.logo} contentFit="contain" accessibilityLabel="GlobalWorkers"/>
+      <View pointerEvents="none" style={s.halo}/>
+      <View pointerEvents="none" style={s.orbit}/>
+      <View style={s.logoLayer}>
+        <LoadingLogo onReady={onLogoReady}/>
+      </View>
       {trail.map((point, i) => <Animated.View key={i} style={[s.light, {
         opacity: (1 - i / 12) * .9,
         transform: [
@@ -56,10 +58,11 @@ export default function OrbitLoadingScreen() {
 const s = StyleSheet.create({
   shell: { flex: 1, minHeight: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F8FC', paddingHorizontal: 16 },
   scene: { width: 360, height: 200, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
-  halo: { position: 'absolute', width: 290, height: 116, borderRadius: 100, backgroundColor: '#EBF3FF' },
-  orbit: { position: 'absolute', width: 328, height: 126, borderRadius: '50%', borderWidth: 1, borderColor: '#C9DDFB' },
-  logo: { width: 252, height: 84 },
-  light: { position: 'absolute', left: 175, top: 95, width: 10, height: 10, borderRadius: 5, backgroundColor: '#2563EB' },
+  halo: { position: 'absolute', zIndex: 0, width: 290, height: 116, borderRadius: 100, backgroundColor: '#EBF3FF' },
+  orbit: { position: 'absolute', zIndex: 0, width: 328, height: 126, borderRadius: '50%', borderWidth: 1, borderColor: '#C9DDFB' },
+  // RN Web Views form stacking contexts; keep the plain web img above the halo.
+  logoLayer: { position: 'relative', zIndex: 1, width: 252, height: 84 },
+  light: { position: 'absolute', zIndex: 2, left: 175, top: 95, width: 10, height: 10, borderRadius: 5, backgroundColor: '#2563EB' },
   caption: { fontSize: 13, letterSpacing: 2, color: '#365D91', fontWeight: '600' },
   sub: { marginTop: 12, fontSize: 11, color: '#7B8FA9' },
 });

@@ -2,7 +2,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { Asset } from 'expo-asset';
-import { useEffect, useState, type PropsWithChildren } from 'react';
+import { useCallback, useEffect, useState, type PropsWithChildren } from 'react';
 import { useWindowDimensions } from 'react-native';
 import OrbitLoadingScreen from './OrbitLoadingScreen';
 
@@ -13,6 +13,26 @@ export default function AppReadyGate({ children }: PropsWithChildren) {
   const [fontsLoaded, fontError] = useFonts(Ionicons.font);
   const [assetsReady, setAssetsReady] = useState(false);
   const [layoutReady, setLayoutReady] = useState(false);
+  const [logoReady, setLogoReady] = useState(false);
+  const [logoShown, setLogoShown] = useState(false);
+  const handleLogoReady = useCallback(() => setLogoReady(true), []);
+
+  useEffect(() => {
+    if (!logoReady) return;
+    let secondFrame = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Start the minimum visible time only after the logo can be painted.
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        timer = setTimeout(() => setLogoShown(true), 450);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      cancelAnimationFrame(secondFrame);
+      if (timer !== undefined) clearTimeout(timer);
+    };
+  }, [logoReady]);
 
   useEffect(() => {
     let active = true;
@@ -34,8 +54,8 @@ export default function AppReadyGate({ children }: PropsWithChildren) {
     if (fontError) console.warn('Icon font preload failed', fontError);
   }, [fontError]);
 
-  if (!authReady || !assetsReady || !layoutReady || (!fontsLoaded && !fontError)) {
-    return <OrbitLoadingScreen />;
+  if (!authReady || !assetsReady || !layoutReady || !logoShown || (!fontsLoaded && !fontError)) {
+    return <OrbitLoadingScreen onLogoReady={handleLogoReady} />;
   }
   return <>{children}</>;
 }
