@@ -1,3 +1,7 @@
+import { useResource, ResourceStatus } from "@/api/useResource";
+import type { Page } from "@/api/platform";
+import { jobItem, type JobRow, type CompanyRow } from "@/api/models";
+import JobSearchCard from "@/components/search/JobSearchCard";
 
 import { AppInput, AppTag } from "@/components/form";
 import { router } from "expo-router";
@@ -20,63 +24,17 @@ import {
 } from "react-native";
 
 type IconName = keyof typeof Ionicons.glyphMap;
-type Job = {
-  mark: string;
-  color: string;
-  title: string;
-  company: string;
-  location: string;
-  style: string;
-  rating: string;
-  salary: string;
-  tags: string[];
-};
-
-const jobs: Job[] = [
-  {
-    mark: "IN",
-    color: "#367BEA",
-    title: "Webデザイナー",
-    company: "株式会社イノート",
-    location: "大阪府",
-    style: "週3リモート可",
-    rating: "4.6",
-    salary: "月給 28万円〜45万円",
-    tags: ["未経験OK", "リモート可", "服装自由"],
-  },
-  {
-    mark: "T",
-    color: "#159A69",
-    title: "バックエンドエンジニア",
-    company: "TechVision株式会社",
-    location: "東京都",
-    style: "フルリモート",
-    rating: "4.8",
-    salary: "月給 45万円〜65万円",
-    tags: ["TypeScript", "AWS", "裁量労働制"],
-  },
-  {
-    mark: "店",
-    color: "#F0A52B",
-    title: "店舗運営スタッフ",
-    company: "グリーンリーフ株式会社",
-    location: "兵庫県神戸市",
-    style: "シフト制",
-    rating: "4.4",
-    salary: "月給 28万円〜35万円",
-    tags: ["未経験OK", "接客", "交通費支給"],
-  },
-];
-
 function Search({ mobile }: { mobile: boolean }) {
-  const [keyword,setKeyword]=useState("");
-  const [location,setLocation]=useState("");
+  const [keyword, setKeyword] = useState("");
+  const [location, setLocation] = useState("");
   return (
     <View style={[s.search, mobile && s.searchMobile]}>
       <View style={s.searchField}>
         <Ionicons name="search" size={20} color={C.sub} />
-        <AppInput variant="plain"
-          value={keyword} onChangeText={setKeyword}
+        <AppInput
+          variant="plain"
+          value={keyword}
+          onChangeText={setKeyword}
           placeholder="職種・スキル・企業名"
           style={s.input}
         />
@@ -84,14 +42,21 @@ function Search({ mobile }: { mobile: boolean }) {
       <View style={[s.divider, mobile && s.dividerMobile]} />
       <View style={s.searchField}>
         <Ionicons name="location-outline" size={21} color={C.sub} />
-        <AppInput variant="plain"
-          value={location} onChangeText={setLocation}
+        <AppInput
+          variant="plain"
+          value={location}
+          onChangeText={setLocation}
           placeholder="勤務地・リモート"
           style={s.input}
         />
       </View>
       <Pressable
-        onPress={() => router.push({pathname:"/jobs",params:{keyword,location}} as never)}
+        onPress={() =>
+          router.push({
+            pathname: "/jobs",
+            params: { keyword, location },
+          } as never)
+        }
         style={({ pressed }) => [
           s.searchButton,
           mobile && { width: "100%" },
@@ -156,70 +121,14 @@ function Flow({ tablet }: { tablet: boolean }) {
 function Review({ company = false }: { company?: boolean }) {
   return (
     <View style={s.review}>
-      <View style={s.reviewHead}>
-        <View style={[s.reviewAvatar, company && { backgroundColor: C.blue }]}>
-          <Ionicons
-            name={company ? "business" : "person"}
-            size={18}
-            color={C.white}
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={s.reviewType}>{company ? "企業" : "ワーカー"}</Text>
-          <Text style={s.reviewName}>
-            {company ? "TechVision株式会社" : "山田 太郎さん"}
-          </Text>
-        </View>
-        <Text style={s.verified}>本人確認済み</Text>
-      </View>
-      <View style={s.rating}>
-        <Text style={s.ratingNo}>{company ? "4.6" : "4.8"}</Text>
-        <Text style={s.stars}>★★★★★</Text>
-      </View>
-      <Text style={s.quote}>“誠実で丁寧な対応に安心できました。”</Text>
-    </View>
-  );
-}
-
-function JobCard({ job }: { job: Job }) {
-  const [saved, setSaved] = useState(false);
-  return (
-    <View style={s.jobCard}>
-      <View style={s.jobHead}>
-        <View style={[s.jobMark, { backgroundColor: job.color }]}>
-          <Text style={s.jobMarkText}>{job.mark}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={s.jobTitle}>{job.title}</Text>
-          <Text style={s.company}>{job.company}</Text>
-        </View>
-        <Pressable onPress={() => setSaved((v) => !v)} style={s.save}>
-          <Ionicons
-            name={saved ? "bookmark" : "bookmark-outline"}
-            size={21}
-            color={C.blue}
-          />
-        </Pressable>
-      </View>
-      <View style={s.meta}>
-        <Ionicons name="location-outline" size={15} color={C.sub} />
-        <Text style={s.metaText}>
-          {job.location}　•　{job.style}　•　正社員
-        </Text>
-      </View>
-      <View style={s.salaryRow}>
-        <Text style={s.salary}>{job.salary}</Text>
-        <Text style={s.jobRating}>★ {job.rating}</Text>
-      </View>
-      <View style={s.tags}>
-        {job.tags.map((x, i) => (
-          <AppTag key={x} label={x} style={i===1?{backgroundColor:'#F1EDFF'}:undefined}/>
-        ))}
-      </View>
-      <View style={s.jobButtons}>
-        <Button label="詳細を見る" outline />
-        <Button label="応募する" />
-      </View>
+      <Text style={s.reviewName}>
+        {company
+          ? "企業の対応・募集条件を評価"
+          : "働いた経験・仕事の品質を評価"}
+      </Text>
+      <Text style={s.quote}>
+        実際のやり取りに基づく相互評価を確認できます。
+      </Text>
     </View>
   );
 }
@@ -283,6 +192,18 @@ function Footer({ desktop }: { desktop: boolean }) {
 }
 
 export default function HomeScreen() {
+  const jobs = useResource<Page<JobRow>>("/jobs?pageSize=3&sort=updatedAt", {
+    items: [],
+    total: 0,
+    page: 1,
+    pageSize: 3,
+  });
+  const companies = useResource<Page<CompanyRow>>("/companies?pageSize=1", {
+    items: [],
+    total: 0,
+    page: 1,
+    pageSize: 1,
+  });
   const { width } = useWindowDimensions();
   const desktop = width >= 1024;
   const tablet = width >= 720;
@@ -295,13 +216,16 @@ export default function HomeScreen() {
           <View style={[s.hero, desktop && s.heroDesktop]}>
             <View style={[s.heroCopy, desktop && { flex: 1 }]}>
               <Text style={s.badge}>採用成功報酬 0円</Text>
-              
+
               <Search mobile={!tablet} />
               <View style={s.metrics}>
                 {[
-                  "12,480件の公開求人",
-                  "8,260社が利用中",
-                  "94%が評価協力済み",
+                  ...(!jobs.loading && !jobs.error
+                    ? [`${jobs.data.total.toLocaleString()}件の公開求人`]
+                    : []),
+                  ...(!companies.loading && !companies.error
+                    ? [`${companies.data.total.toLocaleString()}社の企業`]
+                    : []),
                 ].map((x) => (
                   <View key={x} style={s.metric}>
                     <Ionicons
@@ -329,12 +253,12 @@ export default function HomeScreen() {
               ]}
             >
               <View>
-                <Text style={s.sectionTitle}>評価の高い新着求人</Text>
+                <Text style={s.sectionTitle}>新着求人</Text>
                 <Text style={s.sectionSub}>
                   実際に働いた人の評価を確認して応募できます。
                 </Text>
               </View>
-              <Pressable onPress={() => notify("求人一覧")} style={s.more}>
+              <Pressable onPress={() => router.push("/jobs")} style={s.more}>
                 <Text style={s.moreText}>求人をもっと見る</Text>
                 <Ionicons name="arrow-forward" size={18} color={C.blueDark} />
               </Pressable>
@@ -355,9 +279,25 @@ export default function HomeScreen() {
               )}
             </ScrollView>
             <View style={[s.jobGrid, !desktop && { flexDirection: "column" }]}>
-              {jobs.map((x) => (
-                <JobCard key={x.title} job={x} />
+              <ResourceStatus
+                loading={jobs.loading}
+                error={jobs.error}
+                onRetry={jobs.refresh}
+              />
+              {jobs.data.items.map((job) => (
+                <View key={job.id} style={{ flex: 1, minWidth: 260 }}>
+                  <JobSearchCard
+                    item={jobItem(job)}
+                    onPressDetail={(id) => router.push(`/jobs/${id}` as never)}
+                    onPressApply={(id) =>
+                      router.push(`/jobs/${id}/apply` as never)
+                    }
+                  />
+                </View>
               ))}
+              {!jobs.loading && !jobs.error && !jobs.data.items.length && (
+                <Text>公開中の求人はまだありません。</Text>
+              )}
             </View>
           </View>
           <View style={s.section}>
@@ -566,7 +506,7 @@ const s = StyleSheet.create({
     gap: 9,
     paddingHorizontal: 13,
   },
-  input: {outlineWidth: 0,flex: 1},
+  input: { outlineWidth: 0, flex: 1 },
   divider: { width: 1, height: 32, backgroundColor: C.border },
   dividerMobile: { width: "100%", height: 1 },
   searchButton: {

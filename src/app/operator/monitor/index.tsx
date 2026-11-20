@@ -1,6 +1,90 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useAuth } from "@/auth/AuthProvider";
+import { useResource, ResourceStatus } from "@/api/useResource";
 import AppPage from "@/components/layout/AppPage";
-import { DataTable, KpiRow, Panel, SectionTitle, StatCard } from "@/components/ui/AppUI";
-import { SEARCH_COLORS as C } from "@/components/search/theme";
-export default function MonitorPage(){return <AppPage title="システムモニター" subtitle="アクセス・収益・エラー・稼働率を監視します" role="operator" activeMenu="モニター"><KpiRow><StatCard label="アクセス数（24h）" value="12,842" change="+8.5%"/><StatCard label="売上（24h）" value="¥3,842,600" change="+6.2%"/><StatCard label="エラー件数" value="24" change="-20.0%"/><StatCard label="稼働率" value="99.92%" change="+0.04%"/></KpiRow><View style={s.grid}><Panel style={s.chartPanel}><SectionTitle>アクセス数の推移</SectionTitle><View style={s.chart}>{[30,65,42,88,55,105,72].map((h,i)=><View key={i} style={[s.bar,{height:h}]}/>)}</View></Panel><Panel style={s.errors}><SectionTitle>直近のエラーイベント</SectionTitle><DataTable headers={["発生日時","サービス","内容","重要度"]} rows={[["08/16 10:32","API Service","500 Internal Server Error","高"],["08/16 09:58","Auth Service","認証タイムアウト","中"],["08/16 09:20","Job Service","ジョブ処理遅延","中"],["08/15 17:15","Storage","S3アップロード失敗","低"]]}/></Panel></View><Panel><SectionTitle>サービス稼働状況</SectionTitle><View style={s.statuses}>{["API","認証","求人検索","チャット","ストレージ"].map(x=><View key={x} style={s.status}><View style={s.dot}/><Text style={s.statusName}>{x}</Text><Text style={s.normal}>正常</Text></View>)}</View></Panel></AppPage>}
-const s=StyleSheet.create({grid:{flexDirection:"row",flexWrap:"wrap",gap:13},chartPanel:{flex:1,minWidth:300},errors:{flex:1.5,minWidth:360},chart:{height:220,flexDirection:"row",alignItems:"flex-end",justifyContent:"space-around",borderLeftWidth:1,borderBottomWidth:1,borderColor:C.border,padding:18},bar:{width:28,borderRadius:5,backgroundColor:C.primary},statuses:{flexDirection:"row",flexWrap:"wrap",gap:12},status:{flex:1,minWidth:140,flexDirection:"row",alignItems:"center",gap:8,padding:12,borderRadius:8,backgroundColor:C.background},dot:{width:10,height:10,borderRadius:5,backgroundColor:C.success},statusName:{flex:1,color:C.text,fontSize:12,fontWeight:"800"},normal:{color:C.success,fontSize:10,fontWeight:"800"}});
+import {
+  BodyText,
+  Panel,
+  SectionTitle,
+  DataTable,
+} from "@/components/ui/AppUI";
+import {
+  ResourceEditor,
+  metricFields,
+} from "@/features/operator/ResourceEditor";
+export default function MonitorPage() {
+  const { token } = useAuth();
+  const r = useResource<{
+    metrics: {
+      service: string;
+      metric: string;
+      sum: number;
+      average: number;
+      samples: number;
+    }[];
+    alarms: { status: string; count: number }[];
+    recentEvents: {
+      service: string;
+      message: string;
+      severity: string;
+      occurredAt: string;
+    }[];
+  }>(
+    token ? "/operator/monitor" : null,
+    { metrics: [], alarms: [], recentEvents: [] },
+    true,
+  );
+  return (
+    <AppPage title="モニター" subtitle="" role="operator" activeMenu="モニター">
+      <ResourceStatus
+        loading={r.loading}
+        error={r.error}
+        onRetry={r.refresh}
+        privateData
+      />
+      <Panel>
+        <SectionTitle>過去24時間の計測結果</SectionTitle>
+        {r.data.metrics.length ? (
+          <DataTable
+            headers={["サービス", "計測項目", "合計", "平均", "件数"]}
+            rows={r.data.metrics.map((m) => [
+              m.service,
+              m.metric,
+              String(m.sum),
+              String(m.average),
+              String(m.samples),
+            ])}
+          />
+        ) : (
+          <BodyText>計測データはまだありません。</BodyText>
+        )}
+      </Panel>
+      <Panel>
+        <SectionTitle>アラーム対応状況</SectionTitle>
+        {r.data.alarms.map((a) => (
+          <BodyText key={a.status}>
+            {a.status}：{a.count}件
+          </BodyText>
+        ))}
+      </Panel>
+      <Panel>
+        <SectionTitle>直近のイベント</SectionTitle>
+        <DataTable
+          headers={["日時", "サービス", "内容", "重要度"]}
+          rows={r.data.recentEvents.map((e) => [
+            new Date(e.occurredAt).toLocaleString("ja-JP"),
+            e.service,
+            e.message,
+            e.severity,
+          ])}
+        />
+      </Panel>
+      {!r.error && (
+        <ResourceEditor
+          path="/operator/metrics"
+          title="計測値"
+          fields={metricFields}
+        />
+      )}
+    </AppPage>
+  );
+}

@@ -1,24 +1,141 @@
-import PublishedCompanyEvaluations from '@/features/evaluations/PublishedCompanyEvaluations';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import AppPage from '@/components/layout/AppPage';
-import { AppButton, BodyText, Panel, SectionTitle, StatusBadge, TwoColumn } from '@/components/ui/AppUI';
-import FavoriteButton from '@/components/search/FavoriteButton';
-import { COMPANY_SEARCH_ITEMS, JOB_SEARCH_ITEMS } from '@/components/search/searchData';
-import { useWorkspace } from '@/features/workspace/WorkspaceProvider';
-import { useAuth } from '@/auth/AuthProvider';
-
-export default function JobDetailPage(){
-  const { id = '' }=useLocalSearchParams<{id:string}>();
-  const {favorites,openRoom,ready,mockMode}=useWorkspace();const {user}=useAuth();
-  const saved=favorites.find(f=>f.kind==='job'&&String(f.item.id)===id);
-  const job=JOB_SEARCH_ITEMS.find(j=>String(j.id)===id)??(saved&&'title' in saved.item?saved.item:undefined);
-  if(!job)return <AppPage title="求人詳細" subtitle="求人内容を確認できます。"><Panel><BodyText>求人情報が見つかりませんでした。</BodyText><AppButton label="求人検索へ" onPress={()=>router.push('/jobs')}/></Panel></AppPage>;
-  const company=COMPANY_SEARCH_ITEMS.find(c=>c.companyName===job.companyName);
-  return <AppPage title="求人詳細" subtitle="仕事内容・条件・企業情報を確認できます。"><TwoColumn><View style={s.main}>
-    <Panel><View style={s.head}><View style={[s.mark,{backgroundColor:job.markColor}]}><Text style={s.markText}>{job.mark}</Text></View><View style={{flex:1}}><Text style={s.title}>{job.title}</Text>{company?<Pressable accessibilityRole="link" onPress={()=>router.push(`/companies/${company.id}` as never)}><Text style={s.link}>{job.companyName}　› 企業詳細</Text></Pressable>:<Text style={s.sub}>{job.companyName}</Text>}</View></View><View style={s.tags}>{[job.location,job.workStyle,job.employmentType,...job.tags].filter((v,i,a)=>v&&a.indexOf(v)===i).map(label=><StatusBadge key={label} label={label}/>)}</View><Text style={s.salary}>{job.salary}</Text></Panel>
-    <Panel><SectionTitle>仕事内容</SectionTitle><BodyText>{job.description}</BodyText></Panel>
-    <Panel><SectionTitle>勤務地・働き方</SectionTitle><BodyText>{job.location}　／　{job.workStyle||'要相談'}</BodyText><BodyText>詳しい勤務条件は、応募・面談時に企業へご確認ください。</BodyText></Panel>
-  <PublishedCompanyEvaluations company={job.companyName}/></View><View style={s.aside}><Panel><SectionTitle>この求人に応募する</SectionTitle><Text style={s.salary}>{job.salary}</Text><AppButton label="応募する" onPress={()=>router.push(`/jobs/${job.id}/apply` as never)}/><View style={s.head}><FavoriteButton label={job.title} item={job} kind="job"/><Text style={s.sub}>お気に入りに保存</Text></View><AppButton label="この案件について相談" outline onPress={()=>{if(!user&&!mockMode){router.push('/auth');return;}if(ready){const room=openRoom('job',String(job.id),job.companyName,job.title);router.push({pathname:'/mypage',params:{tab:'messages',room}});}}}/>{company&&<AppButton label="企業詳細を見る" outline onPress={()=>router.push(`/companies/${company.id}` as never)}/>}</Panel></View></TwoColumn></AppPage>;
+import { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { Text, View } from "react-native";
+import { useAuth } from "@/auth/AuthProvider";
+import { useResource, ResourceStatus } from "@/api/useResource";
+import { dataRequest } from "@/api/platform";
+import { jobItem, type JobRow } from "@/api/models";
+import AppPage from "@/components/layout/AppPage";
+import {
+  AppButton,
+  BodyText,
+  Panel,
+  SectionTitle,
+  StatusBadge,
+  TwoColumn,
+} from "@/components/ui/AppUI";
+import FavoriteButton from "@/components/search/FavoriteButton";
+import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import {
+  RecruitmentArticle,
+  articleHtml,
+} from "@/features/company/RecruitmentArticle";
+import PublishedCompanyEvaluations from "@/features/evaluations/PublishedCompanyEvaluations";
+export default function JobDetailPage() {
+  const { id = "" } = useLocalSearchParams<{ id: string }>();
+  const resource = useResource<JobRow | null>(id ? `/jobs/${id}` : null, null);
+  const { user, token } = useAuth();
+  const { openRoom } = useWorkspace();
+  const [error, setError] = useState(""),
+    [busy, setBusy] = useState(false);
+  const row = resource.data;
+  const job = row ? jobItem(row) : null;
+  async function contact() {
+    if (!user) {
+      router.push("/auth");
+      return;
+    }
+    if (busy || !job) return;
+    setBusy(true);
+    try {
+      const room = await openRoom("job", id, job.companyName, job.title);
+      router.push({ pathname: "/messages", params: { room } });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <AppPage title="求人詳細" subtitle="">
+      <ResourceStatus
+        loading={resource.loading}
+        error={resource.error}
+        onRetry={resource.refresh}
+      />
+      {row && job && (
+        <TwoColumn>
+          <View style={{ flex: 2, minWidth: 260, gap: 14 }}>
+            <Panel>
+              <Text style={{ fontSize: 20, fontWeight: "700" }}>
+                {job.title}
+              </Text>
+              <AppButton
+                label={job.companyName + "の企業情報"}
+                outline
+                onPress={() =>
+                  router.push(`/companies/${row.companyId}` as never)
+                }
+              />
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {[job.location, job.employmentType, job.workStyle, ...job.tags]
+                  .filter(Boolean)
+                  .map((tag, i) => (
+                    <StatusBadge key={i} label={tag} />
+                  ))}
+              </View>
+              <Text>{job.salary}</Text>
+            </Panel>
+            <Panel>
+              <SectionTitle>募集内容</SectionTitle>
+              <RecruitmentArticle
+                html={articleHtml(row.document)}
+                articleCss={row.document.articleCss || ""}
+                commonCss={row.commonCss || ""}
+              />
+            </Panel>
+            <Panel>
+              <SectionTitle>応募条件・募集期間</SectionTitle>
+              <BodyText>{row.document.requirements || "未登録"}</BodyText>
+              <BodyText>
+                {row.document.startDate || "開始制限なし"} 〜{" "}
+                {row.document.endDate || "無期限"}
+              </BodyText>
+            </Panel>
+            <PublishedCompanyEvaluations companyId={row.companyId} />
+          </View>
+          <View style={{ flex: 1, minWidth: 240, gap: 14 }}>
+            <Panel>
+              <SectionTitle>応募・お問い合わせ</SectionTitle>
+              <Text>{job.salary}</Text>
+              <AppButton
+                label="応募する"
+                onPress={() => router.push(`/jobs/${id}/apply` as never)}
+              />
+              <FavoriteButton label={job.title} item={job} kind="job" />
+              <AppButton
+                label={busy ? "処理中…" : "メッセージを開く"}
+                outline
+                onPress={() => void contact()}
+              />
+              {!!token && (
+                <AppButton
+                  label="求人比較に追加"
+                  outline
+                  onPress={() => {
+                    if (busy) return;
+                    setBusy(true);
+                    void dataRequest(
+                      `/comparisons/${id}`,
+                      token,
+                      undefined,
+                      "PUT",
+                    )
+                      .then(() => router.push("/company/compare"))
+                      .catch((e) => setError(e.message))
+                      .finally(() => setBusy(false));
+                  }}
+                />
+              )}
+              {!!error && (
+                <Text accessibilityRole="alert" style={{ color: "#B42318" }}>
+                  {error}
+                </Text>
+              )}
+            </Panel>
+          </View>
+        </TwoColumn>
+      )}
+    </AppPage>
+  );
 }
-const s=StyleSheet.create({main:{flex:2,minWidth:260,gap:13},aside:{flex:1,minWidth:240,gap:13},head:{flexDirection:'row',alignItems:'center',gap:13},mark:{width:58,height:58,borderRadius:10,alignItems:'center',justifyContent:'center'},markText:{color:'#FFF',fontSize:22,fontWeight:'900'},title:{color:'#162033',fontSize:19,fontWeight:'900'},sub:{color:'#64748B',fontSize:12},link:{marginTop:8,color:'#2563EB',fontSize:13},tags:{flexDirection:'row',flexWrap:'wrap',gap:7},salary:{color:'#162033',fontSize:18,fontWeight:'900'}});

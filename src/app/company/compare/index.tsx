@@ -1,11 +1,65 @@
-import { CompanyPermissionBoundary } from '@/features/company/CompanyPermissionBoundary';
+import { View, Text } from "react-native";
 import { router } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "@/auth/AuthProvider";
+import { useResource, ResourceStatus } from "@/api/useResource";
+import { dataRequest } from "@/api/platform";
+import type { Document } from "@/api/models";
 import AppPage from "@/components/layout/AppPage";
-import { AppButton, Panel, StatusBadge } from "@/components/ui/AppUI";
-import { SEARCH_COLORS as C } from "@/components/search/theme";
-const jobs=[["バックエンドエンジニア","TechVision株式会社","東京都／フルリモート","45万〜65万円","4.8"],["Webデザイナー","株式会社イノート","大阪府／週3リモート","28万〜45万円","4.6"],["店舗運営スタッフ","グリーンリーフ株式会社","兵庫県神戸市","28万〜35万円","4.4"]];
-function ComparePageContent(){return <AppPage title="求人比較" subtitle="候補求人の条件と評価を並べて比較します" role="company"><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.grid}>{jobs.map((x,i)=><Panel key={x[0]} style={s.card}><View style={[s.mark,{backgroundColor:i===1?C.primary:i===2?C.warning:C.success}]}><Text style={s.markText}>{x[0][0]}</Text></View><Text style={s.title}>{x[0]}</Text><Text style={s.sub}>{x[1]}</Text>{[["勤務地",x[2]],["給与",x[3]],["企業評価",`★ ${x[4]}`],["雇用形態","正社員"],["リモート",i===2?"不可":"対応"]].map(y=><View key={y[0]} style={s.row}><Text style={s.label}>{y[0]}</Text><Text style={s.value}>{y[1]}</Text></View>)}<StatusBadge label="評価協力率90%以上" tone="green"/><AppButton label="求人詳細を見る" onPress={()=>router.push("/jobs/1" as never)}/></Panel>)}</ScrollView></AppPage>}
-const s=StyleSheet.create({grid:{gap:13,paddingBottom:4},card:{width:330},mark:{width:48,height:48,borderRadius:10,alignItems:"center",justifyContent:"center"},markText:{color:C.white,fontSize:18,fontWeight:"900"},title:{color:C.text,fontSize:17,fontWeight:"900"},sub:{color:C.textSub,fontSize:11},row:{minHeight:42,flexDirection:"row",alignItems:"center",justifyContent:"space-between",borderBottomWidth:1,borderBottomColor:C.border},label:{color:C.textSub,fontSize:11},value:{color:C.text,fontSize:12,fontWeight:"800"}});
-
-export default function ComparePage() { return <CompanyPermissionBoundary permission="applicants" title="応募者比較"><ComparePageContent /></CompanyPermissionBoundary>; }
+import { AppButton, Panel, BodyText } from "@/components/ui/AppUI";
+import { ConfirmAction } from "@/api/ApiUI";
+export default function ComparePage() {
+  const { token, user } = useAuth();
+  const r = useResource<
+    { recruitmentId: string; document: Document; companyName: string }[]
+  >(token ? "/comparisons" : null, [], true);
+  return (
+    <AppPage
+      title="求人比較"
+      subtitle=""
+      role={user?.accountType === "GENERAL" ? "user" : "company"}
+    >
+      <ResourceStatus
+        loading={r.loading}
+        error={r.error}
+        onRetry={r.refresh}
+        privateData
+      />
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
+        {r.data.map((j) => (
+          <Panel key={j.recruitmentId} style={{ flex: 1, minWidth: 260 }}>
+            <Text style={{ fontSize: 17, fontWeight: "700" }}>
+              {j.document.title}
+            </Text>
+            <BodyText>{j.companyName}</BodyText>
+            <BodyText>
+              {j.document.location} ／ {j.document.employment}
+            </BodyText>
+            <BodyText>{j.document.compensation}</BodyText>
+            <BodyText>{j.document.requirements}</BodyText>
+            <AppButton
+              label="詳細を見る"
+              onPress={() => router.push(`/jobs/${j.recruitmentId}` as never)}
+            />
+            <ConfirmAction
+              label="比較から外す"
+              message="この求人を比較一覧から外しますか？"
+              onConfirm={() =>
+                dataRequest(
+                  `/comparisons/${j.recruitmentId}`,
+                  token,
+                  undefined,
+                  "DELETE",
+                )
+              }
+            />
+          </Panel>
+        ))}
+      </View>
+      {!r.loading && !r.error && !r.data.length && (
+        <BodyText>
+          求人詳細から比較する求人を追加してください。最大5件まで比較できます。
+        </BodyText>
+      )}
+    </AppPage>
+  );
+}

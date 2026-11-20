@@ -1,13 +1,40 @@
-import { resolveMockAsset } from './mockAssets';
-import { MOCK_CSV } from './mockData';
-import type { DocumentPickerAsset } from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
-import type { Attachment } from './WorkspaceProvider';
-export async function saveAttachment(asset: DocumentPickerAsset): Promise<Attachment> {
- if(!FileSystem.documentDirectory)throw new Error('ファイルを保存できません。');
- const folder=FileSystem.documentDirectory+'message-attachments/';await FileSystem.makeDirectoryAsync(folder,{intermediates:true});
- const id=`${Date.now()}-${Math.random().toString(36).slice(2)}`;const uri=folder+id+'-'+encodeURIComponent(asset.name);await FileSystem.copyAsync({from:asset.uri,to:uri});
- return {id,name:asset.name,uri,mime:asset.mimeType||'application/octet-stream',size:asset.size||0};
+import * as FileSystem from "expo-file-system/legacy";
+import { API_BASE } from "@/auth/api";
+import { dataRequest } from "@/api/platform";
+import type { DocumentPickerAsset } from "expo-document-picker";
+import type { Attachment } from "./WorkspaceProvider";
+export async function saveAttachment(
+  asset: DocumentPickerAsset,
+  roomId: string,
+  token: string,
+): Promise<Attachment> {
+  const form = new FormData();
+  form.append("file", {
+    uri: asset.uri,
+    name: asset.name,
+    type: asset.mimeType || "application/octet-stream",
+  } as unknown as Blob);
+  return dataRequest<Attachment>(`/rooms/${roomId}/attachments`, token, form);
 }
-export async function resolveAttachment(attachment:Attachment){if(attachment.uri==='mock:csv'){if(!FileSystem.documentDirectory)throw new Error('ファイルを開けません');const path=FileSystem.documentDirectory+'mock-interview.csv';await FileSystem.writeAsStringAsync(path,MOCK_CSV);return path;}if(attachment.uri.startsWith('mock:'))return resolveMockAsset(attachment.uri);return attachment.uri;}
-export function releaseAttachment(_uri:string){}
+export async function resolveAttachment(attachment: Attachment, token: string) {
+  if (!FileSystem.cacheDirectory)
+    throw new Error("一時保存領域を利用できません。");
+  const path =
+    FileSystem.cacheDirectory +
+    `gw-attachment-${attachment.id}-${Date.now()}-` +
+    encodeURIComponent(attachment.name);
+  const result = await FileSystem.downloadAsync(
+    `${API_BASE}/api/platform-data/attachments/${attachment.id}`,
+    path,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (result.status !== 200) {
+    await FileSystem.deleteAsync(path, { idempotent: true });
+    throw new Error("添付を取得できませんでした。");
+  }
+  return result.uri;
+}
+export function releaseAttachment(uri: string) {
+  if (uri.startsWith(FileSystem.cacheDirectory + "gw-attachment-"))
+    void FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
+}

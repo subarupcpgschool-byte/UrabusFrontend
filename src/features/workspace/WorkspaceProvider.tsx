@@ -1,34 +1,202 @@
-import { createMockWorkspace, WORKSPACE_MOCK_ENABLED } from './mockData';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '@/auth/AuthProvider';
-import type { CompanySearchItem, JobSearchItem } from '@/components/search/types';
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-export type Favorite = { key: string; kind: 'company' | 'job'; item: CompanySearchItem | JobSearchItem; savedAt: number };
-export type Attachment = { id: string; name: string; uri: string; mime: string; size: number };
-export type Message = { id: string; text: string; attachments: Attachment[]; at: number; mine: boolean };
-export type Room = { id: string; kind: 'company' | 'job'; company: string; title: string; unread: number; archived: boolean; messages: Message[]; createdAt: number };
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { useAuth } from "@/auth/AuthProvider";
+import { useResource } from "@/api/useResource";
+import { dataRequest } from "@/api/platform";
+import {
+  jobItem,
+  companyItem,
+  type JobRow,
+  type CompanyRow,
+} from "@/api/models";
+import type {
+  CompanySearchItem,
+  JobSearchItem,
+} from "@/components/search/types";
+export type Favorite = {
+  key: string;
+  kind: "company" | "job";
+  item: CompanySearchItem | JobSearchItem;
+  savedAt: number;
+};
+export type Attachment = {
+  id: string;
+  name: string;
+  uri: string;
+  mime: string;
+  size: number;
+};
+export type Message = {
+  id: string;
+  text: string;
+  attachments: Attachment[];
+  at: number;
+  mine: boolean;
+  version?: number;
+};
+export type Room = {
+  id: string;
+  kind: "company" | "job";
+  company: string;
+  title: string;
+  unread: number;
+  archived: boolean;
+  messages: Message[];
+  createdAt: number;
+  version?: number;
+};
 export type WorkspaceState = { favorites: Favorite[]; rooms: Room[] };
-const empty = (): WorkspaceState => ({ favorites: [], rooms: [] });
-type Context = WorkspaceState & { ready: boolean; error: string; mockMode: boolean; resetMock: () => void; toggleFavorite: (kind: Favorite['kind'], item: Favorite['item']) => void; openRoom: (kind: Room['kind'], id: string, company: string, title: string) => string; send: (roomId: string, text: string, attachments: Attachment[]) => void; read: (id: string) => void; archive: (id: string) => void };
-const WorkspaceContext = createContext<Context | null>(null);
+type FavoriteRow = {
+  kind: Favorite["kind"];
+  targetId: string;
+  item: JobRow | CompanyRow | null;
+  savedAt: string;
+  available: boolean;
+};
+type RoomRow = Omit<Room, "messages" | "createdAt"> & {
+  createdAt: string;
+  updatedAt: string;
+};
+type Context = WorkspaceState & {
+  ready: boolean;
+  error: string;
+  mockMode: boolean;
+  resetMock: () => void;
+  toggleFavorite: (
+    kind: Favorite["kind"],
+    item: Favorite["item"],
+  ) => Promise<void>;
+  openRoom: (
+    kind: Room["kind"],
+    id: string,
+    company: string,
+    title: string,
+  ) => Promise<string>;
+  send: (
+    roomId: string,
+    text: string,
+    attachments: Attachment[],
+  ) => Promise<void>;
+  read: (id: string) => Promise<void>;
+  archive: (id: string) => Promise<void>;
+  refresh: () => void;
+};
+const C = createContext<Context | null>(null);
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
- const { user, ready: authReady } = useAuth();
- const key = authReady && (user || WORKSPACE_MOCK_ENABLED) ? `globalworkers.workspace.${WORKSPACE_MOCK_ENABLED ? "mock.v1" : "v1"}.${user?.id || "guest"}` : null;
- const [loadedKey, setLoadedKey] = useState<string | null>(null), [data, setData] = useState<WorkspaceState>(empty), [error, setError] = useState('');
- const queue = useRef(Promise.resolve());
- useEffect(() => { let active = true; setLoadedKey(null); setData(empty()); setError(''); if (!key) return;
-  queue.current.then(() => AsyncStorage.getItem(key)).then(raw => { if (!active) return; const value = raw ? JSON.parse(raw) : WORKSPACE_MOCK_ENABLED ? createMockWorkspace() : empty(); if (!Array.isArray(value.favorites) || !Array.isArray(value.rooms)) throw new Error('invalid saved state'); setData(value); setLoadedKey(key); }).catch(() => { if(active) setError('保存データを読み込めませんでした。再度開いてください。'); });
-  return () => { active = false; };
- }, [key]);
- const ready = !!key && key === loadedKey;
- const commit = (change: (state: WorkspaceState) => WorkspaceState) => { if (!ready || !key) return; setData(previous => change(previous)); };
- // Writes are ordered; the account key is captured so account switches cannot overwrite another user.
- useEffect(() => { if (!ready || !key) return; const value = JSON.stringify(data); queue.current = queue.current.then(() => AsyncStorage.setItem(key, value)).catch(() => setError('保存できませんでした。端末の空き容量を確認してください。')); }, [data, ready, key]);
- const toggleFavorite: Context['toggleFavorite'] = (kind, item) => commit(s => { const k = `${kind}:${item.id}`; return { ...s, favorites: s.favorites.some(f => f.key === k) ? s.favorites.filter(f => f.key !== k) : [{ key:k, kind, item, savedAt:Date.now() }, ...s.favorites] }; });
- const openRoom: Context['openRoom'] = (kind, id, company, title) => { const roomId = `${kind}:${id}`; commit(s => s.rooms.some(r => r.id === roomId) ? s : { ...s, rooms: [{ id:roomId, kind, company, title, unread:0, archived:false, messages:WORKSPACE_MOCK_ENABLED&&/^(application|scout|offer)-/.test(id)?[{id:`${roomId}-intro`,text:id.startsWith('scout-')?'プロフィールを拝見し、ご連絡しました。お仕事についてお話しできませんか？（スカウトのサンプル）':id.startsWith('offer-')?'オファーレターをお送りします。提示条件をご確認ください。（画面確認用サンプル）':'ご応募ありがとうございます。オンライン面談の日程をご相談できますか？（サンプル）',at:Date.now()-3600000,mine:false,attachments:[]}]:[], createdAt:Date.now() }, ...s.rooms] }); return roomId; };
- const send: Context['send'] = (id, text, attachments) => { if (!text.trim() && !attachments.length) return; commit(s => ({ ...s, rooms:s.rooms.map(r => r.id !== id ? r : { ...r, archived:false, messages:[...r.messages, { id:`${Date.now()}-${Math.random().toString(36).slice(2)}`, text:text.trim(), attachments, at:Date.now(), mine:true }] }) })); };
- const read = (id: string) => commit(s => s.rooms.some(r => r.id === id && r.unread) ? { ...s, rooms:s.rooms.map(r => r.id === id ? { ...r, unread:0 } : r) } : s);
- const archive = (id: string) => commit(s => ({ ...s, rooms:s.rooms.map(r => r.id === id ? { ...r, archived:!r.archived } : r) }));
- return <WorkspaceContext.Provider value={{ ...(ready ? data : empty()), ready, error, mockMode:WORKSPACE_MOCK_ENABLED, resetMock:() => { if(WORKSPACE_MOCK_ENABLED) commit(() => createMockWorkspace()); }, toggleFavorite, openRoom, send, read, archive }}>{children}</WorkspaceContext.Provider>;
+  const { token, ready: authReady } = useAuth();
+  const favorites = useResource<FavoriteRow[]>(
+    token ? "/favorites" : null,
+    [],
+    true,
+  );
+  const rooms = useResource<RoomRow[]>(token ? "/rooms" : null, [], true);
+  const [problem, setProblem] = useState<{
+    token: string | null;
+    message: string;
+  }>({ token: null, message: "" });
+  const list = useMemo(
+    () =>
+      favorites.data
+        .filter((f) => f.available && f.item)
+        .map((f) => ({
+          key: `${f.kind}:${f.targetId}`,
+          kind: f.kind,
+          item:
+            f.kind === "job"
+              ? jobItem(f.item as JobRow)
+              : companyItem(f.item as CompanyRow),
+          savedAt: Date.parse(f.savedAt),
+        })),
+    [favorites.data],
+  );
+  const roomItems = useMemo(
+    () =>
+      rooms.data.map((r) => ({
+        ...r,
+        messages: [],
+        createdAt: Date.parse(r.updatedAt || r.createdAt),
+        unread: Number(r.unread),
+      })),
+    [rooms.data],
+  );
+  async function execute<T>(operation: () => Promise<T>) {
+    if (!token) throw new Error("ログインしてください。");
+    setProblem({ token, message: "" });
+    try {
+      return await operation();
+    } catch (e) {
+      setProblem({
+        token,
+        message: e instanceof Error ? e.message : "処理できませんでした。",
+      });
+      throw e;
+    }
+  }
+  const value: Context = {
+    favorites: list,
+    rooms: roomItems,
+    ready: authReady && (!token || (favorites.loaded && rooms.loaded)),
+    error:
+      favorites.error ||
+      rooms.error ||
+      (problem.token === token ? problem.message : ""),
+    mockMode: false,
+    resetMock: () => {},
+    refresh: () => {
+      favorites.refresh();
+      rooms.refresh();
+    },
+    toggleFavorite: async (kind, item) =>
+      execute(async () => {
+        const active = list.some((f) => f.key === `${kind}:${item.id}`);
+        await dataRequest(
+          active ? `/favorites/${kind}/${item.id}` : "/favorites",
+          token,
+          active ? undefined : { kind, targetId: String(item.id) },
+          active ? "DELETE" : "POST",
+        );
+      }),
+    openRoom: async (kind, id, _company, title) =>
+      execute(async () => {
+        const room = await dataRequest<{ id: string }>("/rooms", token, {
+          kind,
+          targetId: id,
+          title,
+        });
+        return room.id;
+      }),
+    send: async (id, text, attachments) =>
+      execute(async () => {
+        await dataRequest(`/rooms/${id}/messages`, token, {
+          text,
+          attachmentIds: attachments.map((a) => a.id),
+          version: 0,
+        });
+      }),
+    read: async (id) =>
+      execute(async () => {
+        await dataRequest(`/rooms/${id}/read`, token, {}, "POST");
+      }),
+    archive: async (id) =>
+      execute(async () => {
+        const room = roomItems.find((r) => r.id === id);
+        await dataRequest(
+          `/rooms/${id}/archive`,
+          token,
+          { archived: !room?.archived },
+          "PUT",
+        );
+      }),
+  };
+  return <C.Provider value={value}>{children}</C.Provider>;
 }
-export function useWorkspace() { const context = useContext(WorkspaceContext); if (!context) throw new Error('WorkspaceProviderが必要です'); return context; }
+export function useWorkspace() {
+  const c = useContext(C);
+  if (!c) throw new Error("WorkspaceProviderが必要です");
+  return c;
+}
