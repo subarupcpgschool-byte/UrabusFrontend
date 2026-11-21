@@ -1,7 +1,7 @@
 import { useResource, ResourceStatus } from "@/api/useResource";
 import { dataRequest } from "@/api/platform";
 import { useEffect, useRef, useState } from "react";
-import { Platform, Text, View } from "react-native";
+import { Modal, Platform, Text, View } from "react-native";
 import AppPage from "@/components/layout/AppPage";
 import {
   AppCheckbox,
@@ -43,10 +43,12 @@ const labels = {
   requirements: "応募条件",
   startDate: "開始日",
   endDate: "終了日",
+  publishTime: "公開時刻",
   hidden: "非表示",
   blocks: "旧形式の募集内容",
   articleHtml: "募集内容",
   articleCss: "記事個別CSS",
+  publicationStatus: "掲載状態",
 };
 const emptyDraft = {
   title: "",
@@ -59,6 +61,7 @@ const emptyDraft = {
   startDate: "",
   endDate: "",
   hidden: false,
+  publishTime: "",
   articleHtml: "",
   articleCss: "",
 };
@@ -74,6 +77,7 @@ function readDraft(document: string): Draft {
     startDate: saved.startDate ?? "",
     endDate: saved.endDate ?? "",
     hidden: saved.hidden ?? false,
+    publishTime: saved.publishTime ?? "",
     articleCss: saved.articleCss ?? "",
     articleHtml: articleHtml({ ...fields, blocks }),
   };
@@ -104,7 +108,23 @@ type Job = {
   deleted_at: string | null;
   can_edit: boolean;
   can_delete?: boolean;
+  publication_status?: string;
+  publish_at?: string | null;
+  publication_blocked_at?: string | null;
 };
+function publicationLabel(item: Job) {
+  const states: Record<string, string> = {
+    DRAFT: "非公開",
+    PUBLISHED: "公開中",
+    SCHEDULED: "予約公開",
+    BLOCKED: "公開停止",
+    EXPIRED: "募集終了",
+  };
+  return (
+    states[item.publication_status ?? ""] ??
+    visibility(readDraft(item.document))
+  );
+}
 type Employee = {
   id: string;
   display_name: string;
@@ -118,6 +138,14 @@ type Overview = {
   canCreate: boolean;
   owner: boolean;
   commonCss?: string;
+  publicationPlan?: {
+    code: string;
+    name: string;
+    jobLimit: number;
+    companyLimit: number;
+    jobsPublished: number;
+    companiesPublished: number;
+  };
 };
 type Grant = { employeeId: string; canView: boolean; canEdit: boolean };
 type History = {
@@ -228,6 +256,24 @@ function RecruitmentManager({
     };
   }, [token]);
 
+  useEffect(() => {
+    let active = true;
+    const timer = setInterval(() => {
+      if (busy) return;
+      authRequest<Overview>(path, undefined, token)
+        .then((value) => {
+          if (active) setData(value);
+        })
+        .catch((e) => {
+          if (active) setError(e.message);
+        });
+    }, 30000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [token, busy]);
+
   async function run(action: () => Promise<void>) {
     if (busy) return;
     setBusy(true);
@@ -268,6 +314,57 @@ function RecruitmentManager({
       previous ? { ...previous, commonCss: result.css } : previous,
     );
     setNotice(css ? "共通CSSを更新しました。" : "共通CSSを解除しました。");
+  }
+
+  const [publicationConfirm, setPublicationConfirm] = useState<{
+    input: Draft;
+    check: PublicationCheck;
+  } | null>(null);
+  type PublicationCheck = {
+    kindLabel: string;
+    decision: string;
+    publishedOthers: number;
+    limit: number;
+    plan: string;
+    scheduledAt: string;
+  };
+  async function checkPublication(input: Draft) {
+    return request<PublicationCheck>(
+      `/publication-check${job ? `?jobId=${job.id}` : ""}`,
+      input,
+    );
+  }
+  async function submitPublication(input: Draft, mode = "AUTO") {
+    let result: { id: string };
+    try {
+      result = await request<{ id: string }>(
+        `${job ? `/${job.id}/edit` : ""}?publicationMode=${mode}`,
+        input,
+      );
+    } catch (e) {
+      if (mode !== "PRIVATE") {
+        const check = await checkPublication(input);
+        if (check.decision === "LIMIT" || check.decision === "SCHEDULED") {
+          setPublicationConfirm({ input, check });
+          return;
+        }
+      }
+      throw e;
+    }
+    setDraft(null);
+    setHistory(null);
+    setSelected(result.id);
+    setPublicationConfirm(null);
+    setNotice(
+      mode === "PRIVATE"
+        ? "非公開で保存しました。"
+        : mode === "SCHEDULE"
+          ? "予約公開を設定しました。開始日時に掲載枠を再確認します。"
+          : job
+            ? "募集を更新しました。"
+            : "募集を作成しました。",
+    );
+    await refresh();
   }
 
   async function save() {
@@ -312,15 +409,20 @@ function RecruitmentManager({
     if (input.startDate && input.endDate && input.startDate > input.endDate) {
       throw new Error("終了日は開始日以降にしてください。");
     }
-    const result = await request<{ id: string }>(
-      job ? `/${job.id}/edit` : "",
-      input,
-    );
-    setDraft(null);
-    setHistory(null);
-    setSelected(result.id);
-    setNotice(job ? "募集を更新しました。" : "募集を作成しました。");
-    await refresh();
+    if (
+      input.publishTime &&
+      (!input.startDate ||
+        !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(input.publishTime))
+    )
+      throw new Error(
+        "公開時刻は開始日と00:00〜23:59の形式で入力してください。",
+      );
+    const check = await checkPublication(input);
+    if (check.decision === "LIMIT" || check.decision === "SCHEDULED") {
+      setPublicationConfirm({ input, check });
+      return;
+    }
+    await submitPublication(input);
   }
 
   async function saveRole(
@@ -342,6 +444,80 @@ function RecruitmentManager({
 
   return (
     <>
+      <Modal
+        transparent
+        visible={!!publicationConfirm}
+        onRequestClose={() => {
+          if (!busy) setPublicationConfirm(null);
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(15,23,42,.5)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+          }}
+        >
+          <Panel style={{ width: "100%", maxWidth: 560 }}>
+            <SectionTitle>
+              {publicationConfirm?.check.decision === "LIMIT"
+                ? "掲載上限に達しています"
+                : "予約公開の確認"}
+            </SectionTitle>
+            <BodyText>
+              {publicationConfirm?.check.decision === "LIMIT"
+                ? `${publicationConfirm.check.plan}の${publicationConfirm.check.kindLabel}の上限は${publicationConfirm.check.limit}件です。この募集以外に同じ区分で${publicationConfirm.check.publishedOthers}件公開中のため、公開できません。非公開で保存するか、保存せず編集を終了してください。`
+                : `開始日時（日本時間）に予約公開します。開始時点で同じ募集区分の掲載上限に達している場合は非公開のまま停止し、求人管理にアラートを表示します。`}
+            </BodyText>
+            {!!error && (
+              <Text accessibilityRole="alert" style={{ color: "#B42318" }}>
+                {error}
+              </Text>
+            )}
+            {publicationConfirm?.check.decision === "SCHEDULED" && (
+              <AppButton
+                label="予約公開する"
+                disabled={busy}
+                onPress={() => {
+                  if (publicationConfirm)
+                    void run(() =>
+                      submitPublication(publicationConfirm.input, "SCHEDULE"),
+                    );
+                }}
+              />
+            )}
+            <AppButton
+              label="非公開で保存する"
+              disabled={busy}
+              onPress={() => {
+                if (publicationConfirm)
+                  void run(() =>
+                    submitPublication(publicationConfirm.input, "PRIVATE"),
+                  );
+              }}
+            />
+            {publicationConfirm?.check.decision === "LIMIT" && (
+              <AppButton
+                label="保存せず編集を終了"
+                outline
+                disabled={busy}
+                onPress={() => {
+                  setPublicationConfirm(null);
+                  setDraft(null);
+                }}
+              />
+            )}
+            <AppButton
+              label="編集に戻る"
+              outline
+              disabled={busy}
+              onPress={() => setPublicationConfirm(null)}
+            />
+          </Panel>
+        </View>
+      </Modal>
       {!!error && (
         <Text accessibilityRole="alert" style={{ color: "#B42318" }}>
           {error}
@@ -390,6 +566,22 @@ function RecruitmentManager({
           )}
           <Panel>
             <SectionTitle>求人・企業募集一覧</SectionTitle>
+            {data.publicationPlan && (
+              <BodyText>
+                {data.publicationPlan.name} ／ 求人募集：
+                {data.publicationPlan.jobsPublished} /{" "}
+                {data.publicationPlan.jobLimit}件 ／ 企業募集：
+                {data.publicationPlan.companiesPublished} /{" "}
+                {data.publicationPlan.companyLimit}件
+              </BodyText>
+            )}
+            <AppButton
+              label="掲載状態を更新"
+              outline
+              disabled={busy}
+              onPress={() => void run(refresh)}
+            />
+
             {data.canCreate && (
               <AppButton
                 label="募集を作成"
@@ -405,12 +597,37 @@ function RecruitmentManager({
               <BodyText>閲覧できる募集はありません。</BodyText>
             )}
             {data.jobs.map((item) => (
-              <AppButton
-                key={item.id}
-                outline={item.id !== selected}
-                label={`${item.deleted_at ? "［削除済み］" : ""}${readDraft(item.document).title}${item.deleted_at ? "" : `［${visibility(readDraft(item.document))}］`}`}
-                onPress={() => open(item.id)}
-              />
+              <View key={item.id} style={{ gap: 6 }}>
+                <AppButton
+                  outline={item.id !== selected}
+                  label={`${item.deleted_at ? "［削除済み］" : ""}${readDraft(item.document).title}［${publicationLabel(item)}］`}
+                  onPress={() => open(item.id)}
+                />
+                {!item.deleted_at && item.publication_status === "BLOCKED" && (
+                  <View
+                    accessibilityRole="alert"
+                    style={{
+                      alignSelf: "flex-start",
+                      backgroundColor: "#FEF2F2",
+                      borderColor: "#FCA5A5",
+                      borderWidth: 1,
+                      borderRadius: 8,
+                      padding: 8,
+                    }}
+                  >
+                    <Text style={{ color: "#B91C1C", fontWeight: "700" }}>
+                      ⚠{" "}
+                      {readDraft(item.document).kind === "COMPANY_RECRUITMENT"
+                        ? "企業募集"
+                        : "求人募集"}
+                      の掲載上限により公開できません
+                    </Text>
+                    <BodyText>
+                      公開枠を空けて編集・保存すると、再度公開を確認できます。
+                    </BodyText>
+                  </View>
+                )}
+              </View>
             ))}
           </Panel>
           {draft ? (
@@ -499,6 +716,17 @@ function RecruitmentManager({
                       onValueChange={(value) => setField("endDate", value)}
                     />
                   </View>
+                  <AppInput
+                    label="公開時刻（日本時間・任意）"
+                    placeholder="00:00"
+                    value={draft.publishTime}
+                    maxLength={5}
+                    editable={!busy}
+                    onChangeText={(value) => setField("publishTime", value)}
+                  />
+                  <BodyText>
+                    開始日を指定した場合に使用します。空欄は00:00です。予約時点では掲載枠を確保せず、開始日時に判定します。
+                  </BodyText>
                   <AppCheckbox
                     label="非表示にする"
                     checked={draft.hidden}
@@ -621,8 +849,8 @@ function RecruitmentManager({
               <Panel>
                 <SectionTitle>{saved.title}</SectionTitle>
                 <BodyText>
-                  {visibility(saved)} ／ {saved.startDate || "開始制限なし"} 〜{" "}
-                  {saved.endDate || "無期限"}
+                  {publicationLabel(job)} ／ {saved.startDate || "開始制限なし"}{" "}
+                  〜 {saved.endDate || "無期限"}
                 </BodyText>
                 <RecruitmentArticle
                   html={saved.articleHtml}
