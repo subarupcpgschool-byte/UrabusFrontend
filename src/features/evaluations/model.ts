@@ -1,3 +1,4 @@
+import { sourceText } from "@/i18n/source";
 import type { Application } from "@/features/applications/data";
 export type Answer = { score: number; choices: string[]; comment: string };
 export type EvaluationDraft = {
@@ -37,9 +38,10 @@ export function deadlineFor(item: Application) {
 }
 export function eligibleStatus(item: Application) {
   return (
-    item.companyResult === "内定" &&
-    (item.status === "内定" || item.status === "内定辞退") &&
-    item.afterResult !== "内定取り消し"
+    item.companyResult === sourceText("jobOffer") &&
+    (item.status === sourceText("jobOffer") ||
+      item.status === sourceText("offerDeclined")) &&
+    item.afterResult !== sourceText("offerWithdrawn")
   );
 }
 export function canEvaluate(
@@ -65,14 +67,14 @@ const validScore = (score: number) =>
 const answered = (a: Answer) => a.choices.length > 0 || !!a.comment.trim();
 export function validateDraft(d: EvaluationDraft) {
   if (!validScore(d.response.score) || !validScore(d.description.score))
-    return "対応と案件説明の点数を選択してください。";
+    return sourceText("selectScoresForCommunicationAndJobExplanation");
   if (!answered(d.response) || !answered(d.description))
-    return "対応と案件説明は、アンケートの選択かコメントを入力してください。";
+    return sourceText("chooseAQuestionnaireAnswerOrEnterA");
   const workUsed = d.work.score !== 0 || answered(d.work);
   if (workUsed && !validScore(d.work.score))
-    return "仕事内容を回答する場合は点数も選択してください。";
+    return sourceText("chooseAScoreWhenAnsweringTheWork");
   if ([d.response, d.description, d.work].some((a) => a.comment.length > 2000))
-    return "コメントは各2,000文字以内で入力してください。";
+    return sourceText("eachCommentMustBeNoMoreThan");
   return "";
 }
 export function calculateTotal(d: EvaluationDraft) {
@@ -84,14 +86,14 @@ export function calculateTotal(d: EvaluationDraft) {
 }
 export function ratingLabel(score: number) {
   return score === 5
-    ? "最優良企業"
+    ? sourceText("outstandingCompany")
     : score >= 4
-      ? "優良企業"
+      ? sourceText("excellentCompany")
       : score >= 3
-        ? "通常企業"
+        ? sourceText("standardCompany")
         : score <= 2
-          ? "注意企業"
-          : "要確認";
+          ? sourceText("companyRequiringCaution")
+          : sourceText("checkDetails");
 }
 export function publicationDate(base: number, random = Math.random) {
   const days = 15 + Math.min(15, Math.max(0, Math.floor(random() * 16)));

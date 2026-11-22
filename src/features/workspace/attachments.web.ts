@@ -1,3 +1,4 @@
+import { sourceText } from "@/i18n/source";
 import { API_BASE } from "@/auth/api";
 import { dataRequest } from "@/api/platform";
 import type { DocumentPickerAsset } from "expo-document-picker";
@@ -20,7 +21,8 @@ export async function resolveAttachment(
     `${API_BASE}/api/platform-data/attachments/${attachment.id}`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
-  if (!response.ok) throw new Error("添付を取得できませんでした。");
+  if (!response.ok)
+    throw new Error(sourceText("unableToRetrieveTheAttachment"));
   return URL.createObjectURL(await response.blob());
 }
 export function releaseAttachment(uri: string) {

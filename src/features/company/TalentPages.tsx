@@ -1,5 +1,9 @@
+import { translateText } from "@/i18n/display";
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useState } from "react";
-import { Modal, ScrollView, Text, View } from "react-native";
+import { Modal, ScrollView, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
@@ -42,6 +46,8 @@ function ScoutModal({
   person: Pick<Person, "id" | "displayName"> | null;
   onClose: () => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { user, token } = useAuth();
   const owner = user?.companyOwnerId || user?.id;
   const jobs = useResource<Page<JobRow>>(
@@ -73,20 +79,21 @@ function ScoutModal({
         }}
       >
         <Panel style={{ width: "100%", maxWidth: 600 }}>
-          <SectionTitle>{person?.displayName}さんへ連絡</SectionTitle>
+          <SectionTitle localize={false}>
+            {person?.displayName}
+            {tText("contact")}
+          </SectionTitle>
           {done ? (
-            <BodyText>
-              送信しました。応募・選考管理で状況を確認できます。
-            </BodyText>
+            <BodyText>{tText("sentCheckTheStatusInApplicationsAnd")}</BodyText>
           ) : (
             <>
               <AppSelect
-                label="送信する種類"
+                label={tText("messageType")}
                 value={kind}
                 onValueChange={setKind}
                 options={[
-                  { value: "scout", label: "スカウト" },
-                  { value: "offer", label: "オファーレター" },
+                  { value: "scout", label: sourceText("scout") },
+                  { value: "offer", label: sourceText("offerLetter") },
                 ]}
               />
               <ResourceStatus
@@ -95,11 +102,11 @@ function ScoutModal({
                 onRetry={jobs.refresh}
               />
               <AppSelect
-                label="対象の募集"
+                label={tText("relatedPosting")}
                 value={job}
                 onValueChange={setJob}
                 options={[
-                  { value: "", label: "企業として連絡する" },
+                  { value: "", label: sourceText("contactAsACompany") },
                   ...jobs.data.items.map((j) => ({
                     value: j.id,
                     label: j.title,
@@ -107,7 +114,7 @@ function ScoutModal({
                 ]}
               />
               <AppTextArea
-                label="メッセージ・提案条件"
+                label={tText("messageAndProposedTerms")}
                 value={text}
                 onChangeText={setText}
                 maxLength={8000}
@@ -118,7 +125,7 @@ function ScoutModal({
                 </Text>
               )}
               <AppButton
-                label={busy ? "送信中…" : "送信"}
+                label={busy ? sourceText("sending") : sourceText("send")}
                 onPress={() => {
                   if (busy || !person) return;
                   setBusy(true);
@@ -137,7 +144,7 @@ function ScoutModal({
             </>
           )}
           <AppButton
-            label="閉じる"
+            label={tText("close")}
             outline
             onPress={() => {
               if (!busy) onClose();
@@ -149,6 +156,8 @@ function ScoutModal({
   );
 }
 function TalentContent() {
+  "use no memo";
+  useLocaleVersion();
   const { token } = useAuth();
   const [q, setQ] = useState(""),
     [search, setSearch] = useState(""),
@@ -159,7 +168,7 @@ function TalentContent() {
     ),
     [candidate, setCandidate] = useState<Candidate | null>(null),
     [note, setNote] = useState(""),
-    [status, setStatus] = useState("候補"),
+    [status, setStatus] = useState<string>(sourceText("candidate")),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const people = useResource<Page<Person>>(
@@ -173,16 +182,21 @@ function TalentContent() {
     true,
   );
   return (
-    <AppPage title="人材検索" subtitle="" role="company" activeMenu="人材検索">
+    <AppPage
+      title={tText("talentSearch")}
+      subtitle=""
+      role="company"
+      activeMenu={sourceText("talentSearch")}
+    >
       <Tabs
-        label="人材一覧の表示"
+        label={tText("talentListView")}
         value={tab}
         onChange={setTab}
         options={[
-          { value: "search", label: "公開プロフィール検索" },
+          { value: "search", label: sourceText("searchPublicProfiles") },
           {
             value: "candidates",
-            label: "候補者リスト",
+            label: sourceText("candidateList"),
             count: candidates.data.length,
           },
         ]}
@@ -191,12 +205,12 @@ function TalentContent() {
         <>
           <Panel>
             <AppInput
-              label="職種・スキル・氏名"
+              label={tText("occupationSkillsOrName")}
               value={q}
               onChangeText={setQ}
             />
             <AppButton
-              label="検索"
+              label={tText("search")}
               onPress={() => {
                 setSearch(q);
                 setPage(1);
@@ -212,30 +226,30 @@ function TalentContent() {
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
             {people.data.items.map((p) => (
               <Panel key={p.id} style={{ flex: 1, minWidth: 250 }}>
-                <SectionTitle>{p.displayName}</SectionTitle>
+                <SectionTitle localize={false}>{p.displayName}</SectionTitle>
                 <BodyText>
                   {p.occupation} ／ {p.city}
                 </BodyText>
                 <BodyText>
                   {p.rating == null
-                    ? "未評価"
-                    : `★ ${Number(p.rating).toFixed(1)}`}
+                    ? sourceText("notReviewed")
+                    : `★ ${translateText(Number(p.rating).toFixed(1))}`}
                 </BodyText>
                 <BodyText>{p.skills.join(" ／ ")}</BodyText>
                 <AppButton
-                  label="詳細を見る"
+                  label={tText("viewDetails")}
                   outline
                   onPress={() => router.push(`/users/${p.id}` as never)}
                 />
                 <AppButton
-                  label="スカウト・オファー"
+                  label={tText("scoutsAndOffers")}
                   onPress={() => setPerson(p)}
                 />
               </Panel>
             ))}
           </View>
           {!people.loading && !people.error && !people.data.total && (
-            <BodyText>該当する公開プロフィールはありません。</BodyText>
+            <BodyText>{tText("noMatchingPublicProfiles")}</BodyText>
           )}
         </>
       ) : (
@@ -247,17 +261,17 @@ function TalentContent() {
           />
           {candidates.data.map((c) => (
             <Panel key={c.id}>
-              <SectionTitle>{c.displayName}</SectionTitle>
+              <SectionTitle localize={false}>{c.displayName}</SectionTitle>
               <BodyText>
                 {c.status} ／ {c.note}
               </BodyText>
               <AppButton
-                label="プロフィール"
+                label={tText("profile")}
                 outline
                 onPress={() => router.push(`/users/${c.userId}` as never)}
               />
               <AppButton
-                label="メモ・状態を編集"
+                label={tText("editNoteAndStatus")}
                 outline
                 onPress={() => {
                   setCandidate(c);
@@ -267,9 +281,9 @@ function TalentContent() {
                 }}
               />
               <ConfirmAction
-                label="候補から削除"
+                label={tText("removeCandidate")}
                 danger
-                message="候補者リストから削除しますか？"
+                message={tText("removeThisUserFromYourCandidateList")}
                 onConfirm={() =>
                   dataRequest(
                     `/candidates/${c.id}?version=${c.version}`,
@@ -282,7 +296,7 @@ function TalentContent() {
             </Panel>
           ))}
           {!candidates.loading && !candidates.data.length && (
-            <BodyText>候補者はまだ登録されていません。</BodyText>
+            <BodyText>{tText("noCandidatesHaveBeenAdded")}</BodyText>
           )}
         </>
       )}
@@ -310,22 +324,24 @@ function TalentContent() {
           }}
         >
           <Panel style={{ width: "100%", maxWidth: 560 }}>
-            <SectionTitle>{candidate?.displayName}</SectionTitle>
+            <SectionTitle localize={false}>
+              {candidate?.displayName}
+            </SectionTitle>
             <AppInput
-              label="状態"
+              label={tText("status_1063")}
               value={status}
               onChangeText={setStatus}
               maxLength={30}
             />
             <AppTextArea
-              label="メモ"
+              label={tText("note")}
               value={note}
               onChangeText={setNote}
               maxLength={2000}
             />
             {!!error && <Text style={{ color: "#B42318" }}>{error}</Text>}
             <AppButton
-              label={busy ? "保存中…" : "保存"}
+              label={busy ? sourceText("saving") : sourceText("save_384")}
               onPress={() => {
                 if (!candidate || busy) return;
                 setBusy(true);
@@ -346,7 +362,7 @@ function TalentContent() {
               }}
             />
             <AppButton
-              label="閉じる"
+              label={tText("close")}
               outline
               onPress={() => {
                 if (!busy) setCandidate(null);
@@ -359,13 +375,17 @@ function TalentContent() {
   );
 }
 export function TalentPage() {
+  "use no memo";
+  useLocaleVersion();
   return (
-    <CompanyPermissionBoundary permission="scout" title="人材検索">
+    <CompanyPermissionBoundary permission="scout" title={tText("talentSearch")}>
       <TalentContent />
     </CompanyPermissionBoundary>
   );
 }
 function UserDetailContent() {
+  "use no memo";
+  useLocaleVersion();
   const { id = "" } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
   const p = useResource<Person | null>(
@@ -383,23 +403,25 @@ function UserDetailContent() {
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
   return (
-    <AppPage title="ユーザー詳細" subtitle="" role="company">
+    <AppPage title={tText("userDetails")} subtitle="" role="company">
       <ResourceStatus loading={p.loading} error={p.error} onRetry={p.refresh} />
       {p.data && (
         <>
           <Panel>
-            <SectionTitle>{p.data.displayName}</SectionTitle>
+            <SectionTitle localize={false}>{p.data.displayName}</SectionTitle>
             <BodyText>
               {p.data.occupation} ／ {p.data.city}
             </BodyText>
-            <BodyText>{p.data.bio}</BodyText>
+            <BodyText localize={false}>{p.data.bio}</BodyText>
             <BodyText>{p.data.skills.join(" ／ ")}</BodyText>
             <AppButton
-              label="スカウト・オファーを送る"
+              label={tText("sendScoutOrOffer")}
               onPress={() => setScout(true)}
             />
             <AppButton
-              label={busy ? "処理中…" : "候補者に追加"}
+              label={
+                busy ? sourceText("processing") : sourceText("addCandidate")
+              }
               outline
               onPress={() => {
                 if (busy) return;
@@ -409,10 +431,10 @@ function UserDetailContent() {
                 void dataRequest("/candidates", token, {
                   userId: id,
                   note: "",
-                  status: "候補",
+                  status: sourceText("candidate"),
                   version: 0,
                 })
-                  .then(() => setNotice("候補者リストに追加しました。"))
+                  .then(() => setNotice(sourceText("addedToCandidateList")))
                   .catch((e) => setError(e.message))
                   .finally(() => setBusy(false));
               }}
@@ -422,12 +444,12 @@ function UserDetailContent() {
           </Panel>
           {p.data.resumes.map((r) => (
             <Panel key={r.id}>
-              <SectionTitle>{r.title}</SectionTitle>
+              <SectionTitle localize={false}>{r.title}</SectionTitle>
               <ResumeDetails body={r.body} />
             </Panel>
           ))}
           <Panel>
-            <SectionTitle>企業からの評価</SectionTitle>
+            <SectionTitle>{tText("companyReviews_1069")}</SectionTitle>
             <ResourceStatus
               loading={evaluations.loading}
               error={evaluations.error}
@@ -436,7 +458,7 @@ function UserDetailContent() {
             {evaluations.data.map((e) => (
               <View key={e.id}>
                 <Text>{Number(e.total).toFixed(1)} / 5.0</Text>
-                <BodyText>{e.comment}</BodyText>
+                <BodyText localize={false}>{e.comment}</BodyText>
                 {e.scores.map((s) => (
                   <BodyText key={s.label}>
                     {s.label}：{s.value}
@@ -445,7 +467,7 @@ function UserDetailContent() {
               </View>
             ))}
             {!evaluations.loading && !evaluations.data.length && (
-              <BodyText>公開されている評価はまだありません。</BodyText>
+              <BodyText>{tText("noReviewsHaveBeenPublishedYet")}</BodyText>
             )}
           </Panel>
           {scout && (
@@ -457,8 +479,10 @@ function UserDetailContent() {
   );
 }
 export function UserDetailPage() {
+  "use no memo";
+  useLocaleVersion();
   return (
-    <CompanyPermissionBoundary permission="scout" title="ユーザー詳細">
+    <CompanyPermissionBoundary permission="scout" title={tText("userDetails")}>
       <UserDetailContent />
     </CompanyPermissionBoundary>
   );

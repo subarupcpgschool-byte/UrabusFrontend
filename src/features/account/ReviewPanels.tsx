@@ -1,12 +1,9 @@
+import { translateText } from "@/i18n/display";
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { useEffect, useState } from "react";
-import {
-  Modal,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { AppInput, AppSelect, AppTextArea, AppTag } from "@/components/form";
 import {
@@ -21,7 +18,7 @@ import { reviewError, type Contract } from "./data";
 export function Stars({
   value,
   onChange,
-  label = "総合評価",
+  label = sourceText("overallRating"),
   disabled = false,
 }: {
   value: number;
@@ -29,9 +26,16 @@ export function Stars({
   label?: string;
   disabled?: boolean;
 }) {
+  "use no memo";
+  useLocaleVersion();
   if (!onChange)
     return (
-      <Text accessibilityLabel={`${label} ${value}点 / 5点`} style={s.stars}>
+      <Text
+        accessibilityLabel={translateText(
+          sourceFormat("5", { v0: label, v1: value }, []),
+        )}
+        style={s.stars}
+      >
         {"★".repeat(Math.round(value))}
         {"☆".repeat(5 - Math.round(value))}{" "}
         <Text style={s.score}>{value.toFixed(1)}</Text>
@@ -40,14 +44,16 @@ export function Stars({
   return (
     <View
       accessibilityRole="radiogroup"
-      accessibilityLabel={label}
+      accessibilityLabel={translateText(label)}
       style={s.starRow}
     >
       {[1, 2, 3, 4, 5].map((n) => (
         <Pressable
           key={n}
           accessibilityRole="radio"
-          accessibilityLabel={`${n}点`}
+          accessibilityLabel={translateText(
+            sourceFormat("points", { v0: n }, []),
+          )}
           accessibilityState={{ checked: value === n, disabled }}
           disabled={disabled}
           onPress={() => onChange(n)}
@@ -62,11 +68,17 @@ export function Stars({
   );
 }
 function ContractHeading({ contract }: { contract: Contract }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <View style={{ gap: 8 }}>
       <View style={s.row}>
         <AppTag
-          label={contract.kind === "company" ? "企業との契約" : "案件契約"}
+          label={
+            contract.kind === "company"
+              ? sourceText("companyContract")
+              : sourceText("projectContract")
+          }
         />
         <Text style={s.meta}>{contract.status}</Text>
       </View>
@@ -74,14 +86,23 @@ function ContractHeading({ contract }: { contract: Contract }) {
         accessibilityRole="link"
         onPress={() => router.push(`/companies/${contract.companyId}` as never)}
       >
-        <Text style={s.company}>{contract.company}</Text>
+        <Text localize={false} style={s.company}>
+          {contract.company}
+        </Text>
       </Pressable>
-      <Text style={s.title}>{contract.title}</Text>
-      <Text style={s.meta}>契約期間：{contract.period}</Text>
+      <Text localize={false} style={s.title}>
+        {contract.title}
+      </Text>
+      <Text style={s.meta}>
+        {tText("contractPeriod")}
+        {contract.period}
+      </Text>
     </View>
   );
 }
 export function ReceivedReviews() {
+  "use no memo";
+  useLocaleVersion();
   const { contracts, received } = useAccount();
   const [kind, setKind] = useState("all"),
     [query, setQuery] = useState("");
@@ -99,32 +120,39 @@ export function ReceivedReviews() {
   return (
     <View style={s.stack}>
       <Panel>
-        <SectionTitle>企業・案件から受けた評価</SectionTitle>
+        <SectionTitle>
+          {tText("reviewsReceivedFromCompaniesAndProjects")}
+        </SectionTitle>
         <View style={s.row}>
           <Text style={s.average}>
             {received.length ? average.toFixed(1) : "—"}
             <Text style={s.meta}> / 5</Text>
           </Text>
-          <Text style={s.meta}>{received.length}件の評価</Text>
+          <Text style={s.meta}>
+            {received.length}
+            {tText("reviews_653")}
+          </Text>
         </View>
-        <BodyText>契約先があなたに記入した評価内容を確認できます。</BodyText>
+        <BodyText>
+          {tText("viewFeedbackWrittenByYourContractPartners")}
+        </BodyText>
       </Panel>
       <View style={s.filters}>
         <AppInput
-          accessibilityLabel="受けた評価を検索"
-          placeholder="企業名・案件名・評価内容で検索"
+          accessibilityLabel={tText("searchReviewsReceived")}
+          placeholder={tText("searchCompanyProjectOrReviewContent")}
           value={query}
           onChangeText={setQuery}
           style={{ flex: 1, minWidth: 180 }}
         />
         <AppSelect
-          accessibilityLabel="受けた評価の契約区分"
+          accessibilityLabel={tText("contractCategoryForReceivedReviews")}
           value={kind}
           onValueChange={setKind}
           options={[
-            { label: "すべての契約", value: "all" },
-            { label: "企業との契約", value: "company" },
-            { label: "案件契約", value: "job" },
+            { label: sourceText("allContracts"), value: "all" },
+            { label: sourceText("companyContract"), value: "company" },
+            { label: sourceText("projectContract"), value: "job" },
           ]}
         />
       </View>
@@ -148,7 +176,7 @@ export function ReceivedReviews() {
                 </View>
               ))}
             </View>
-            <BodyText>{review.comment}</BodyText>
+            <BodyText localize={false}>{review.comment}</BodyText>
           </Panel>
         );
       })}
@@ -156,8 +184,8 @@ export function ReceivedReviews() {
         <Panel>
           <BodyText>
             {received.length
-              ? "条件に一致する評価はありません。"
-              : "受けた評価はまだありません。"}
+              ? sourceText("noReviewsMatchYourFilters")
+              : sourceText("noReviewsHaveBeenReceivedYet")}
           </BodyText>
         </Panel>
       )}
@@ -165,6 +193,8 @@ export function ReceivedReviews() {
   );
 }
 export function WriteReviews() {
+  "use no memo";
+  useLocaleVersion();
   const { contracts, data, saveReview } = useAccount();
   const [filter, setFilter] = useState("all"),
     [kind, setKind] = useState("all"),
@@ -201,9 +231,9 @@ export function WriteReviews() {
     setNotice("");
     try {
       await saveReview(contract.id, rating, comment);
-      setNotice("評価を送信しました。");
+      setNotice(sourceText("reviewSubmitted"));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "保存できませんでした。");
+      setError(e instanceof Error ? e.message : sourceText("unableToSave"));
     } finally {
       setBusy(false);
     }
@@ -211,30 +241,30 @@ export function WriteReviews() {
   return (
     <View style={s.stack}>
       <Panel>
-        <SectionTitle>契約した企業・案件を評価</SectionTitle>
-        <BodyText>
-          実際の契約先ごとに、仕事の経験を評価できます。評価点と評価内容の両方を入力してください。
-        </BodyText>
+        <SectionTitle>
+          {tText("reviewAContractedCompanyOrProject")}
+        </SectionTitle>
+        <BodyText>{tText("reviewYourWorkExperienceWithEachContract")}</BodyText>
       </Panel>
       <View style={s.filters}>
         <AppSelect
-          accessibilityLabel="評価記入状況"
+          accessibilityLabel={tText("reviewCompletionStatus")}
           value={filter}
           onValueChange={setFilter}
           options={[
-            { value: "all", label: "すべての記入状況" },
-            { value: "pending", label: "未評価" },
-            { value: "reviewed", label: "評価済み" },
+            { value: "all", label: sourceText("allCompletionStatuses") },
+            { value: "pending", label: sourceText("notReviewed") },
+            { value: "reviewed", label: sourceText("reviewed") },
           ]}
         />
         <AppSelect
-          accessibilityLabel="評価する契約区分"
+          accessibilityLabel={tText("contractCategoryToReview")}
           value={kind}
           onValueChange={setKind}
           options={[
-            { value: "all", label: "すべての契約" },
-            { value: "company", label: "企業との契約" },
-            { value: "job", label: "案件契約" },
+            { value: "all", label: sourceText("allContracts") },
+            { value: "company", label: sourceText("companyContract") },
+            { value: "job", label: sourceText("projectContract") },
           ]}
         />
       </View>
@@ -246,19 +276,24 @@ export function WriteReviews() {
             {review ? (
               <>
                 <Stars value={review.rating} />
-                <BodyText>{review.comment}</BodyText>
+                <BodyText localize={false}>{review.comment}</BodyText>
                 <Text style={s.meta}>
-                  保存日：{review.updatedAt.slice(0, 10)}
+                  {tText("savedOn")}
+                  {review.updatedAt.slice(0, 10)}
                 </Text>
               </>
             ) : (
-              <Text style={s.pending}>未評価</Text>
+              <Text style={s.pending}>{tText("notReviewed")}</Text>
             )}
             {review?.mode === "automatic" ? (
-              <Text>自動評価のため編集できません。</Text>
+              <Text>{tText("automaticReviewsCannotBeEdited")}</Text>
             ) : (
               <AppButton
-                label={review ? "評価内容を編集" : "この契約を評価する"}
+                label={
+                  review
+                    ? sourceText("editReview")
+                    : sourceText("reviewThisContract")
+                }
                 outline
                 onPress={() => {
                   if (!busy) setSelected(c.id);
@@ -272,8 +307,8 @@ export function WriteReviews() {
         <Panel>
           <BodyText>
             {contracts.length
-              ? "条件に一致する契約はありません。"
-              : "評価できる契約はまだありません。"}
+              ? sourceText("noContractsMatchYourFilters")
+              : sourceText("thereAreNoEligibleContractsToReview")}
           </BodyText>
         </Panel>
       )}
@@ -293,9 +328,14 @@ export function WriteReviews() {
               contentContainerStyle={{ padding: 2 }}
             >
               <Panel>
-                <SectionTitle>{contract.company}への評価</SectionTitle>
-                <Text style={s.meta}>{contract.title}</Text>
-                <Text style={s.title}>総合評価 *</Text>
+                <SectionTitle localize={false}>
+                  {contract.company}
+                  {tText("review")}
+                </SectionTitle>
+                <Text localize={false} style={s.meta}>
+                  {contract.title}
+                </Text>
+                <Text style={s.title}>{tText("overallRating_849")}</Text>
                 <Stars
                   value={rating}
                   onChange={(v) => {
@@ -305,7 +345,7 @@ export function WriteReviews() {
                   disabled={busy}
                 />
                 <AppTextArea
-                  label="評価内容"
+                  label={tText("reviewContent")}
                   required
                   value={comment}
                   onChangeText={(v) => {
@@ -314,8 +354,12 @@ export function WriteReviews() {
                   }}
                   maxLength={2000}
                   disabled={busy}
-                  placeholder="仕事内容や対応について、具体的な感想を入力してください"
-                  hint={`${comment.length} / 2,000文字`}
+                  placeholder={tText("describeYourExperienceWithTheWorkAnd")}
+                  hint={sourceFormat(
+                    "2000Characters",
+                    { v0: comment.length },
+                    [],
+                  )}
                 />
                 {!!error && (
                   <Text accessibilityRole="alert" style={s.error}>
@@ -329,14 +373,16 @@ export function WriteReviews() {
                 )}
                 <View style={s.row}>
                   <AppButton
-                    label="編集を閉じる"
+                    label={tText("closeEditor")}
                     outline
                     onPress={() => {
                       if (!busy) setSelected(null);
                     }}
                   />
                   <AppButton
-                    label={busy ? "保存中…" : "評価を保存"}
+                    label={
+                      busy ? sourceText("saving") : sourceText("saveReview")
+                    }
                     onPress={() => void save()}
                   />
                 </View>

@@ -1,9 +1,96 @@
-import { AppTag } from '@/components/form';
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
+import { AppTag } from "@/components/form";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { SEARCH_COLORS as C } from "./theme";
 
-export default function SearchResultHeader({ label, count, sort, onChangeSort, chips, onClear }: { label: string; count: number; sort: string; onChangeSort: () => void; chips: string[]; onClear: () => void }) {
-  return <View style={s.wrap}><View style={s.top}><Text style={s.count}>{label} <Text style={s.countAccent}>{count.toLocaleString()}件</Text></Text><Pressable onPress={onChangeSort} style={s.sort}><Text style={s.sortLabel}>並び替え</Text><Text style={s.sortValue}>{sort}</Text><Ionicons name="chevron-down" size={16} color={C.textSub} /></Pressable></View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>{chips.map(chip => <AppTag key={chip} label={chip}/>)}{chips.length > 0 && <Pressable onPress={onClear}><Text style={s.clear}>すべてクリア</Text></Pressable>}</ScrollView></View>;
+export default function SearchResultHeader({
+  label,
+  count,
+  sort,
+  onChangeSort,
+  chips,
+  onClear,
+}: {
+  label: string;
+  count: number;
+  sort: string;
+  onChangeSort: () => void;
+  chips: string[];
+  onClear: () => void;
+}) {
+  "use no memo";
+  useLocaleVersion();
+  return (
+    <View style={s.wrap}>
+      <View style={s.top}>
+        <Text style={s.count}>
+          {label}{" "}
+          <Text style={s.countAccent}>
+            {count.toLocaleString()}
+            {tText("total_199")}
+          </Text>
+        </Text>
+        <Pressable onPress={onChangeSort} style={s.sort}>
+          <Text style={s.sortLabel}>{tText("sortBy")}</Text>
+          <Text style={s.sortValue}>{sort}</Text>
+          <Ionicons name="chevron-down" size={16} color={C.textSub} />
+        </Pressable>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={s.chips}
+      >
+        {chips.map((chip) => (
+          <AppTag key={chip} label={chip} />
+        ))}
+        {chips.length > 0 && (
+          <Pressable onPress={onClear}>
+            <Text style={s.clear}>{tText("clearAll")}</Text>
+          </Pressable>
+        )}
+      </ScrollView>
+    </View>
+  );
 }
-const s = StyleSheet.create({wrap:{gap:12},top:{minHeight:45,flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:12},count:{color:C.text,fontSize:18,fontWeight:"900"},countAccent:{color:C.primary},sort:{minHeight:39,borderRadius:8,borderWidth:1,borderColor:C.border,backgroundColor:C.white,paddingHorizontal:12,flexDirection:"row",alignItems:"center",gap:8},sortLabel:{color:C.textSub,fontSize:10},sortValue:{color:C.text,fontSize:11.5,fontWeight:"800"},chips:{alignItems:"center",gap:8},chip:{borderRadius:7,borderWidth:1,borderColor:"#C7D9FA",backgroundColor:C.primarySoft,paddingHorizontal:10,paddingVertical:7,flexDirection:"row",alignItems:"center",gap:7},chipText:{color:C.primaryDark,fontSize:10.5,fontWeight:"700"},clear:{color:C.primary,fontSize:10.5,fontWeight:"800",padding:7}});
+const s = StyleSheet.create({
+  wrap: { gap: 12 },
+  top: {
+    minHeight: 45,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  count: { color: C.text, fontSize: 18, fontWeight: "900" },
+  countAccent: { color: C.primary },
+  sort: {
+    minHeight: 39,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.white,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sortLabel: { color: C.textSub, fontSize: 10 },
+  sortValue: { color: C.text, fontSize: 11.5, fontWeight: "800" },
+  chips: { alignItems: "center", gap: 8 },
+  chip: {
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: "#C7D9FA",
+    backgroundColor: C.primarySoft,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  chipText: { color: C.primaryDark, fontSize: 10.5, fontWeight: "700" },
+  clear: { color: C.primary, fontSize: 10.5, fontWeight: "800", padding: 7 },
+});

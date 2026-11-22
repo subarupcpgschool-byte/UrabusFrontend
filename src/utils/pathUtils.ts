@@ -1,30 +1,34 @@
+import { sourceText } from "@/i18n/source";
+import { Alert } from "@/i18n/native";
 import { router } from "expo-router";
-import { Alert } from "react-native";
 
 export const notify = (title: string) => {
   if (title === "top" || title === "top") {
     router.push("/" as never);
     return;
   }
-  if (title === "求人を探す" || title === "求人検索") {
+  if (title === sourceText("findJobs") || title === sourceText("jobSearch")) {
     router.push("/jobs" as never);
     return;
   }
-  if (title === "企業を探す") {
+  if (title === sourceText("findCompanies")) {
     router.push("/companies" as never);
     return;
   }
-  if (title === "ログイン" || title === "無料で始める") {
+  if (
+    title === sourceText("logIn") ||
+    title === sourceText("getStartedForFree")
+  ) {
     router.push("/auth" as never);
     return;
   }
-  if (title.includes("詳細")) {
+  if (title.includes(sourceText("details"))) {
     router.push("/jobs/1" as never);
     return;
   }
-  if (title.includes("応募")) {
+  if (title.includes(sourceText("application"))) {
     router.push("/jobs/1/apply" as never);
     return;
   }
-  Alert.alert(title, "検索条件を受け付けました（デモ）。");
+  Alert.alert(title, sourceText("searchFiltersReceivedDemo"));
 };

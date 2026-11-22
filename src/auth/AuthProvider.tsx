@@ -1,14 +1,27 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { sourceText } from "@/i18n/source";
+import { useLocaleVersion } from "@/i18n/display";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { authRequest, type AuthSession, type AuthUser } from "./api";
 import { readToken, writeToken } from "./tokenStore";
 type AuthContextValue = {
-  user: AuthUser | null; token: string | null; ready: boolean;
+  user: AuthUser | null;
+  token: string | null;
+  ready: boolean;
   acceptSession: (session: AuthSession) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
 const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
+  "use no memo";
+  useLocaleVersion();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -21,21 +34,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const stored = await readToken();
         if (stored) {
           const current = await authRequest<AuthUser>("/me", undefined, stored);
-          if (active && revision.current === rev) { setToken(stored); setUser(current); }
+          if (active && revision.current === rev) {
+            setToken(stored);
+            setUser(current);
+          }
         }
-      } catch { /* 通信エラーでは保存済みトークンを消さず、次回の起動で再確認する */ }
-      finally { if (active) setReady(true); }
+      } catch {
+        /* 通信エラーでは保存済みトークンを消さず、次回の起動で再確認する */
+      } finally {
+        if (active) setReady(true);
+      }
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
   async function acceptSession(session: AuthSession) {
     revision.current++;
-    await writeToken(session.accessToken); setToken(session.accessToken); setUser(session.user); setReady(true);
+    await writeToken(session.accessToken);
+    setToken(session.accessToken);
+    setUser(session.user);
+    setReady(true);
   }
   async function logout() {
     if (token) await authRequest("/logout", {}, token); // サーバーのセッションを失効させる
     revision.current++;
-    await writeToken(null); setToken(null); setUser(null);
+    await writeToken(null);
+    setToken(null);
+    setUser(null);
   }
   async function refreshUser() {
     if (!token) return;
@@ -43,8 +69,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const current = await authRequest<AuthUser>("/me", undefined, token);
     if (revision.current === rev) setUser(current);
   }
-  return <AuthContext.Provider value={{ user, token, ready, acceptSession, logout, refreshUser }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{ user, token, ready, acceptSession, logout, refreshUser }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 export function useAuth() {
-  const auth = useContext(AuthContext); if (!auth) throw new Error("AuthProviderが必要です。"); return auth;
+  const auth = useContext(AuthContext);
+  if (!auth) throw new Error(sourceText("authproviderIsRequired"));
+  return auth;
 }

@@ -1,7 +1,9 @@
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable } from "@/i18n/native";
 import { COLORS } from "@/theme/colors";
 import { router } from "expo-router";
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 export function Logo({
   backgroundColor = "transparent",
@@ -12,9 +14,17 @@ export function Logo({
   width?: number;
   onHome?: () => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <View style={s.logo}>
-      <Pressable key="logo" accessibilityRole="button" accessibilityLabel="GlobalWorkers ホーム" onPress={onHome} style={[s.logoMark, { width }]}>
+      <Pressable
+        key="logo"
+        accessibilityRole="button"
+        accessibilityLabel={tText("globalworkersHome")}
+        onPress={onHome}
+        style={[s.logoMark, { width }]}
+      >
         <Image
           source={require("@/assets/images/logo.svg")}
           style={{

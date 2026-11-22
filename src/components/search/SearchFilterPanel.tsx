@@ -1,17 +1,13 @@
+import { translateText } from "@/i18n/display";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Alert, Pressable, Text } from "@/i18n/native";
 import { INPUT_THEME } from "@/theme/inputTheme";
 import { AppInput, AppMultiSelect, AppFormField } from "@/components/form";
 import MapSearch from "../geo/MapSearch";
 import type { SearchArea } from "../geo/types";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { SEARCH_COLORS as C, SEARCH_SHADOW } from "./theme";
 import type { SearchConditions, SearchFilterConfig } from "./types";
 
@@ -24,6 +20,8 @@ export default function SearchFilterPanel({
   config: SearchFilterConfig;
   onSearch: (conditions: SearchConditions) => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const [area, setArea] = useState<SearchArea>();
   const { width } = useWindowDimensions();
   const [keyword, setKeyword] = useState(initialConditions?.keyword ?? "");
@@ -50,21 +48,21 @@ export default function SearchFilterPanel({
   return (
     <View style={[s.panel, width < 900 && s.panelMobile]}>
       <View style={s.heading}>
-        <Text style={s.title}>絞り込み条件</Text>
+        <Text style={s.title}>{tText("filters")}</Text>
         <Pressable onPress={reset}>
-          <Text style={s.reset}>条件をリセット</Text>
+          <Text style={s.reset}>{tText("resetFilters")}</Text>
         </Pressable>
       </View>
       <Input
         label={config.keywordLabel}
-        placeholder={config.keywordPlaceholder}
+        placeholder={translateText(config.keywordPlaceholder)}
         value={keyword}
         onChangeText={setKeyword}
         icon="search-outline"
       />
       <Input
         label={config.locationLabel}
-        placeholder={config.locationPlaceholder}
+        placeholder={translateText(config.locationPlaceholder)}
         value={location}
         onChangeText={setLocation}
         icon="location-outline"
@@ -96,13 +94,13 @@ export default function SearchFilterPanel({
       )}
       {!area && config.showSalary && (
         <View>
-          <Text style={s.label}>想定年収（万円）</Text>
+          <Text style={s.label}>{tText("estimatedAnnualPayJpy10000")}</Text>
           <View style={s.range}>
             <AppInput
               value={salaryMin}
               onChangeText={setSalaryMin}
               keyboardType="numeric"
-              placeholder="下限なし"
+              placeholder={tText("noMinimum")}
               style={s.input}
             />
             <Text style={s.rangeMark}>〜</Text>
@@ -110,7 +108,7 @@ export default function SearchFilterPanel({
               value={salaryMax}
               onChangeText={setSalaryMax}
               keyboardType="numeric"
-              placeholder="上限なし"
+              placeholder={tText("noMaximum")}
               style={s.input}
             />
           </View>
@@ -120,14 +118,14 @@ export default function SearchFilterPanel({
         onPress={() => onSearch(conditions)}
         style={({ pressed }) => [s.primary, pressed && s.pressed]}
       >
-        <Text style={s.primaryText}>この条件で検索</Text>
+        <Text style={s.primaryText}>{tText("searchWithTheseFilters")}</Text>
       </Pressable>
       <Pressable
         onPress={() => onSearch(conditions)}
         style={({ pressed }) => [s.outline, pressed && s.pressed]}
       >
         <Ionicons name="bookmark-outline" size={17} color={C.primary} />
-        <Text style={s.outlineText}>検索結果を更新</Text>
+        <Text style={s.outlineText}>{tText("refreshResults")}</Text>
       </Pressable>
     </View>
   );
@@ -144,13 +142,15 @@ function Input({
   value: string;
   onChangeText: (value: string) => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <AppFormField label={label}>
       <View style={s.inputWrap}>
         <Ionicons name={icon} size={18} color={C.textMuted} />
         <AppInput
           {...props}
-          accessibilityLabel={label}
+          accessibilityLabel={translateText(label)}
           variant="plain"
           style={s.inputText}
         />

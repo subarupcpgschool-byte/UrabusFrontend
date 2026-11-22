@@ -1,3 +1,4 @@
+import { tText, useLocaleVersion } from "@/i18n/display";
 import AppPage from "@/components/layout/AppPage";
 import {
   AppButton,
@@ -8,37 +9,40 @@ import {
 import { router } from "expo-router";
 
 export default function GuidePage() {
+  "use no memo";
+  useLocaleVersion();
   return (
     <AppPage
-      title="ご利用ガイド"
-      subtitle="GlobalWorkersの基本的な使い方をご案内します。"
+      title={tText("userGuide")}
+      subtitle={tText("learnTheBasicsOfUsingGlobalworkers")}
     >
       <Panel>
-        <SectionTitle>1. 求人・企業を探す</SectionTitle>
-        <BodyText>
-          「求人を探す」「企業を探す」から、希望の条件に合わせて検索できます。
-        </BodyText>
-        <AppButton label="求人を探す" onPress={() => router.push("/jobs")} />
+        <SectionTitle>{tText("1FindJobsAndCompanies")}</SectionTitle>
+        <BodyText>{tText("useFindJobsOrFindCompaniesTo")}</BodyText>
+        <AppButton
+          label={tText("findJobs")}
+          onPress={() => router.push("/jobs")}
+        />
       </Panel>
       <Panel>
-        <SectionTitle>2. アカウントを登録する</SectionTitle>
-        <BodyText>
-          ログイン、または新規登録をしてご利用ください。ユーザーの利用料金は0円です。
-        </BodyText>
-        <AppButton label="アカウント" onPress={() => router.push("/auth")} />
+        <SectionTitle>{tText("2CreateAnAccount")}</SectionTitle>
+        <BodyText>{tText("logInOrCreateAnAccountTo")}</BodyText>
+        <AppButton
+          label={tText("account")}
+          onPress={() => router.push("/auth")}
+        />
       </Panel>
       <Panel>
-        <SectionTitle>3. 応募・採用後の対応</SectionTitle>
-        <BodyText>
-          求人詳細から応募し、企業とやり取りします。企業は応募から30日以内の交渉終了と、採用後の試用期間中の評価をお願いします。
-        </BodyText>
+        <SectionTitle>{tText("3ApplicationsAndAfterHiring")}</SectionTitle>
+        <BodyText>{tText("applyFromAJobDetailsPageAnd")}</BodyText>
       </Panel>
       <Panel>
-        <SectionTitle>料金を確認する</SectionTitle>
-        <BodyText>
-          現在は企業の無料プランで企業募集1件・求人募集3件まで、それぞれ公開できます。上限を超える募集は非公開で保存できます。
-        </BodyText>
-        <AppButton label="料金を見る" onPress={() => router.push("/price")} />
+        <SectionTitle>{tText("checkPricing")}</SectionTitle>
+        <BodyText>{tText("theFreeCompanyPlanAllowsOneCompany")}</BodyText>
+        <AppButton
+          label={tText("viewPricing")}
+          onPress={() => router.push("/price")}
+        />
       </Panel>
     </AppPage>
   );

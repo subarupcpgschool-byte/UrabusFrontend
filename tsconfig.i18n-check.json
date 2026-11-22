@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","include":["src/**/*.ts","src/**/*.tsx","expo-env.d.ts"],"exclude":["node_modules","退避","src/features/workspace/mockData.ts"]}

@@ -1,11 +1,8 @@
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 import FavoriteButton from "./FavoriteButton";
 import { SEARCH_COLORS as C, SEARCH_SHADOW } from "./theme";
 import type { CompanySearchItem } from "./types";
@@ -19,6 +16,8 @@ export default function CompanySearchCard({
   onPressDetail: (id: number | string) => void;
   onPressJobs: (id: number | string) => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { width } = useWindowDimensions();
   return (
     <View style={[s.card, width < 600 && { width: "100%", minWidth: 0 }]}>
@@ -28,10 +27,12 @@ export default function CompanySearchCard({
         </View>
         <View style={{ flex: 1 }}>
           <View style={s.nameRow}>
-            <Text style={s.name}>{item.companyName}</Text>
+            <Text localize={false} style={s.name}>
+              {item.companyName}
+            </Text>
             {true && (
               <View style={s.verified}>
-                <Text style={s.verifiedText}>審査済み</Text>
+                <Text style={s.verifiedText}>{tText("verified")}</Text>
               </View>
             )}
           </View>
@@ -52,7 +53,8 @@ export default function CompanySearchCard({
             <Text style={s.totalScore}>{item.rating.toFixed(1)}</Text>
             <Text style={s.stars}>★★★★★</Text>
             <Text style={s.reviewCount}>
-              {item.reviewCount.toLocaleString()}件の評価
+              {item.reviewCount.toLocaleString()}
+              {tText("reviews_653")}
             </Text>
           </View>
           <View style={s.scoreList}>
@@ -68,34 +70,40 @@ export default function CompanySearchCard({
           </View>
         </View>
       )}
-      <Text style={s.description}>{item.description}</Text>
+      <Text localize={false} style={s.description}>
+        {item.description}
+      </Text>
       {true && (
         <View style={s.stats}>
           <Stat
-            value={`${item.openJobCount}件`}
-            label="公開求人"
+            value={sourceFormat("total_654", { v0: item.openJobCount }, [])}
+            label={tText("openJobs_655")}
             icon="folder-open-outline"
           />
           <Stat
             value={`${item.reviewParticipationRate}%`}
-            label="評価協力率"
+            label={tText("reviewParticipationRate")}
             icon="sync-outline"
           />
           <Stat
             value={item.employeeRange}
-            label="従業員数"
+            label={tText("numberOfEmployees")}
             icon="people-outline"
           />
         </View>
       )}
       <View style={s.actions}>
         <Button
-          label="企業詳細を見る"
+          label={tText("viewCompanyDetails")}
           outline
           onPress={() => onPressDetail(item.id)}
         />
         <Button
-          label={false ? `求人を見る（${item.openJobCount}件）` : "求人を見る"}
+          label={
+            false
+              ? sourceFormat("viewJobs", { v0: item.openJobCount }, [])
+              : sourceText("viewJobs_658")
+          }
           onPress={() => onPressJobs(item.id)}
         />
       </View>
@@ -111,6 +119,8 @@ function Stat({
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <View style={s.stat}>
       <Ionicons name={icon} size={15} color={C.textSub} />
@@ -128,6 +138,8 @@ function Button({
   outline?: boolean;
   onPress: () => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <Pressable
       onPress={onPress}

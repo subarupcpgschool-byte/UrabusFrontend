@@ -1,5 +1,9 @@
+import { translateText } from "@/i18n/display";
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useState } from "react";
-import { Modal, ScrollView, Text, View } from "react-native";
+import { Modal, ScrollView, View } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import { dataRequest, type Page } from "@/api/platform";
@@ -32,6 +36,8 @@ export function ResourceEditor({
   title: string;
   fields: Field[];
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { token } = useAuth();
   const [page, setPage] = useState(1),
     [draft, setDraft] = useState<Record<string, string | boolean> | null>(null),
@@ -70,7 +76,7 @@ export function ResourceEditor({
       const value = draft[f.key];
       if (f.kind === "number") {
         if (String(value).trim() === "" || !Number.isFinite(Number(value))) {
-          setError(`${f.label}は数値で入力してください。`);
+          setError(sourceFormat("enterAsANumber", { v0: f.label }, []));
           return;
         }
         body[f.key] = Number(value);
@@ -102,7 +108,7 @@ export function ResourceEditor({
         privateData
       />
       {token && !r.error && (
-        <AppButton label="作成＋" onPress={() => edit(null)} />
+        <AppButton label={tText("create")} onPress={() => edit(null)} />
       )}
       <Pager page={page} total={total} onChange={setPage} />
       {rows.map((row) => (
@@ -117,17 +123,21 @@ export function ResourceEditor({
                 {f.label}：
                 {f.kind === "boolean"
                   ? row[f.key]
-                    ? "有効"
-                    : "無効"
-                  : String(row[f.key] ?? "未設定")}
+                    ? sourceText("enabled")
+                    : sourceText("disabled")
+                  : String(row[f.key] ?? sourceText("notConfigured"))}
               </BodyText>
             ))}
           <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
-            <AppButton label="編集" outline onPress={() => edit(row)} />
+            <AppButton
+              label={tText("edit")}
+              outline
+              onPress={() => edit(row)}
+            />
             <ConfirmAction
-              label="削除"
+              label={tText("delete")}
               danger
-              message="このデータを削除しますか？"
+              message={tText("deleteThisData")}
               onConfirm={() =>
                 dataRequest(
                   `${path}/${row.id}?version=${row.version}`,
@@ -141,7 +151,7 @@ export function ResourceEditor({
         </Panel>
       ))}
       {!r.loading && !r.error && !rows.length && (
-        <BodyText>登録データはありません。</BodyText>
+        <BodyText>{tText("noDataHasBeenRegistered")}</BodyText>
       )}
       <Modal
         transparent
@@ -171,14 +181,16 @@ export function ResourceEditor({
             {draft && (
               <Panel>
                 <SectionTitle>
-                  {title}を{editing ? "編集" : "作成"}
+                  {title}
+                  {tText("honorific_1227")}
+                  {editing ? sourceText("edit") : sourceText("create_354")}
                 </SectionTitle>
                 {fields.map((f) =>
                   f.kind === "boolean" ? (
                     <View key={f.key}>
                       <Text>{f.label}</Text>
                       <AppSwitch
-                        accessibilityLabel={f.label}
+                        accessibilityLabel={translateText(f.label)}
                         value={Boolean(draft[f.key])}
                         disabled={busy}
                         onValueChange={(v) =>
@@ -234,14 +246,14 @@ export function ResourceEditor({
                 )}
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <AppButton
-                    label="キャンセル"
+                    label={tText("cancel")}
                     outline
                     onPress={() => {
                       if (!busy) setDraft(null);
                     }}
                   />
                   <AppButton
-                    label={busy ? "保存中…" : "保存"}
+                    label={busy ? sourceText("saving") : sourceText("save_384")}
                     onPress={() => void save()}
                   />
                 </View>
@@ -254,40 +266,64 @@ export function ResourceEditor({
   );
 }
 export const ruleFields: Field[] = [
-  { key: "name", label: "ルール名" },
-  { key: "metric", label: "監視項目" },
-  { key: "windowMinutes", label: "集計期間（分）", kind: "number", initial: 5 },
-  { key: "threshold", label: "しきい値", kind: "number", initial: 5 },
-  { key: "unit", label: "単位", initial: "件" },
+  { key: "name", label: sourceText("ruleName") },
+  { key: "metric", label: sourceText("metric_1229") },
+  {
+    key: "windowMinutes",
+    label: sourceText("windowMinutes"),
+    kind: "number",
+    initial: 5,
+  },
+  {
+    key: "threshold",
+    label: sourceText("threshold"),
+    kind: "number",
+    initial: 5,
+  },
+  { key: "unit", label: sourceText("unit"), initial: sourceText("total_199") },
   {
     key: "severity",
-    label: "重要度",
+    label: sourceText("severity"),
     kind: "select",
-    choices: ["高", "中", "低"],
-    initial: "中",
+    choices: [sourceText("high"), sourceText("medium"), sourceText("low")],
+    initial: sourceText("medium"),
   },
-  { key: "enabled", label: "有効", kind: "boolean", initial: true },
+  {
+    key: "enabled",
+    label: sourceText("enabled"),
+    kind: "boolean",
+    initial: true,
+  },
 ];
 export const alarmFields: Field[] = [
-  { key: "service", label: "サービス" },
-  { key: "message", label: "内容", kind: "long" },
+  { key: "service", label: sourceText("services") },
+  { key: "message", label: sourceText("content"), kind: "long" },
   {
     key: "severity",
-    label: "重要度",
+    label: sourceText("severity"),
     kind: "select",
-    choices: ["高", "中", "低"],
-    initial: "中",
+    choices: [sourceText("high"), sourceText("medium"), sourceText("low")],
+    initial: sourceText("medium"),
   },
   {
     key: "status",
-    label: "対応状況",
+    label: sourceText("responseStatus"),
     kind: "select",
-    choices: ["未対応", "対応中", "解決済み"],
-    initial: "未対応",
+    choices: [
+      sourceText("unhandled"),
+      sourceText("inProgress"),
+      sourceText("resolved"),
+    ],
+    initial: sourceText("unhandled"),
   },
 ];
 export const metricFields: Field[] = [
-  { key: "service", label: "サービス" },
-  { key: "metric", label: "計測項目" },
-  { key: "value", label: "計測値", kind: "number", initial: 0 },
+  { key: "service", label: sourceText("services") },
+  { key: "metric", label: sourceText("metric") },
+  {
+    key: "value",
+    label: sourceText("measuredValue"),
+    kind: "number",
+    initial: 0,
+  },
 ];

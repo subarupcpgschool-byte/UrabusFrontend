@@ -1,7 +1,9 @@
+import { useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { AppInput, AppTextArea, type AppInputProps } from "@/components/form";
 import { Ionicons } from "@expo/vector-icons";
 import type { PropsWithChildren, ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { SEARCH_COLORS as C, SEARCH_SHADOW } from "@/components/search/theme";
 
 export function Panel({
@@ -11,12 +13,30 @@ export function Panel({
   children: ReactNode;
   style?: object;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return <View style={[s.panel, style]}>{children}</View>;
 }
-export function SectionTitle({ children }: { children: ReactNode }) {
+export function SectionTitle({
+  children,
+  localize = true,
+}: {
+  children: ReactNode;
+  localize?: boolean;
+}) {
+  "use no memo";
+  useLocaleVersion();
   return <Text style={s.sectionTitle}>{children}</Text>;
 }
-export function BodyText({ children }: { children: ReactNode }) {
+export function BodyText({
+  children,
+  localize = true,
+}: {
+  children: ReactNode;
+  localize?: boolean;
+}) {
+  "use no memo";
+  useLocaleVersion();
   return <Text style={s.body}>{children}</Text>;
 }
 export function AppButton({
@@ -32,6 +52,8 @@ export function AppButton({
   disabled?: boolean;
   onPress: () => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <Pressable
       accessibilityRole="button"
@@ -57,6 +79,8 @@ export function StatusBadge({
   label: string;
   tone?: "blue" | "green" | "yellow" | "red";
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <View
       style={[
@@ -84,6 +108,8 @@ export function FormField({
   large = false,
   ...props
 }: AppInputProps & { large?: boolean }) {
+  "use no memo";
+  useLocaleVersion();
   return large ? <AppTextArea {...props} /> : <AppInput {...props} />;
 }
 export function StatCard({
@@ -95,6 +121,8 @@ export function StatCard({
   value: string;
   change?: string;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <Panel style={s.stat}>
       <Text style={s.statLabel}>{label}</Text>
@@ -110,6 +138,8 @@ export function DataTable({
   headers: string[];
   rows: string[][];
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <View style={s.table}>
@@ -134,6 +164,8 @@ export function DataTable({
   );
 }
 export function EmptyIcon({ name }: { name: keyof typeof Ionicons.glyphMap }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <View style={s.icon}>
       <Ionicons name={name} size={26} color={C.primary} />
@@ -141,9 +173,13 @@ export function EmptyIcon({ name }: { name: keyof typeof Ionicons.glyphMap }) {
   );
 }
 export function TwoColumn({ children }: { children: ReactNode }) {
+  "use no memo";
+  useLocaleVersion();
   return <View style={s.two}>{children}</View>;
 }
 export function KpiRow({ children }: { children: ReactNode }) {
+  "use no memo";
+  useLocaleVersion();
   return <View style={s.kpis}>{children}</View>;
 }
 const s = StyleSheet.create({

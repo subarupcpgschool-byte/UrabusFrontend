@@ -1,4 +1,7 @@
-import { View, Text } from "react-native";
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
+import { View } from "react-native";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import type { EvaluationRow } from "@/api/models";
 import { Panel, BodyText, SectionTitle } from "@/components/ui/AppUI";
@@ -7,16 +10,18 @@ export default function PublishedCompanyEvaluations({
 }: {
   companyId: string;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const r = useResource<EvaluationRow[]>(
     `/companies/${companyId}/evaluations`,
     [],
   );
   return (
     <Panel>
-      <SectionTitle>企業評価</SectionTitle>
+      <SectionTitle>{tText("companyReviews")}</SectionTitle>
       <ResourceStatus loading={r.loading} error={r.error} onRetry={r.refresh} />
       {!r.loading && !r.error && !r.data.length && (
-        <BodyText>公開されている評価はまだありません。</BodyText>
+        <BodyText>{tText("noReviewsHaveBeenPublishedYet")}</BodyText>
       )}
       {r.data.map((e) => (
         <View
@@ -30,18 +35,26 @@ export default function PublishedCompanyEvaluations({
         >
           <Text>
             {Number(e.total).toFixed(1)} / 5.0　
-            {e.mode === "automatic" ? "自動評価" : "利用者の評価"}
+            {e.mode === "automatic"
+              ? sourceText("automaticReview")
+              : sourceText("userReview")}
           </Text>
-          {!!e.comment && <BodyText>{e.comment}</BodyText>}
+          {!!e.comment && <BodyText localize={false}>{e.comment}</BodyText>}
           {e.answers &&
             "response" in e.answers &&
             (["response", "description", "work"] as const).map((k, i) => (
               <View key={k}>
                 <Text>
-                  {["対応", "案件説明", "仕事内容"][i]}：
-                  {e.answers![k].score || 5}
+                  {
+                    [
+                      sourceText("communication_1168"),
+                      sourceText("jobExplanation"),
+                      sourceText("jobDescription"),
+                    ][i]
+                  }
+                  ：{e.answers![k].score || 5}
                 </Text>
-                <BodyText>
+                <BodyText localize={false}>
                   {[...e.answers![k].choices, e.answers![k].comment]
                     .filter(Boolean)
                     .join(" ／ ")}

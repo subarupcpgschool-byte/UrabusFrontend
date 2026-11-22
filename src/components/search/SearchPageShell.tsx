@@ -1,13 +1,9 @@
+import { useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 
 import { Header } from "@/components/common/Header";
 import type { PropsWithChildren } from "react";
-import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { SafeAreaView, ScrollView, StyleSheet, View } from "react-native";
 import { SEARCH_COLORS as C } from "./theme";
 
 type Props = PropsWithChildren<{
@@ -22,6 +18,8 @@ export default function SearchPageShell({
   activeNav,
   children,
 }: Props) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <SafeAreaView style={s.safe}>
       <Header />
@@ -30,7 +28,6 @@ export default function SearchPageShell({
         contentContainerStyle={s.pageContent}
         showsVerticalScrollIndicator={false}
       >
-        
         {children}
       </ScrollView>
     </SafeAreaView>

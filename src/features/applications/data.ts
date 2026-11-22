@@ -1,7 +1,9 @@
+import { sourceText } from "@/i18n/source";
+import { localeTag } from "@/i18n/display";
 export const INTERACTION_KINDS = [
-  { value: "application", label: "応募" },
-  { value: "scout", label: "スカウト" },
-  { value: "offer", label: "オファーレター" },
+  { value: "application", label: sourceText("application") },
+  { value: "scout", label: sourceText("scout") },
+  { value: "offer", label: sourceText("offerLetter") },
 ] as const;
 export type InteractionKind = (typeof INTERACTION_KINDS)[number]["value"];
 export type ApplicationStatus =
@@ -17,11 +19,11 @@ export type ApplicationStatus =
 export type CompanyResult = "内定" | "不採用" | "見送り";
 export type AfterResult = "内定辞退" | "内定取り消し";
 export const APPLICATION_TYPES = [
-  "正社員",
-  "契約社員",
-  "業務委託",
-  "アルバイト・パート",
-  "ボランティア",
+  sourceText("fullTimeEmployee"),
+  sourceText("fixedTermEmployee"),
+  sourceText("freelanceContractWork"),
+  sourceText("partTimeEmployee"),
+  sourceText("volunteer"),
 ] as const;
 export type Application = {
   canEvaluate?: boolean;
@@ -43,16 +45,16 @@ export type Application = {
 };
 export const PAGE_SIZE = 20;
 export const FILTERS = [
-  "すべて",
-  "未返信",
-  "選考中",
-  "面談",
-  "オファー検討中",
-  "内定",
-  "不採用",
-  "見送り",
-  "内定辞退",
-  "内定取り消し",
+  sourceText("all"),
+  sourceText("unanswered"),
+  sourceText("inSelection"),
+  sourceText("meeting"),
+  sourceText("consideringOffer"),
+  sourceText("jobOffer"),
+  sourceText("notSelected"),
+  sourceText("notProceeding"),
+  sourceText("offerDeclined"),
+  sourceText("offerWithdrawn"),
 ] as const;
 export type ApplicationFilter = (typeof FILTERS)[number];
 export type SortKey = "updatedAt" | "status";
@@ -67,7 +69,7 @@ export function applicationPay(item: Application) {
   return [item.salaryUnit, item.salary].filter(Boolean).join(" ");
 }
 export function formatUpdatedAt(iso: string) {
-  return new Date(iso).toLocaleString("ja-JP", {
+  return new Date(iso).toLocaleString(localeTag(), {
     timeZone: "Asia/Tokyo",
     year: "numeric",
     month: "2-digit",
@@ -105,7 +107,7 @@ export function pageApplications(
     .filter(
       (a) =>
         (!kind || a.kind === kind) &&
-        (filter === "すべて" || a.status === filter) &&
+        (filter === sourceText("all") || a.status === filter) &&
         (!employmentType || a.employmentType === employmentType),
     )
     .sort((a, b) => {
@@ -134,7 +136,9 @@ export function kindLabel(kind: InteractionKind) {
   return INTERACTION_KINDS.find((k) => k.value === kind)!.label;
 }
 export function eventDateLabel(kind: InteractionKind) {
-  return kind === "application" ? "応募日" : "受信日";
+  return kind === "application"
+    ? sourceText("applicationDate")
+    : sourceText("receivedOn");
 }
 /** Company decision and subsequent action remain separate to preserve the offer history. */
 export function outcomeLabel(item: Application) {
@@ -143,28 +147,42 @@ export function outcomeLabel(item: Application) {
     : item.status;
 }
 export function progressSteps(item: Application) {
-  const result = item.companyResult ?? "結果";
-  const steps =
+  const result = item.companyResult ?? sourceText("result");
+  const steps: string[] =
     item.kind === "application"
-      ? ["応募", "書類選考", "面談", result]
+      ? [
+          sourceText("application"),
+          sourceText("applicationScreening"),
+          sourceText("meeting"),
+          result,
+        ]
       : [
-          item.kind === "scout" ? "スカウト受信" : "オファー受信",
-          "条件確認",
-          "面談",
+          item.kind === "scout"
+            ? sourceText("scoutReceived")
+            : sourceText("offerReceived"),
+          sourceText("reviewTerms"),
+          sourceText("meeting"),
           result,
         ];
-  if (item.companyResult === "内定" && item.afterResult)
+  if (item.companyResult === sourceText("jobOffer") && item.afterResult)
     steps.push(item.afterResult);
   const current = item.companyResult
     ? steps.length - 1
-    : item.status === "未返信"
+    : item.status === sourceText("unanswered")
       ? 0
-      : item.status === "面談"
+      : item.status === sourceText("meeting")
         ? 2
         : 1;
   return { steps, current };
 }
 
 export function isNegativeStep(step: string) {
-  return ["内定辞退", "内定取り消し", "見送り", "不採用"].includes(step);
+  return (
+    [
+      sourceText("offerDeclined"),
+      sourceText("offerWithdrawn"),
+      sourceText("notProceeding"),
+      sourceText("notSelected"),
+    ] as string[]
+  ).includes(step);
 }

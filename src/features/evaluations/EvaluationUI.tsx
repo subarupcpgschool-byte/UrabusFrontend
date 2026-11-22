@@ -1,13 +1,9 @@
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { tText, useLocaleVersion, localeTag } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { ConfirmAction } from "@/api/ApiUI";
 import { useState } from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { AppSelect, AppTextArea } from "@/components/form";
 import {
@@ -32,48 +28,48 @@ import {
 const groups = [
   {
     key: "response" as const,
-    label: "対応",
-    prompt: "言葉遣いや態度はいかがでしたか？",
+    label: sourceText("communication_1168"),
+    prompt: sourceText("howWereTheLanguageAndAttitude"),
     options: [
-      "丁寧な言葉で優しい口調",
-      "普通の対応だった",
-      "言葉遣いが悪く威圧的だった",
-      "その他",
+      sourceText("politeLanguageAndAKindTone"),
+      sourceText("standardCommunication"),
+      sourceText("rudeOrIntimidatingLanguage"),
+      sourceText("other"),
     ],
   },
   {
     key: "description" as const,
-    label: "案件説明",
-    prompt: "説明や企業名に相違はありませんでしたか？",
+    label: sourceText("jobExplanation"),
+    prompt: sourceText("wereTheExplanationAndCompanyNameAccurate"),
     options: [
-      "説明・企業名に相違はなかった",
-      "仕事内容や条件に一部相違があった",
-      "説明と案件企業名が違っていた",
-      "その他",
+      sourceText("theExplanationAndCompanyNameWereAccurate"),
+      sourceText("someDutiesOrTermsDiffered"),
+      sourceText("theClientCompanyDifferedFromTheExplanation"),
+      sourceText("other"),
     ],
   },
   {
     key: "work" as const,
-    label: "仕事内容（任意）",
-    prompt: "勤務後の仕事内容・対応速度・休暇連絡への対応はいかがでしたか？",
+    label: sourceText("workExperienceOptional"),
+    prompt: sourceText("howWereTheActualWorkResponseSpeed"),
     options: [
-      "説明どおりで対応も適切だった",
-      "一部相違があった",
-      "業務や休暇連絡への対応に問題があった",
-      "まだ勤務していない",
-      "その他",
+      sourceText("theWorkMatchedTheExplanationAndResponses"),
+      sourceText("someDifferencesExisted"),
+      sourceText("thereWereIssuesWithTheWorkOr"),
+      sourceText("iHaveNotStartedWorkingYet"),
+      sourceText("other"),
     ],
   },
 ];
 const scores = [
-  { label: "未選択", value: "0" },
+  { label: sourceText("notSelected_600"), value: "0" },
   ...Array.from({ length: 9 }, (_, i) => {
     const n = 1 + i * 0.5;
     return { label: `${n.toFixed(1)} / 5.0`, value: String(n) };
   }),
 ];
 const date = (iso: string) =>
-  new Date(iso).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" });
+  new Date(iso).toLocaleDateString(localeTag(), { timeZone: "Asia/Tokyo" });
 export function EvaluationForm({
   application,
   onComplete,
@@ -85,6 +81,8 @@ export function EvaluationForm({
   onComplete?: () => void;
   onCancel?: () => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { submit, records, now, ready } = useEvaluations();
   const [draft, setDraft] = useState(
       () =>
@@ -122,7 +120,9 @@ export function EvaluationForm({
       await submit(application.id, draft);
       onComplete?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "評価を保存できませんでした。");
+      setError(
+        e instanceof Error ? e.message : sourceText("unableToSaveTheReview"),
+      );
     } finally {
       setBusy(false);
     }
@@ -132,15 +132,15 @@ export function EvaluationForm({
     <Panel>
       <View style={s.row}>
         <View style={{ flex: 1 }}>
-          <SectionTitle>企業・案件への評価</SectionTitle>
-          <Text style={s.meta}>
+          <SectionTitle>{tText("reviewACompanyOrOpportunity")}</SectionTitle>
+          <Text localize={false} style={s.meta}>
             {application.company} ／ {application.title}
           </Text>
         </View>
         {onCancel && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="評価を閉じる"
+            accessibilityLabel={tText("closeReview")}
             disabled={busy}
             onPress={onCancel}
             style={s.close}
@@ -149,39 +149,40 @@ export function EvaluationForm({
           </Pressable>
         )}
       </View>
-      <Text style={s.meta}>
-        5.0 最優良企業 ／ 4.0以上 優良企業 ／ 3.0以上 通常企業 ／ 2.0以下
-        注意企業
-      </Text>
+      <Text style={s.meta}>{tText("50Outstanding40Excellent3")}</Text>
       {deadline && (
-        <Text style={s.meta}>評価期限：{date(deadline)}（内定から3か月）</Text>
+        <Text style={s.meta}>
+          {tText("reviewDeadline")}
+          {date(deadline)}
+          {tText("3MonthsAfterTheJobOffer")}
+        </Text>
       )}
       <Text style={s.info}>
-        対応・案件説明は点数とアンケートまたはコメントを回答してください。仕事内容が未回答なら5.0で計算します。
+        {tText("provideScoresAndEitherAQuestionnaireAnswer")}
       </Text>
       {groups.map((g) => (
         <View key={g.key} style={s.group}>
           <Text style={s.label}>{g.label}</Text>
           <Text style={s.meta}>{g.prompt}</Text>
           <AppSelect
-            label={`${g.label}の点数`}
+            label={sourceFormat("score", { v0: g.label }, [])}
             value={String(draft[g.key].score)}
             onValueChange={(v) => change(g.key, "score", Number(v))}
             options={scores}
             disabled={busy || !available}
           />
           <AppSelect
-            label={`${g.label}のアンケート`}
+            label={sourceFormat("questionnaire", { v0: g.label }, [])}
             value={draft[g.key].choices[0] ?? ""}
             onValueChange={(v) => change(g.key, "choices", v ? [v] : [])}
             options={[
-              { label: "選択してください", value: "" },
+              { label: sourceText("selectAnOption"), value: "" },
               ...g.options.map((value) => ({ value, label: value })),
             ]}
             disabled={busy || !available}
           />
           <AppTextArea
-            label={`${g.label}のコメント（任意）`}
+            label={sourceFormat("commentOptional", { v0: g.label }, [])}
             value={draft[g.key].comment}
             onChangeText={(v) => change(g.key, "comment", v)}
             maxLength={2000}
@@ -191,16 +192,13 @@ export function EvaluationForm({
       ))}
       {draft.response.score > 0 && draft.description.score > 0 && (
         <Text style={s.total}>
-          総合評価：{calculateTotal(draft).toFixed(1)} / 5.0
+          {tText("overallRating_1194")}
+          {calculateTotal(draft).toFixed(1)} / 5.0
         </Text>
       )}
-      <Text style={s.meta}>
-        評価をサーバーに送信します。相手側へは15〜30日後に反映されます。
-      </Text>
+      <Text style={s.meta}>{tText("theReviewIsSentToTheServer")}</Text>
       {!available && (
-        <Text style={s.error}>
-          評価済み、評価対象外、または評価期限が終了しています。
-        </Text>
+        <Text style={s.error}>{tText("thisItemHasAlreadyBeenReviewedIs")}</Text>
       )}
       {!!error && (
         <Text accessibilityRole="alert" style={s.error}>
@@ -210,7 +208,7 @@ export function EvaluationForm({
       <View style={s.row}>
         {onCancel && (
           <AppButton
-            label="閉じる"
+            label={tText("close")}
             outline
             onPress={() => {
               if (!busy) onCancel();
@@ -218,7 +216,7 @@ export function EvaluationForm({
           />
         )}
         <AppButton
-          label={busy ? "保存中…" : "評価を送信"}
+          label={busy ? sourceText("saving") : sourceText("submitReview")}
           onPress={() => void send()}
         />
       </View>
@@ -235,6 +233,8 @@ export function EvaluationModal({
   visible: boolean;
   onClose: () => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <Modal
       transparent
@@ -264,14 +264,16 @@ export function EvaluationDetail({
 }: {
   application: Application | undefined;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { records, ready, error, now, remove } = useEvaluations();
   const [editing, setEditing] = useState(false);
   if (!application)
     return (
       <Panel>
         <View style={s.empty}>
-          <SectionTitle>評価内容が表示されます</SectionTitle>
-          <BodyText>左の一覧からやり取りを選択してください。</BodyText>
+          <SectionTitle>{tText("reviewContentAppearsHere")}</SectionTitle>
+          <BodyText>{tText("selectAnInteractionFromTheListOn")}</BodyText>
         </View>
       </Panel>
     );
@@ -292,10 +294,10 @@ export function EvaluationDetail({
   return (
     <View style={{ gap: 14 }}>
       <Panel>
-        <SectionTitle>{application.company}</SectionTitle>
-        <BodyText>{application.title}</BodyText>
+        <SectionTitle localize={false}>{application.company}</SectionTitle>
+        <BodyText localize={false}>{application.title}</BodyText>
         {!ready ? (
-          <BodyText>{error || "評価を読み込み中…"}</BodyText>
+          <BodyText>{error || sourceText("loadingReview")}</BodyText>
         ) : record ? (
           <>
             <Text style={s.total}>
@@ -303,13 +305,13 @@ export function EvaluationDetail({
             </Text>
             <Text style={s.info}>
               {record.mode === "automatic"
-                ? "期限終了による自動評価（4.5）"
-                : "あなたが記入した評価"}
+                ? sourceText("automaticReviewAfterTheDeadline45")
+                : sourceText("yourReview")}
             </Text>
             <Text style={s.meta}>
               {now >= Date.parse(record.publishAt)
-                ? "相手側への反映期間に到達しました。"
-                : "相手側への反映待ち（評価から15〜30日）"}
+                ? sourceText("thePublicationWaitingPeriodHasEnded")
+                : sourceText("waitingForPublication1530DaysAfter")}
             </Text>
             {record.mode === "manual" && (
               <View style={s.row}>
@@ -317,20 +319,23 @@ export function EvaluationDetail({
                   deadline &&
                   now < Date.parse(deadline) && (
                     <AppButton
-                      label="評価を編集"
+                      label={tText("editReview_1203")}
                       outline
                       onPress={() => setEditing(true)}
                     />
                   )}
                 <ConfirmAction
-                  label="評価を削除"
+                  label={tText("deleteReview")}
                   danger
-                  message="評価を削除しますか？ 同じ選考への再登録はできません。"
+                  message={tText("deleteThisReviewYouCannotSubmitAnother")}
                   onConfirm={() => remove(application.id)}
                 />
               </View>
             )}
-            <Text style={s.meta}>評価日：{date(record.submittedAt)}</Text>
+            <Text style={s.meta}>
+              {tText("reviewDate")}
+              {date(record.submittedAt)}
+            </Text>
             {record.answers &&
               groups.map((g) => (
                 <View key={g.key} style={s.group}>
@@ -342,8 +347,8 @@ export function EvaluationDetail({
                       {c}
                     </Text>
                   ))}
-                  <BodyText>
-                    {record.answers![g.key].comment || "コメントなし"}
+                  <BodyText localize={false}>
+                    {record.answers![g.key].comment || tText("noComment")}
                   </BodyText>
                 </View>
               ))}
@@ -351,21 +356,19 @@ export function EvaluationDetail({
         ) : canEvaluate(application, undefined, now) ? (
           <>
             <Text style={s.meta}>
-              評価期限：{deadline ? date(deadline) : "—"}
+              {tText("reviewDeadline")}
+              {deadline ? date(deadline) : "—"}
             </Text>
           </>
         ) : (
           <BodyText>
             {deadline && now >= Date.parse(deadline)
-              ? "評価期限が終了しました。対象の未評価は自動評価になります。"
-              : "内定・内定辞退の状態になった場合に評価できます。"}
+              ? sourceText("theReviewPeriodHasEndedEligibleUnreviewed")
+              : sourceText("reviewsAreAvailableAfterAJobOffer")}
           </BodyText>
         )}
       </Panel>
-      <Text style={s.meta}>
-        5.0 最優良企業／4.0〜4.9 優良企業／3.0〜3.9 通常企業／2.1〜2.9
-        要確認／2.0以下 注意企業
-      </Text>
+      <Text style={s.meta}>{tText("50Outstanding4049")}</Text>
     </View>
   );
 }
@@ -376,6 +379,8 @@ export function EvaluationButton({
   application: Application;
   onPress: () => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { records, ready, now } = useEvaluations();
   if (
     !ready ||
@@ -389,11 +394,11 @@ export function EvaluationButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="企業・案件を評価する"
+      accessibilityLabel={tText("reviewCompanyOrOpportunity")}
       onPress={onPress}
       style={s.button}
     >
-      <Text style={s.buttonText}>☆ 評価する</Text>
+      <Text style={s.buttonText}>{tText("writeAReview")}</Text>
     </Pressable>
   );
 }

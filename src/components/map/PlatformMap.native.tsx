@@ -1,3 +1,5 @@
+import { translateText } from "@/i18n/display";
+import { tText, useLocaleVersion } from "@/i18n/display";
 import { COLORS } from "@/theme/colors";
 import type { PlatformMapProps } from "@/types/map";
 import { StyleSheet } from "react-native";
@@ -9,6 +11,8 @@ export default function PlatformMap({
   craftsmen,
   onRegionChangeComplete,
 }: PlatformMapProps) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <MapView
       style={styles.map}
@@ -17,7 +21,7 @@ export default function PlatformMap({
     >
       <Marker
         coordinate={{ latitude: region.latitude, longitude: region.longitude }}
-        title="検索中心"
+        title={tText("searchCenter")}
         pinColor={COLORS.primary}
       />
 
@@ -38,8 +42,8 @@ export default function PlatformMap({
               region.longitude +
               (index % 2 === 0 ? 0.009 : -0.008) * (index + 1),
           }}
-          title={item.name}
-          description={`${item.job} / ${item.distance}`}
+          title={translateText(item.name)}
+          description={`${translateText(item.job)} / ${translateText(item.distance)}`}
         />
       ))}
     </MapView>

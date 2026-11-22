@@ -1,6 +1,9 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import {
@@ -24,6 +27,8 @@ import FavoriteButton from "@/components/search/FavoriteButton";
 import JobSearchCard from "@/components/search/JobSearchCard";
 import PublishedCompanyEvaluations from "@/features/evaluations/PublishedCompanyEvaluations";
 export default function CompanyDetailPage() {
+  "use no memo";
+  useLocaleVersion();
   const { id = "" } = useLocalSearchParams<{ id: string }>();
   const r = useResource<CompanyRow | null>(
     id ? `/companies/${id}` : null,
@@ -51,7 +56,7 @@ export default function CompanyDetailPage() {
         "company",
         id,
         company.companyName,
-        "企業へのお問い合わせ",
+        sourceText("contactTheCompany"),
       );
       router.push({ pathname: "/messages", params: { room } });
     } catch (e) {
@@ -61,12 +66,12 @@ export default function CompanyDetailPage() {
     }
   }
   return (
-    <AppPage title="企業詳細" subtitle="">
+    <AppPage title={tText("companyDetails")} subtitle="">
       <ResourceStatus loading={r.loading} error={r.error} onRetry={r.refresh} />
       {company && (
         <>
           <Panel>
-            <Text style={{ fontSize: 22, fontWeight: "700" }}>
+            <Text localize={false} style={{ fontSize: 22, fontWeight: "700" }}>
               {company.companyName}
             </Text>
             <BodyText>
@@ -77,49 +82,63 @@ export default function CompanyDetailPage() {
               kind="company"
               item={company}
             />
-            <BodyText>{company.description || "紹介文は未登録です。"}</BodyText>
+            <BodyText localize={false}>
+              {company.description || tText("noIntroductionHasBeenAdded")}
+            </BodyText>
             <AppButton
-              label={busy ? "処理中…" : "企業へメッセージ"}
+              label={
+                busy ? sourceText("processing") : sourceText("messageCompany")
+              }
               onPress={() => void contact()}
             />
             {!!error && <Text style={{ color: "#B42318" }}>{error}</Text>}
           </Panel>
           <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
             <StatCard
-              label="企業評価"
+              label={tText("companyReviews")}
               value={
                 company.reviewCount
                   ? Number(company.rating).toFixed(1)
-                  : "未評価"
+                  : sourceText("notReviewed")
               }
             />
-            <StatCard label="公開求人数" value={String(company.openJobCount)} />
             <StatCard
-              label="評価協力率"
+              label={tText("openJobs_133")}
+              value={String(company.openJobCount)}
+            />
+            <StatCard
+              label={tText("reviewParticipationRate")}
               value={`${company.reviewParticipationRate}%`}
             />
           </View>
           <Tabs
-            label="企業詳細"
+            label={tText("companyDetails")}
             value={tab}
             onChange={setTab}
             options={[
-              { value: "overview", label: "企業情報" },
-              { value: "jobs", label: "募集求人", count: jobs.data.total },
-              { value: "reviews", label: "評価" },
+              {
+                value: "overview",
+                label: sourceText("companyInformation_135"),
+              },
+              {
+                value: "jobs",
+                label: sourceText("jobOpenings"),
+                count: jobs.data.total,
+              },
+              { value: "reviews", label: sourceText("reviews") },
             ]}
           />
           {tab === "overview" && (
             <Panel>
-              <SectionTitle>企業概要</SectionTitle>
+              <SectionTitle>{tText("companyOverview")}</SectionTitle>
               {[
-                ["企業名", company.companyName],
-                ["業種", company.industry],
-                ["所在地", company.location],
-                ["従業員数", company.employeeRange],
+                [sourceText("companyName"), company.companyName],
+                [sourceText("industry"), company.industry],
+                [sourceText("location"), company.location],
+                [sourceText("numberOfEmployees"), company.employeeRange],
               ].map(([label, value]) => (
                 <BodyText key={label}>
-                  {label}：{value || "未登録"}
+                  {label}：{value || sourceText("notRegistered")}
                 </BodyText>
               ))}
             </Panel>
@@ -140,11 +159,11 @@ export default function CompanyDetailPage() {
                 />
               ))}
               {!jobs.loading && !jobs.error && !jobs.data.total && (
-                <BodyText>公開中の求人はありません。</BodyText>
+                <BodyText>{tText("thereAreNoOpenJobs")}</BodyText>
               )}
               {jobs.data.total > 20 && (
                 <AppButton
-                  label="すべての募集求人を見る"
+                  label={tText("seeAllJobOpenings")}
                   outline
                   onPress={() =>
                     router.push({

@@ -1,3 +1,7 @@
+import { translateText } from "@/i18n/display";
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { useLocaleVersion } from "@/i18n/display";
+import { Alert, Pressable } from "@/i18n/native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useWorkspace,
@@ -5,7 +9,7 @@ import {
 } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { router } from "expo-router";
-import { Alert, Pressable, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import { SEARCH_COLORS as C } from "./theme";
 
 export default function FavoriteButton({
@@ -19,6 +23,8 @@ export default function FavoriteButton({
   item: Favorite["item"];
   kind: Favorite["kind"];
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { favorites, ready, toggleFavorite, mockMode } = useWorkspace();
   const { user, ready: authReady } = useAuth();
   const active = favorites.some((f) => f.key === `${kind}:${item.id}`);
@@ -33,13 +39,24 @@ export default function FavoriteButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${label}をお気に入り${active ? "から解除" : "に登録"}`}
+      accessibilityLabel={translateText(
+        sourceFormat(
+          "favorites_659",
+          {
+            v0: label,
+            v1: active
+              ? sourceText("removeFromSuffix")
+              : sourceText("addToSuffix"),
+          },
+          ["v0"],
+        ),
+      )}
       accessibilityState={{ selected: active }}
       disabled={!authReady || ((!!user || mockMode) && !ready)}
       onPress={() =>
         user || mockMode
           ? void toggleFavorite(kind, item).catch((e) =>
-              Alert.alert("お気に入り", e.message),
+              Alert.alert(sourceText("favorites"), e.message),
             )
           : router.push("/auth")
       }

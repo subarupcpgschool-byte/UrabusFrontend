@@ -1,3 +1,5 @@
+import { sourceText } from "@/i18n/source";
+import { useLocaleVersion } from "@/i18n/display";
 import {
   createContext,
   useContext,
@@ -88,6 +90,8 @@ type Context = WorkspaceState & {
 };
 const C = createContext<Context | null>(null);
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
+  "use no memo";
+  useLocaleVersion();
   const { token, ready: authReady } = useAuth();
   const favorites = useResource<FavoriteRow[]>(
     token ? "/favorites" : null,
@@ -125,14 +129,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [rooms.data],
   );
   async function execute<T>(operation: () => Promise<T>) {
-    if (!token) throw new Error("ログインしてください。");
+    if (!token) throw new Error(sourceText("pleaseLogIn"));
     setProblem({ token, message: "" });
     try {
       return await operation();
     } catch (e) {
       setProblem({
         token,
-        message: e instanceof Error ? e.message : "処理できませんでした。",
+        message:
+          e instanceof Error
+            ? e.message
+            : sourceText("unableToCompleteTheAction"),
       });
       throw e;
     }
@@ -197,6 +204,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 }
 export function useWorkspace() {
   const c = useContext(C);
-  if (!c) throw new Error("WorkspaceProviderが必要です");
+  if (!c) throw new Error(sourceText("workspaceproviderIsRequired"));
   return c;
 }

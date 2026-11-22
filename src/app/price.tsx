@@ -1,13 +1,14 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { Header } from "@/components/common/Header";
 import { Logo } from "@/components/common/Logo";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
   useWindowDimensions,
 } from "react-native";
@@ -17,21 +18,31 @@ const navy = "#081b50",
   green = "#18833c";
 const questions = [
   [
-    "有料になるのは何件目からですか？",
-    "現在は全企業が無料プランで、企業募集1件・求人募集3件まで、それぞれ公開できます。上限を超える募集は非公開で保存できます。有料プランは準備中です。",
+    sourceText("whenDoesPaidPostingBegin"),
+    sourceText("allCompaniesCurrentlyUseTheFreePlan"),
   ],
   [
-    "割引を受けるために必要なことは？",
-    "応募後の交渉終了と、試用期間中の評価記入が条件です。締切を過ぎると割引対象外となります。",
+    sourceText("whatIsRequiredForADiscount"),
+    sourceText("concludeApplicationNegotiationsAndSubmitHiringReviews"),
   ],
 ];
 const comparison = [
-  ["求人掲載数", "求人募集3件・企業募集1件まで", "準備中"],
-  ["基本料金", "0円", "8,000円"],
-  ["条件達成による割引", "—", "最大3,000円"],
-  ["採用成功による追加料金", "0円", "0円"],
+  [
+    sourceText("postingAllowance"),
+    sourceText("upToThreeJobPostingsAndOne"),
+    sourceText("comingSoon"),
+  ],
+  [sourceText("baseFee"), sourceText("jpy0"), sourceText("jpy8000")],
+  [sourceText("discountForMeetingConditions"), "—", sourceText("upToJpy3000")],
+  [
+    sourceText("additionalHiringSuccessFee"),
+    sourceText("jpy0"),
+    sourceText("jpy0"),
+  ],
 ];
 function Action({ label, color = blue }: { label: string; color?: string }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <Pressable
       accessibilityRole="button"
@@ -58,6 +69,8 @@ function Action({ label, color = blue }: { label: string; color?: string }) {
   );
 }
 function Feature({ children, color }: { children: string; color: string }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <View style={s.feature}>
       <Ionicons name="checkmark-circle" color={color} size={27} />
@@ -66,6 +79,8 @@ function Feature({ children, color }: { children: string; color: string }) {
   );
 }
 export default function PriceScreen() {
+  "use no memo";
+  useLocaleVersion();
   const { width } = useWindowDimensions();
   const desktop = width >= 1000,
     columns = width >= 760;
@@ -77,17 +92,17 @@ export default function PriceScreen() {
       <View style={s.main}>
         <View style={s.breadcrumb}>
           <Pressable onPress={() => router.push("/")}>
-            <Text style={s.small}>ホーム</Text>
+            <Text style={s.small}>{tText("home")}</Text>
           </Pressable>
           <Ionicons name="chevron-forward" size={13} color={navy} />
-          <Text style={s.small}>料金体系</Text>
+          <Text style={s.small}>{tText("pricing_493")}</Text>
         </View>
 
         <View accessibilityRole="tablist" style={s.segment}>
           {(
             [
-              { key: "company", label: "企業" },
-              { key: "user", label: "ユーザー" },
+              { key: "company", label: sourceText("company") },
+              { key: "user", label: sourceText("individualUser_494") },
             ] as const
           ).map((x) => (
             <Pressable
@@ -122,20 +137,20 @@ export default function PriceScreen() {
                 ]}
               >
                 <Text style={[s.pill, { backgroundColor: green }]}>
-                  無料プラン
+                  {tText("freePlan")}
                 </Text>
                 <Text style={[s.price, { color: green }]}>
-                  0<Text style={s.unit}>円</Text>
+                  0<Text style={s.unit}>{tText("jpy")}</Text>
                 </Text>
                 <Text style={[s.body, s.center]}>
-                  まずは無料で求人掲載を始めたい企業さまへ
+                  {tText("forCompaniesGettingStartedWithFreeJob")}
                 </Text>
                 <View style={s.features}>
                   {[
-                    "求人募集3件・企業募集1件まで",
-                    "求人管理",
-                    "応募者とのチャット",
-                    "採用成功による追加料金なし",
+                    sourceText("upToThreeJobPostingsAndOne"),
+                    sourceText("jobManagement"),
+                    sourceText("chatWithApplicants"),
+                    sourceText("noAdditionalHiringSuccessFees"),
                   ].map((x) => (
                     <Feature key={x} color={green}>
                       {x}
@@ -143,7 +158,7 @@ export default function PriceScreen() {
                   ))}
                 </View>
                 <View style={s.space} />
-                <Action label="無料で掲載を始める" color={green} />
+                <Action label={tText("startPostingForFree")} color={green} />
               </View>
               <View
                 style={[
@@ -152,34 +167,36 @@ export default function PriceScreen() {
                 ]}
               >
                 <Text style={[s.pill, { backgroundColor: blue }]}>
-                  有料掲載プラン（準備中）
+                  {tText("paidPostingPlanComingSoon")}
                 </Text>
                 <Text style={[s.body, s.center]}>
-                  4件以上の掲載に向けて準備中
+                  {tText("plansForFourOrMoreJobPostings")}
                 </Text>
                 <Text style={[s.body, s.center, { marginTop: 12 }]}>
-                  基本料金
+                  {tText("baseFee")}
                 </Text>
                 <Text style={[s.price, { color: blue, fontSize: 52 }]}>
-                  8,000<Text style={s.unit}>円</Text>
+                  8,000<Text style={s.unit}>{tText("jpy")}</Text>
                 </Text>
-                <Text style={s.discount}>◆ 最大3,000円割引</Text>
+                <Text style={s.discount}>{tText("saveUpToJpy3000")}</Text>
                 <Ionicons
                   name="chevron-down"
                   size={21}
                   color={navy}
                   style={{ alignSelf: "center", marginTop: 7 }}
                 />
-                <Text style={[s.body, s.center]}>割引適用で</Text>
+                <Text style={[s.body, s.center]}>{tText("afterDiscount")}</Text>
                 <Text style={[s.price, { color: blue, fontSize: 52 }]}>
-                  5,000<Text style={s.unit}>円〜</Text>
+                  5,000<Text style={s.unit}>{tText("jpyAndUp")}</Text>
                 </Text>
-                <Text style={s.note}>割引額は条件の達成状況により決定</Text>
+                <Text style={s.note}>
+                  {tText("theDiscountDependsOnTheConditionsYou")}
+                </Text>
                 <View style={s.features}>
                   {[
-                    "求人管理",
-                    "応募者とのチャット",
-                    "採用成功による追加料金は 0円",
+                    sourceText("jobManagement"),
+                    sourceText("chatWithApplicants"),
+                    sourceText("additionalHiringSuccessFeeJpy0"),
                   ].map((x) => (
                     <Feature key={x} color={blue}>
                       {x}
@@ -188,31 +205,35 @@ export default function PriceScreen() {
                 </View>
                 <View style={s.space} />
                 <Text style={s.note}>
-                  現在は無料プランのみご利用いただけます。
+                  {tText("onlyTheFreePlanIsCurrentlyAvailable")}
                 </Text>
               </View>
             </View>
-            <Text style={s.heading}>割引の適用条件</Text>
+            <Text style={s.heading}>{tText("discountConditions")}</Text>
             <Text style={[s.body, { marginBottom: 18 }]}>
-              応募への対応と、採用後の評価が割引の条件です。
+              {tText("respondingToApplicationsAndSubmittingHiringReviews")}
             </Text>
             <View style={[s.row, !columns && s.vertical]}>
               {[
                 {
-                  title: "応募後の募集状況を「交渉終了」にする",
-                  limit: "応募から30日以内",
-                  body: "応募のあった案件は、募集状況を「交渉終了」まで進めてください。",
+                  title: sourceText(
+                    "setTheApplicationStatusToNegotiationsCompleted",
+                  ),
+                  limit: sourceText("within30DaysOfApplication"),
+                  body: sourceText(
+                    "progressApplicationsToNegotiationsCompleted",
+                  ),
                   warnings: [
-                    "応募から30日を超えた場合は割引対象外となり、「交渉終了」にするまで割引対象になりません。",
+                    sourceText("applicationsExceeding30DaysAreIneligibleUntil"),
                   ],
                 },
                 {
-                  title: "採用したユーザーを試用期間中に評価する",
-                  limit: "試用期間内",
-                  body: "採用後は、試用期間中にユーザーの評価結果と評価内容を記載してください。",
+                  title: sourceText("reviewHiredUsersDuringTheProbationPeriod"),
+                  limit: sourceText("duringTheProbationPeriod"),
+                  body: sourceText("enterARatingAndReviewContentDuring"),
                   warnings: [
-                    "評価内容が未記入の場合、評価を完了できません。",
-                    "試用期間を超えた場合は割引対象外となります。",
+                    sourceText("aReviewCannotBeCompletedWithoutReview"),
+                    sourceText("reviewsSubmittedAfterTheProbationPeriodAre"),
                   ],
                 },
               ].map((x, i) => (
@@ -244,10 +265,10 @@ export default function PriceScreen() {
                 </View>
               ))}
             </View>
-            <Text style={s.heading}>割引額の計算方法</Text>
+            <Text style={s.heading}>{tText("howDiscountsAreCalculated")}</Text>
             <View style={s.condition}>
               <Text style={[s.body, { lineHeight: 26 }]}>
-                応募対応と採用後の評価の達成率を、同じ重みで平均します。総合達成率50％以下は割引なし、100％で最大3,000円割引です。
+                {tText("applicationResponseAndHiringReviewCompletionRates")}
               </Text>
               <Text
                 style={[
@@ -255,19 +276,23 @@ export default function PriceScreen() {
                   { lineHeight: 26, marginTop: 12, fontWeight: "700" },
                 ]}
               >
-                割引額 ＝ 3,000円 × max（0,（総合達成率 − 50％）÷ 50％）
+                {tText("discountJpy3000Max0Overall")}
               </Text>
               <Text style={[s.body, { lineHeight: 25, marginTop: 12 }]}>
-                応募は毎月15日から翌月15日未満を対象とし、期間終了から30日後に判定します。応募から30日以内に交渉終了した割合で計算します。30日を超えて交渉中の応募が残っている間は、応募対応の達成率を0％として計算します。
+                {tText("applicationsAreGroupedFromThe15thOf")}
               </Text>
               <Text style={[s.body, { lineHeight: 25, marginTop: 12 }]}>
-                採用評価は対象期間内に試用期間が終了した人を集計します。評価結果と評価内容を試用期間内に記入した割合で計算します。対象が0件の項目は100％として扱います。
+                {tText("hiringReviewsCoverUsersWhoseProbationPeriod")}
               </Text>
             </View>
-            <Text style={s.heading}>プラン比較</Text>
+            <Text style={s.heading}>{tText("planComparison")}</Text>
             <View style={s.table}>
               <View style={s.tableRow}>
-                {["機能", "無料プラン", "有料掲載プラン"].map((x, i) => (
+                {[
+                  sourceText("feature"),
+                  sourceText("freePlan"),
+                  sourceText("paidPostingPlan"),
+                ].map((x, i) => (
                   <View
                     key={x}
                     style={[
@@ -306,7 +331,9 @@ export default function PriceScreen() {
                 </View>
               ))}
             </View>
-            <Text style={s.heading}>よくあるご質問</Text>
+            <Text style={s.heading}>
+              {tText("frequentlyAskedQuestions_528")}
+            </Text>
             {questions.map(([q, a], i) => (
               <View key={q} style={s.faq}>
                 <Pressable
@@ -337,20 +364,20 @@ export default function PriceScreen() {
         ) : (
           <View style={[s.plan, s.userPlan]}>
             <Text style={[s.pill, { backgroundColor: blue }]}>
-              ユーザー向け無料プラン
+              {tText("freePlanForIndividuals")}
             </Text>
             <Text style={[s.price, { color: blue }]}>
-              0<Text style={s.unit}>円</Text>
+              0<Text style={s.unit}>{tText("jpy")}</Text>
             </Text>
             <Text style={[s.body, s.center]}>
-              ユーザーの利用料金は、いつでも0円です。
+              {tText("individualUsersAlwaysPayJpy0")}
             </Text>
             <View style={s.features}>
               {[
-                "求人検索・求人詳細の閲覧",
-                "求人への応募",
-                "企業とのチャット",
-                "企業の評価",
+                sourceText("searchAndViewJobDetails"),
+                sourceText("applyForJobs"),
+                sourceText("chatWithCompanies"),
+                sourceText("reviewCompanies"),
               ].map((x) => (
                 <Feature key={x} color={blue}>
                   {x}
@@ -358,7 +385,7 @@ export default function PriceScreen() {
               ))}
             </View>
             <View style={{ height: 24 }} />
-            <Action label="無料で登録する" />
+            <Action label={tText("registerForFree")} />
           </View>
         )}
         <View style={[s.banner, !columns && s.vertical]}>
@@ -369,12 +396,14 @@ export default function PriceScreen() {
             ]}
           >
             {audience === "company"
-              ? "採用の第一歩を、ここから。"
-              : "仕事探しの第一歩を、ここから。"}
+              ? sourceText("yourNextHireStartsHere")
+              : sourceText("yourNextOpportunityStartsHere")}
           </Text>
           <Action
             label={
-              audience === "company" ? "無料で求人を掲載する" : "無料で登録する"
+              audience === "company"
+                ? sourceText("postJobsForFree_538")
+                : sourceText("registerForFree")
             }
           />
         </View>

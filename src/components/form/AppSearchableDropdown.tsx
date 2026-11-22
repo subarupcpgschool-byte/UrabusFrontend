@@ -1,12 +1,8 @@
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { tText, translateText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text, TextInput } from "@/i18n/native";
 import { useEffect, useRef, useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { INPUT_THEME as T } from "@/theme/inputTheme";
 import { AppFormField, type FieldProps } from "./AppFormField";
@@ -34,11 +30,13 @@ export function AppSearchableDropdown({
   maxOptionLength = 120,
   onCreate,
   multiple = false,
-  placeholder = "入力して検索",
+  placeholder = sourceText("typeToSearch"),
   disabled = false,
   accessibilityLabel,
   ...field
 }: AppSearchableDropdownProps) {
+  "use no memo";
+  useLocaleVersion();
   const [active, setActive] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
@@ -78,8 +76,10 @@ export function AppSearchableDropdown({
   ];
   const candidate = query.trim().replace(/\s+/g, " ");
   const searching = active && !disabled && candidate.length > 0;
-  const filtered = allOptions.filter((o) =>
-    normalize(o.label).includes(normalize(candidate)),
+  const filtered = allOptions.filter(
+    (o) =>
+      normalize(o.label).includes(normalize(candidate)) ||
+      normalize(translateText(o.label)).includes(normalize(candidate)),
   );
   const canCreate =
     allowCreate &&
@@ -90,7 +90,7 @@ export function AppSearchableDropdown({
         normalize(o.label) === normalize(candidate) ||
         normalize(o.value) === normalize(candidate),
     );
-  const name = accessibilityLabel ?? field.label ?? "選択肢";
+  const name = accessibilityLabel ?? field.label ?? sourceText("options");
 
   function select(option: ChoiceOption) {
     if (disabled || option.disabled) return;
@@ -115,7 +115,9 @@ export function AppSearchableDropdown({
       setCreated((previous) => [...new Set([...previous, saved])]);
       select({ value: saved, label: saved });
     } catch (e) {
-      setCreateError(e instanceof Error ? e.message : "追加できませんでした。");
+      setCreateError(
+        e instanceof Error ? e.message : sourceText("unableToAddTheItem"),
+      );
     } finally {
       setCreating(false);
     }
@@ -137,7 +139,9 @@ export function AppSearchableDropdown({
               </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${name}の「${v}」を解除`}
+                accessibilityLabel={translateText(
+                  sourceFormat("removeFrom", { v0: name, v1: v }, []),
+                )}
                 disabled={disabled}
                 onPress={() =>
                   onValueChange(value.filter((item) => item !== v))
@@ -152,8 +156,8 @@ export function AppSearchableDropdown({
       )}
       <AppInput
         ref={input}
-        accessibilityLabel={name}
-        placeholder={placeholder}
+        accessibilityLabel={translateText(name)}
+        placeholder={translateText(placeholder)}
         value={query}
         onChangeText={(text) => {
           setQuery(text);
@@ -180,7 +184,7 @@ export function AppSearchableDropdown({
               <Pressable
                 key={option.value}
                 accessibilityRole={multiple ? "checkbox" : "radio"}
-                accessibilityLabel={option.label}
+                accessibilityLabel={translateText(option.label)}
                 aria-checked={value.includes(option.value)}
                 accessibilityState={{
                   checked: value.includes(option.value),
@@ -205,7 +209,9 @@ export function AppSearchableDropdown({
             {canCreate && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`「${candidate}」を新規追加`}
+                accessibilityLabel={translateText(
+                  sourceFormat("addAsANewOption", { v0: candidate }, ["v0"]),
+                )}
                 onFocus={keepOpen}
                 onBlur={closeAfterBlur}
                 disabled={creating}
@@ -217,11 +223,16 @@ export function AppSearchableDropdown({
                   size={22}
                   color={T.primaryColor}
                 />
-                <Text style={s.text}>「{candidate}」を新規追加</Text>
+                <Text style={s.text}>
+                  「{candidate}
+                  {tText("asANewOption")}
+                </Text>
               </Pressable>
             )}
             {!filtered.length && !canCreate && (
-              <Text style={[s.text, s.empty]}>該当する候補がありません</Text>
+              <Text style={[s.text, s.empty]}>
+                {tText("noMatchingOptions")}
+              </Text>
             )}
           </ScrollView>
         </View>

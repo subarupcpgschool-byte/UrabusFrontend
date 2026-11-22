@@ -1,5 +1,8 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import { dataRequest } from "@/api/platform";
@@ -22,6 +25,8 @@ export default function CompanyContractPanel({
 }: {
   item: InteractionRow;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { token } = useAuth();
   const r = useResource<ContractRow[]>(token ? "/contracts" : null, [], true),
     reviews = useResource<EvaluationRow[]>(
@@ -36,7 +41,7 @@ export default function CompanyContractPanel({
   const [title, setTitle] = useState(item.title),
     [start, setStart] = useState(""),
     [end, setEnd] = useState(""),
-    [status, setStatus] = useState("契約中"),
+    [status, setStatus] = useState<string>(sourceText("activeContract")),
     [rating, setRating] = useState("0"),
     [comment, setComment] = useState(""),
     [scores, setScores] = useState(["5", "5", "5"]),
@@ -47,13 +52,17 @@ export default function CompanyContractPanel({
     setTitle(contract?.title || item.title);
     setStart(contract?.startDate || "");
     setEnd(contract?.endDate || "");
-    setStatus(contract?.status || "契約中");
+    setStatus(contract?.status || sourceText("activeContract"));
   }, [contract?.id, contract?.version, item.id]);
   useEffect(() => {
     setRating(previous ? String(previous.total) : "0");
     setComment(previous?.comment || "");
     setScores(
-      ["仕事の品質", "コミュニケーション", "納期・責任感"].map((label) =>
+      [
+        sourceText("workQuality"),
+        sourceText("communication"),
+        sourceText("timelinessAndResponsibility"),
+      ].map((label) =>
         String(previous?.scores.find((s) => s.label === label)?.value || 5),
       ),
     );
@@ -65,7 +74,7 @@ export default function CompanyContractPanel({
     setNotice("");
     try {
       await operation();
-      setNotice("保存しました。");
+      setNotice(sourceText("saved"));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -85,34 +94,37 @@ export default function CompanyContractPanel({
       {!!error && <Text style={{ color: "#B42318" }}>{error}</Text>}
       {!!notice && <Text>{notice}</Text>}
       <Panel>
-        <SectionTitle>契約情報</SectionTitle>
-        {item.companyResult !== "内定" ? (
-          <BodyText>内定確定後に契約を登録できます。</BodyText>
+        <SectionTitle>{tText("contractInformation")}</SectionTitle>
+        {item.companyResult !== sourceText("jobOffer") ? (
+          <BodyText>{tText("contractsCanBeRegisteredAfterAJob")}</BodyText>
         ) : (
           <>
             <AppInput
-              label="契約名"
+              label={tText("contractName")}
               value={title}
               onChangeText={setTitle}
               editable={item.canEdit !== false && !busy}
             />
             <AppDatePicker
-              label="契約開始日"
+              label={tText("contractStartDate")}
               value={start}
               onValueChange={setStart}
               disabled={item.canEdit === false || busy}
             />
             <AppDatePicker
-              label="契約終了日"
+              label={tText("contractEndDate")}
               value={end}
               onValueChange={setEnd}
               disabled={item.canEdit === false || busy}
             />
             <AppSelect
-              label="契約状態"
+              label={tText("contractStatus")}
               value={status}
               onValueChange={setStatus}
-              options={["契約中", "契約終了"].map((value) => ({
+              options={[
+                sourceText("activeContract"),
+                sourceText("contractEnded"),
+              ].map((value) => ({
                 value,
                 label: value,
               }))}
@@ -121,7 +133,11 @@ export default function CompanyContractPanel({
             {item.canEdit !== false && (
               <AppButton
                 label={
-                  busy ? "処理中…" : contract ? "契約を更新" : "契約を登録"
+                  busy
+                    ? sourceText("processing")
+                    : contract
+                      ? sourceText("updateContract")
+                      : sourceText("registerContract")
                 }
                 onPress={() =>
                   void run(() =>
@@ -144,9 +160,9 @@ export default function CompanyContractPanel({
             )}{" "}
             {contract && item.canDelete && (
               <ConfirmAction
-                label="契約を削除"
+                label={tText("deleteContract")}
                 danger
-                message="契約を削除しますか？"
+                message={tText("deleteThisContract")}
                 onConfirm={() =>
                   dataRequest(
                     `/contracts/${contract.id}?version=${contract.version}`,
@@ -162,16 +178,14 @@ export default function CompanyContractPanel({
       </Panel>
       {contract && (
         <Panel>
-          <SectionTitle>契約したユーザーへの評価</SectionTitle>
-          <BodyText>
-            企業からユーザーへ送信します。公開は15〜30日後です。
-          </BodyText>
+          <SectionTitle>{tText("reviewAContractedUser")}</SectionTitle>
+          <BodyText>{tText("sentFromTheCompanyToTheUser")}</BodyText>
           <AppSelect
-            label="総合評価"
+            label={tText("overallRating")}
             value={rating}
             onValueChange={setRating}
             options={[
-              { value: "0", label: "選択してください" },
+              { value: "0", label: sourceText("selectAnOption") },
               ...[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((v) => ({
                 value: String(v),
                 label: `${v} / 5`,
@@ -179,25 +193,27 @@ export default function CompanyContractPanel({
             ]}
             disabled={item.canEdit === false || busy}
           />
-          {["仕事の品質", "コミュニケーション", "納期・責任感"].map(
-            (label, index) => (
-              <AppSelect
-                key={label}
-                label={label}
-                value={scores[index]}
-                onValueChange={(value) =>
-                  setScores((s) => s.map((v, i) => (i === index ? value : v)))
-                }
-                options={[1, 2, 3, 4, 5].map((v) => ({
-                  value: String(v),
-                  label: String(v),
-                }))}
-                disabled={item.canEdit === false || busy}
-              />
-            ),
-          )}
+          {[
+            sourceText("workQuality"),
+            sourceText("communication"),
+            sourceText("timelinessAndResponsibility"),
+          ].map((label, index) => (
+            <AppSelect
+              key={label}
+              label={label}
+              value={scores[index]}
+              onValueChange={(value) =>
+                setScores((s) => s.map((v, i) => (i === index ? value : v)))
+              }
+              options={[1, 2, 3, 4, 5].map((v) => ({
+                value: String(v),
+                label: String(v),
+              }))}
+              disabled={item.canEdit === false || busy}
+            />
+          ))}
           <AppTextArea
-            label="評価コメント"
+            label={tText("reviewComment")}
             value={comment}
             onChangeText={setComment}
             maxLength={2000}
@@ -205,7 +221,13 @@ export default function CompanyContractPanel({
           />
           {item.canEdit !== false && (
             <AppButton
-              label={busy ? "処理中…" : previous ? "評価を更新" : "評価を送信"}
+              label={
+                busy
+                  ? sourceText("processing")
+                  : previous
+                    ? sourceText("updateReview")
+                    : sourceText("submitReview")
+              }
               onPress={() =>
                 void run(() =>
                   dataRequest(
@@ -216,9 +238,9 @@ export default function CompanyContractPanel({
                       rating: Number(rating),
                       comment,
                       scores: [
-                        "仕事の品質",
-                        "コミュニケーション",
-                        "納期・責任感",
+                        sourceText("workQuality"),
+                        sourceText("communication"),
+                        sourceText("timelinessAndResponsibility"),
                       ].map((label, i) => ({
                         label,
                         value: Number(scores[i]),
@@ -233,9 +255,9 @@ export default function CompanyContractPanel({
           )}{" "}
           {previous && item.canDelete && (
             <ConfirmAction
-              label="評価を削除"
+              label={tText("deleteReview")}
               danger
-              message="この評価を削除しますか？ 削除後の再登録はできません。"
+              message={tText("deleteThisReviewItCannotBeRegistered")}
               onConfirm={() =>
                 dataRequest(
                   `/evaluations/${previous.id}?version=${previous.version}`,

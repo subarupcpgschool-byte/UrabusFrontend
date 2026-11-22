@@ -1,5 +1,7 @@
-import { EvaluationProvider } from '@/features/evaluations/EvaluationProvider';
-import { AccountProvider } from '@/features/account/AccountProvider';
+import { LanguageProvider } from "@/i18n/LanguageProvider";
+import { useLocaleVersion } from "@/i18n/display";
+import { EvaluationProvider } from "@/features/evaluations/EvaluationProvider";
+import { AccountProvider } from "@/features/account/AccountProvider";
 import InputFocusStyles from "@/components/common/InputFocusStyles";
 import { WorkspaceProvider } from "@/features/workspace/WorkspaceProvider";
 import AppReadyGate from "@/components/common/AppReadyGate";
@@ -8,32 +10,36 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
 export default function RootLayout() {
+  "use no memo";
+  useLocaleVersion();
   return (
-    <AuthProvider>
-      <InputFocusStyles />
-      <WorkspaceProvider>
-      <AccountProvider>
-      <EvaluationProvider>
-      <AppReadyGate>
-      <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: "#F5F8FC" },
-          animation: "slide_from_right",
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="auth" />
-        <Stack.Screen name="jobs/index" />
-        <Stack.Screen name="jobs/[id]" />
-        <Stack.Screen name="jobs/[id]/apply" />
-        <Stack.Screen name="companies/index" />
-      </Stack>
-      </AppReadyGate>
-      </EvaluationProvider>
-      </AccountProvider>
-      </WorkspaceProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <InputFocusStyles />
+        <WorkspaceProvider>
+          <AccountProvider>
+            <EvaluationProvider>
+              <AppReadyGate>
+                <StatusBar style="dark" />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: "#F5F8FC" },
+                    animation: "slide_from_right",
+                  }}
+                >
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="auth" />
+                  <Stack.Screen name="jobs/index" />
+                  <Stack.Screen name="jobs/[id]" />
+                  <Stack.Screen name="jobs/[id]/apply" />
+                  <Stack.Screen name="companies/index" />
+                </Stack>
+              </AppReadyGate>
+            </EvaluationProvider>
+          </AccountProvider>
+        </WorkspaceProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }

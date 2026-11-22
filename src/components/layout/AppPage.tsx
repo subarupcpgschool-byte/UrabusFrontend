@@ -1,3 +1,7 @@
+import { translateText } from "@/i18n/display";
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 
 import { Header } from "@/components/common/Header";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
@@ -5,11 +9,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
 import { useState, type PropsWithChildren } from "react";
 import {
-  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -25,25 +27,41 @@ type Props = PropsWithChildren<{
 
 const menus = {
   user: [
-    ["person-circle-outline", "マイページ", "/mypage"],
-    ["grid-outline", "ダッシュボード", "/"],
-    ["document-text-outline", "選考・オファー状況", "/user/applications"],
-    ["star-outline", "評価", "/user/evaluations"],
-    ["chatbubbles-outline", "メッセージ", "/messages"],
-    ["person-outline", "経歴書", "/user/resume"],
+    ["person-circle-outline", sourceText("myPage"), "/mypage"],
+    ["grid-outline", sourceText("dashboard"), "/"],
+    [
+      "document-text-outline",
+      sourceText("applicationsAndOffers_641"),
+      "/user/applications",
+    ],
+    ["star-outline", sourceText("reviews"), "/user/evaluations"],
+    ["chatbubbles-outline", sourceText("messages"), "/messages"],
+    ["person-outline", sourceText("resume"), "/user/resume"],
   ],
   company: [
-    ["grid-outline", "ダッシュボード", "/company"],
-    ["people-outline", "応募・選考管理", "/company/applications"],
-    ["briefcase-outline", "求人管理", "/company/jobs"],
-    ["search-outline", "人材検索", "/company/talent"],
-    ["business-outline", "企業・権限", "/company/settings"],
-    ["people-circle-outline", "従業員管理", "/company/employees"],
+    ["grid-outline", sourceText("dashboard"), "/company"],
+    [
+      "people-outline",
+      sourceText("applicationsAndSelection"),
+      "/company/applications",
+    ],
+    ["briefcase-outline", sourceText("jobManagement"), "/company/jobs"],
+    ["search-outline", sourceText("talentSearch"), "/company/talent"],
+    [
+      "business-outline",
+      sourceText("companyAndPermissions"),
+      "/company/settings",
+    ],
+    [
+      "people-circle-outline",
+      sourceText("employeeManagement"),
+      "/company/employees",
+    ],
   ],
   operator: [
-    ["grid-outline", "ダッシュボード", "/"],
-    ["pulse-outline", "モニター", "/operator/monitor"],
-    ["notifications-outline", "アラーム", "/operator/alarms"],
+    ["grid-outline", sourceText("dashboard"), "/"],
+    ["pulse-outline", sourceText("monitoring"), "/operator/monitor"],
+    ["notifications-outline", sourceText("alerts"), "/operator/alarms"],
   ],
 } as const;
 
@@ -53,11 +71,13 @@ export default function AppPage({
   role = "public",
   activeMenu = "",
   children,
-  onNavigate = path => router.push(path),
+  onNavigate = (path) => router.push(path),
 }: Props) {
+  "use no memo";
+  useLocaleVersion();
   const { width } = useWindowDimensions();
-  const [collapsed,setCollapsed]=useState(false);
-  const [mobileMenu,setMobileMenu]=useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
   const showSidebar = role !== "public" && width >= 1024;
   return (
     <SafeAreaView style={s.safe}>
@@ -69,12 +89,48 @@ export default function AppPage({
             active={activeMenu}
             collapsed={collapsed}
             onNavigate={onNavigate}
-            onToggle={()=>setCollapsed(v=>!v)}
+            onToggle={() => setCollapsed((v) => !v)}
           />
         )}
-        <ScrollView style={s.page} contentContainerStyle={[s.content,(activeMenu==="選考・オファー状況"||activeMenu==="評価")&&{maxWidth:1760},width<600&&{padding:12}]}>
-          {role!=="public"&&!showSidebar&&<View><Pressable accessibilityRole="button" accessibilityLabel="マイページメニュー" accessibilityState={{expanded:mobileMenu}} onPress={()=>setMobileMenu(v=>!v)} style={s.sideItem}><Ionicons name="menu-outline" size={22} color={C.primary}/><Text style={s.sideText}>メニュー</Text></Pressable>{mobileMenu&&menus[role].map(([icon,label,path])=><Pressable key={label} accessibilityRole="button" onPress={()=>{setMobileMenu(false);onNavigate(path);}} style={[s.sideItem,activeMenu===label&&s.sideActive]}><Ionicons name={icon} size={19} color={C.primary}/><Text style={s.sideText}>{label}</Text></Pressable>)}</View>}
-          
+        <ScrollView
+          style={s.page}
+          contentContainerStyle={[
+            s.content,
+            (activeMenu === sourceText("applicationsAndOffers_641") ||
+              activeMenu === sourceText("reviews")) && { maxWidth: 1760 },
+            width < 600 && { padding: 12 },
+          ]}
+        >
+          {role !== "public" && !showSidebar && (
+            <View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={tText("myPageMenu")}
+                accessibilityState={{ expanded: mobileMenu }}
+                onPress={() => setMobileMenu((v) => !v)}
+                style={s.sideItem}
+              >
+                <Ionicons name="menu-outline" size={22} color={C.primary} />
+                <Text style={s.sideText}>{tText("menu")}</Text>
+              </Pressable>
+              {mobileMenu &&
+                menus[role].map(([icon, label, path]) => (
+                  <Pressable
+                    key={label}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setMobileMenu(false);
+                      onNavigate(path);
+                    }}
+                    style={[s.sideItem, activeMenu === label && s.sideActive]}
+                  >
+                    <Ionicons name={icon} size={19} color={C.primary} />
+                    <Text style={s.sideText}>{label}</Text>
+                  </Pressable>
+                ))}
+            </View>
+          )}
+
           {children}
         </ScrollView>
       </View>
@@ -84,26 +140,52 @@ export default function AppPage({
 
 function Sidebar({
   role,
-  active, collapsed, onToggle, onNavigate,
+  active,
+  collapsed,
+  onToggle,
+  onNavigate,
 }: {
   role: "user" | "company" | "operator";
   active: string;
-  collapsed: boolean; onToggle:()=>void; onNavigate:(path: Href)=>void;
+  collapsed: boolean;
+  onToggle: () => void;
+  onNavigate: (path: Href) => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
-    <View style={[s.sidebar,collapsed&&{width:68,padding:8}]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={collapsed?"メニューを展開":"メニューを縮小"} accessibilityState={{expanded:!collapsed}} onPress={onToggle} style={s.sideItem}><Ionicons name={collapsed?"chevron-forward-outline":"chevron-back-outline"} size={20} color={C.primary}/>{!collapsed&&<Text style={s.sideText}>縮小</Text>}</Pressable>
-      {!collapsed&&<Text style={s.sideTitle}>
-        {role === "user"
-          ? "マイページ"
-          : role === "company"
-            ? "企業管理"
-            : "運営管理"}
-      </Text>}
+    <View style={[s.sidebar, collapsed && { width: 68, padding: 8 }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={translateText(
+          collapsed ? sourceText("expandMenu") : sourceText("collapseMenu"),
+        )}
+        accessibilityState={{ expanded: !collapsed }}
+        onPress={onToggle}
+        style={s.sideItem}
+      >
+        <Ionicons
+          name={collapsed ? "chevron-forward-outline" : "chevron-back-outline"}
+          size={20}
+          color={C.primary}
+        />
+        {!collapsed && <Text style={s.sideText}>{tText("collapse")}</Text>}
+      </Pressable>
+      {!collapsed && (
+        <Text style={s.sideTitle}>
+          {role === "user"
+            ? sourceText("myPage")
+            : role === "company"
+              ? sourceText("companyManagement")
+              : sourceText("operatorConsole")}
+        </Text>
+      )}
       {menus[role].map(([icon, label, path]) => (
         <Pressable
           key={label}
-          accessibilityRole="button" accessibilityLabel={label} accessibilityState={{selected:active===label}}
+          accessibilityRole="button"
+          accessibilityLabel={translateText(label)}
+          accessibilityState={{ selected: active === label }}
           onPress={() => onNavigate(path)}
           style={[s.sideItem, active === label && s.sideActive]}
         >
@@ -112,9 +194,13 @@ function Sidebar({
             size={19}
             color={active === label ? C.primary : C.textSub}
           />
-          {!collapsed&&<Text style={[s.sideText, active === label && { color: C.primary }]}>
-            {label}
-          </Text>}
+          {!collapsed && (
+            <Text
+              style={[s.sideText, active === label && { color: C.primary }]}
+            >
+              {label}
+            </Text>
+          )}
         </Pressable>
       ))}
     </View>

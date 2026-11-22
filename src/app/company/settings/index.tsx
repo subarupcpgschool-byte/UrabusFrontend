@@ -1,16 +1,11 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion, localeTag } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import PublicCompanyEditor from "@/features/company/PublicCompanyEditor";
 import { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
-import {
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Modal, Platform, ScrollView, StyleSheet, View } from "react-native";
 import AppPage from "@/components/layout/AppPage";
 import { AppInput } from "@/components/form";
 import {
@@ -58,12 +53,12 @@ const limits: Record<keyof CompanyForm, number> = {
   address: 500,
 };
 const labels: Record<keyof CompanyForm, string> = {
-  businessName: "屋号・法人名",
-  industry: "業種",
-  employeeCount: "従業員数",
-  address: "所在地",
+  businessName: sourceText("businessOrCompanyName"),
+  industry: sourceText("industry"),
+  employeeCount: sourceText("numberOfEmployees"),
+  address: sourceText("location"),
 };
-const display = (value?: string | null) => value || "未登録";
+const display = (value?: string | null) => value || sourceText("notRegistered");
 
 function Action({
   label,
@@ -78,6 +73,8 @@ function Action({
   primary?: boolean;
   danger?: boolean;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <Pressable
       accessibilityRole="button"
@@ -98,6 +95,8 @@ function Action({
   );
 }
 function Detail({ label, value }: { label: string; value?: string | null }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <View style={s.detail}>
       <Text style={s.label}>{label}</Text>
@@ -109,6 +108,8 @@ function Detail({ label, value }: { label: string; value?: string | null }) {
 }
 
 export default function CompanySettingsPage() {
+  "use no memo";
+  useLocaleVersion();
   const { user, token, ready, refreshUser } = useAuth();
   const [managementDirty, setManagementDirty] = useState(false);
   const [managementReset, setManagementReset] = useState(0);
@@ -159,7 +160,7 @@ export default function CompanySettingsPage() {
           setError(
             cause instanceof Error
               ? cause.message
-              : "企業情報を取得できませんでした。",
+              : sourceText("unableToLoadCompanyInformation"),
           );
       })
       .finally(() => {
@@ -200,7 +201,7 @@ export default function CompanySettingsPage() {
   async function save() {
     if (!token || !isOwner || busyRef.current) return;
     if (!form.businessName.trim()) {
-      setError("屋号・法人名を入力してください。");
+      setError(sourceText("enterABusinessOrCompanyName"));
       return;
     }
     busyRef.current = true;
@@ -217,7 +218,7 @@ export default function CompanySettingsPage() {
       setProfile(result);
       setForm(toForm(result));
       setMode("detail");
-      setNotice("企業情報を保存しました。");
+      setNotice(sourceText("companyInformationSaved"));
       void refreshUser().catch(() => {
         /* 保存は完了済み。認証情報は次回取得時にも更新される。 */
       });
@@ -225,7 +226,7 @@ export default function CompanySettingsPage() {
       setError(
         cause instanceof Error
           ? cause.message
-          : "企業情報を保存できませんでした。",
+          : sourceText("unableToSaveCompanyInformation"),
       );
     } finally {
       busyRef.current = false;
@@ -235,10 +236,10 @@ export default function CompanySettingsPage() {
 
   return (
     <AppPage
-      title="企業・社員・権限管理"
-      subtitle="企業情報、所属社員、ロール権限を管理します"
+      title={tText("companyEmployeesAndPermissions")}
+      subtitle={tText("manageCompanyInformationEmployeesAndRolePermissions")}
       role="company"
-      activeMenu="企業・権限"
+      activeMenu={sourceText("companyAndPermissions")}
       onNavigate={exit.navigate}
     >
       {!mode && !!notice && (
@@ -253,29 +254,38 @@ export default function CompanySettingsPage() {
       )}
       <View style={s.top}>
         <Panel style={s.profile}>
-          <SectionTitle>企業プロフィール</SectionTitle>
-          {isOwner && <BodyText>適用中の権限　OWNER（すべての権限）</BodyText>}
+          <SectionTitle>{tText("companyProfile")}</SectionTitle>
+          {isOwner && (
+            <BodyText>{tText("currentRoleOwnerAllPermissions")}</BodyText>
+          )}
           {!ready || loading ? (
-            <BodyText>読み込み中…</BodyText>
+            <BodyText>{tText("loading")}</BodyText>
           ) : !allowed || !token ? (
             <>
-              <BodyText>
-                企業アカウントまたは所属従業員のアカウントでログインしてください。
-              </BodyText>
-              {!user && <Link href="/auth">ログインする</Link>}
+              <BodyText>{tText("logInWithACompanyAccountOr_371")}</BodyText>
+              {!user && <Link href="/auth">{tText("logIn_184")}</Link>}
             </>
           ) : profile ? (
             <>
-              <Text style={s.name}>{display(profile.businessName)}</Text>
+              <Text localize={false} style={s.name}>
+                {display(profile.businessName)}
+              </Text>
               <BodyText>
-                企業ID　{profile.id}
-                {"\n"}業種　{display(profile.industry)}
-                {"\n"}従業員数　{display(profile.employeeCount)}
-                {"\n"}所在地　{display(profile.address)}
+                {tText("companyId")}
+                {profile.id}
+                {"\n"}
+                {tText("industry")}
+                {display(profile.industry)}
+                {"\n"}
+                {tText("numberOfEmployees")}
+                {display(profile.employeeCount)}
+                {"\n"}
+                {tText("location")}
+                {display(profile.address)}
               </BodyText>
               <View style={s.actions}>
                 <Action
-                  label="詳細表示"
+                  label={tText("viewDetails_373")}
                   onPress={() => {
                     setError("");
                     setNotice("");
@@ -286,10 +296,10 @@ export default function CompanySettingsPage() {
             </>
           ) : (
             <>
-              <BodyText>企業情報を取得できませんでした。</BodyText>
+              <BodyText>{tText("unableToLoadCompanyInformation")}</BodyText>
               <View style={s.actions}>
                 <Action
-                  label="再読み込み"
+                  label={tText("reload")}
                   onPress={() => setReload((value) => value + 1)}
                 />
               </View>
@@ -311,12 +321,16 @@ export default function CompanySettingsPage() {
         <View style={s.backdrop}>
           <View style={s.confirm} accessibilityViewIsModal>
             <Text accessibilityRole="header" style={s.name}>
-              変更を破棄してページを離れますか？
+              {tText("discardChangesAndLeaveThisPage")}
             </Text>
-            <BodyText>保存していない変更があります。</BodyText>
+            <BodyText>{tText("youHaveUnsavedChanges")}</BodyText>
             <View style={s.footer}>
-              <Action label="このページに留まる" onPress={exit.stay} />
-              <Action label="破棄して移動" danger onPress={exit.leave} />
+              <Action label={tText("stayOnThisPage")} onPress={exit.stay} />
+              <Action
+                label={tText("discardAndLeave")}
+                danger
+                onPress={exit.leave}
+              />
             </View>
           </View>
         </View>
@@ -332,7 +346,7 @@ export default function CompanySettingsPage() {
         <View style={s.backdrop}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="企業情報を閉じる"
+            accessibilityLabel={tText("closeCompanyInformation")}
             onPress={requestClose}
             style={StyleSheet.absoluteFill}
             disabled={busy}
@@ -349,11 +363,13 @@ export default function CompanySettingsPage() {
           >
             <View style={s.head}>
               <Text accessibilityRole="header" style={s.name}>
-                {mode === "edit" ? "企業情報を編集" : "企業情報の詳細"}
+                {mode === "edit"
+                  ? sourceText("editCompanyInformation")
+                  : sourceText("companyInformationDetails")}
               </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="閉じる"
+                accessibilityLabel={tText("close")}
                 disabled={busy}
                 onPress={requestClose}
                 style={s.close}
@@ -372,9 +388,12 @@ export default function CompanySettingsPage() {
               )}
               {profile && (
                 <>
-                  <Detail label="企業ID（変更不可）" value={profile.id} />
                   <Detail
-                    label="登録メールアドレス（変更不可）"
+                    label={tText("companyIdReadOnly")}
+                    value={profile.id}
+                  />
+                  <Detail
+                    label={tText("registeredEmailAddressReadOnly")}
                     value={profile.email}
                   />
                   {mode === "edit" ? (
@@ -400,20 +419,29 @@ export default function CompanySettingsPage() {
                   ) : (
                     <>
                       <Detail
-                        label="屋号・法人名"
+                        label={tText("businessOrCompanyName")}
                         value={profile.businessName}
                       />
-                      <Detail label="業種" value={profile.industry} />
-                      <Detail label="従業員数" value={profile.employeeCount} />
-                      <Detail label="所在地" value={profile.address} />
+                      <Detail
+                        label={tText("industry")}
+                        value={profile.industry}
+                      />
+                      <Detail
+                        label={tText("numberOfEmployees")}
+                        value={profile.employeeCount}
+                      />
+                      <Detail
+                        label={tText("location")}
+                        value={profile.address}
+                      />
                     </>
                   )}
                   <Detail
-                    label="登録日（変更不可）"
+                    label={tText("registrationDateReadOnly")}
                     value={
                       profile.createdAt
                         ? new Date(profile.createdAt).toLocaleDateString(
-                            "ja-JP",
+                            localeTag(),
                           )
                         : null
                     }
@@ -425,12 +453,12 @@ export default function CompanySettingsPage() {
               {mode === "edit" ? (
                 <>
                   <Action
-                    label="キャンセル"
+                    label={tText("cancel")}
                     disabled={busy}
                     onPress={requestClose}
                   />
                   <Action
-                    label={busy ? "保存中…" : "保存"}
+                    label={busy ? sourceText("saving") : sourceText("save_384")}
                     primary
                     disabled={busy}
                     onPress={() => void save()}
@@ -438,10 +466,10 @@ export default function CompanySettingsPage() {
                 </>
               ) : (
                 <>
-                  <Action label="閉じる" onPress={requestClose} />
+                  <Action label={tText("close")} onPress={requestClose} />
                   {isOwner && (
                     <Action
-                      label="編集"
+                      label={tText("edit")}
                       primary
                       onPress={() => {
                         if (profile) {
@@ -462,22 +490,26 @@ export default function CompanySettingsPage() {
               <Pressable
                 style={StyleSheet.absoluteFill}
                 accessibilityRole="button"
-                accessibilityLabel="編集を続ける"
+                accessibilityLabel={tText("continueEditing")}
                 onPress={() => setConfirmDiscard(false)}
               />
               <View accessibilityViewIsModal style={s.confirm}>
                 <Text accessibilityRole="header" style={s.name}>
-                  変更を破棄しますか？
+                  {tText("discardYourChanges")}
                 </Text>
                 <BodyText>
-                  保存していない変更を破棄し、企業情報の画面を閉じます。
+                  {tText("discardUnsavedChangesAndCloseCompanyInformation")}
                 </BodyText>
                 <View style={s.footer}>
                   <Action
-                    label="編集を続ける"
+                    label={tText("continueEditing")}
                     onPress={() => setConfirmDiscard(false)}
                   />
-                  <Action label="破棄して閉じる" danger onPress={close} />
+                  <Action
+                    label={tText("discardAndClose")}
+                    danger
+                    onPress={close}
+                  />
                 </View>
               </View>
             </View>

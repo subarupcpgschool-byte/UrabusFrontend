@@ -1,6 +1,8 @@
+import { useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { C } from "@/theme/colors";
 import { notify } from "@/utils/pathUtils";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { StyleSheet } from "react-native";
 
 export function Button({
   label,
@@ -11,6 +13,8 @@ export function Button({
   outline?: boolean;
   onPress?: () => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <Pressable
       onPress={onPress ?? (() => notify(label))}

@@ -1,3 +1,4 @@
+import { sourceText } from "@/i18n/source";
 import * as FileSystem from "expo-file-system/legacy";
 import { API_BASE } from "@/auth/api";
 import { dataRequest } from "@/api/platform";
@@ -18,7 +19,7 @@ export async function saveAttachment(
 }
 export async function resolveAttachment(attachment: Attachment, token: string) {
   if (!FileSystem.cacheDirectory)
-    throw new Error("一時保存領域を利用できません。");
+    throw new Error(sourceText("temporaryStorageIsUnavailable"));
   const path =
     FileSystem.cacheDirectory +
     `gw-attachment-${attachment.id}-${Date.now()}-` +
@@ -30,7 +31,7 @@ export async function resolveAttachment(attachment: Attachment, token: string) {
   );
   if (result.status !== 200) {
     await FileSystem.deleteAsync(path, { idempotent: true });
-    throw new Error("添付を取得できませんでした。");
+    throw new Error(sourceText("unableToRetrieveTheAttachment"));
   }
   return result.uri;
 }

@@ -1,7 +1,9 @@
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { COLORS } from "@/theme/colors";
 import type { PlatformMapProps } from "@/types/map";
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 /**
  * Web向けの軽量マップ表示です。
@@ -13,6 +15,8 @@ export default function PlatformMap({
   radiusKm,
   craftsmen,
 }: PlatformMapProps) {
+  "use no memo";
+  useLocaleVersion();
   const circleSize = radiusKm === 3 ? 150 : radiusKm === 5 ? 220 : 310;
 
   return (
@@ -24,9 +28,11 @@ export default function PlatformMap({
       <View style={styles.park} />
       <View style={styles.river} />
 
-      <Text style={[styles.mapLabel, { top: 24, left: 22 }]}>東大阪市</Text>
+      <Text style={[styles.mapLabel, { top: 24, left: 22 }]}>
+        {tText("higashiosaka")}
+      </Text>
       <Text style={[styles.mapLabel, { bottom: 24, right: 28 }]}>
-        現在地周辺
+        {tText("nearMyLocation")}
       </Text>
 
       <View

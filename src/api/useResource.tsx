@@ -1,3 +1,6 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import {
   useCallback,
   useEffect,
@@ -5,7 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/auth/AuthProvider";
 import { AppButton } from "@/components/ui/AppUI";
@@ -53,7 +56,7 @@ export function useResource<T>(
             key,
             data: old.key === key ? old.data : initialRef.current,
             loading: false,
-            error: e instanceof Error ? e.message : "読み込めませんでした。",
+            error: e instanceof Error ? e.message : sourceText("unableToLoad"),
             resolved: true,
           }));
       });
@@ -83,11 +86,13 @@ export function ResourceStatus({
   onRetry: () => void;
   privateData?: boolean;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { user, ready } = useAuth();
   if (privateData && ready && !user)
     return (
       <AppButton
-        label="ログインして利用する"
+        label={tText("logInToContinue")}
         onPress={() => router.push("/auth")}
       />
     );
@@ -97,10 +102,10 @@ export function ResourceStatus({
         <Text accessibilityRole="alert" style={{ color: "#B42318" }}>
           {error}
         </Text>
-        <AppButton label="再読み込み" outline onPress={onRetry} />
+        <AppButton label={tText("reload")} outline onPress={onRetry} />
       </View>
     );
   return loading ? (
-    <Text style={{ padding: 10, color: "#64748B" }}>読み込み中…</Text>
+    <Text style={{ padding: 10, color: "#64748B" }}>{tText("loading")}</Text>
   ) : null;
 }

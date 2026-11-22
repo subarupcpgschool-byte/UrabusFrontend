@@ -1,5 +1,8 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
 import {
   AppSwitch,
@@ -14,6 +17,8 @@ import { useAccount } from "./AccountProvider";
 import { profileError, type Profile } from "./data";
 
 export default function ProfilePanel() {
+  "use no memo";
+  useLocaleVersion();
   const { user } = useAuth();
   const { data, saveProfile } = useAccount();
   const [draft, setDraft] = useState<Profile | null>(data?.profile ?? null);
@@ -53,9 +58,9 @@ export default function ProfilePanel() {
     setNotice("");
     try {
       await saveProfile(draft);
-      setNotice("プロフィールを保存しました。");
+      setNotice(sourceText("profileSaved"));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "保存できませんでした。");
+      setError(e instanceof Error ? e.message : sourceText("unableToSave"));
     } finally {
       setBusy(false);
     }
@@ -63,20 +68,18 @@ export default function ProfilePanel() {
   return (
     <View style={s.stack}>
       <Panel>
-        <SectionTitle>基本プロフィール</SectionTitle>
-        <Text style={s.hint}>
-          氏名と生年月日は必須です。住所は市区町村まで入力してください。
-        </Text>
+        <SectionTitle>{tText("basicProfile")}</SectionTitle>
+        <Text style={s.hint}>{tText("yourNameAndDateOfBirthAre")}</Text>
         <View style={s.grid}>
           <AppInput
-            label="姓"
+            label={tText("familyName")}
             required
             {...field("familyName")}
             maxLength={50}
             containerStyle={s.cell}
           />
           <AppInput
-            label="名"
+            label={tText("givenName")}
             required
             {...field("givenName")}
             maxLength={50}
@@ -85,13 +88,13 @@ export default function ProfilePanel() {
         </View>
         <View style={s.grid}>
           <AppInput
-            label="姓（カナ）"
+            label={tText("familyNameKatakana")}
             {...field("familyKana")}
             maxLength={50}
             containerStyle={s.cell}
           />
           <AppInput
-            label="名（カナ）"
+            label={tText("givenNameKatakana")}
             {...field("givenKana")}
             maxLength={50}
             containerStyle={s.cell}
@@ -99,7 +102,7 @@ export default function ProfilePanel() {
         </View>
         <View style={s.grid}>
           <AppDatePicker
-            label="生年月日"
+            label={tText("dateOfBirth")}
             required
             value={draft.birthDate}
             onValueChange={(v) => change("birthDate", v)}
@@ -107,7 +110,7 @@ export default function ProfilePanel() {
             containerStyle={s.cell}
           />
           <AppInput
-            label="住所（市区町村まで）"
+            label={tText("addressCityOrWardOnly")}
             {...field("city")}
             maxLength={100}
             containerStyle={s.cell}
@@ -115,14 +118,14 @@ export default function ProfilePanel() {
         </View>
         <View style={s.grid}>
           <AppInput
-            label="電話番号（任意）"
+            label={tText("phoneNumberOptional")}
             keyboardType="phone-pad"
             {...field("phone")}
             maxLength={25}
             containerStyle={s.cell}
           />
           <AppInput
-            label="事業名（任意）"
+            label={tText("businessNameOptional")}
             {...field("businessName")}
             maxLength={100}
             containerStyle={s.cell}
@@ -130,57 +133,72 @@ export default function ProfilePanel() {
         </View>
         {user && (
           <AppInput
-            label="登録メールアドレス"
+            label={tText("registeredEmailAddress")}
             value={user.email}
             editable={false}
-            hint="メールアドレスは認証情報から表示しています。"
+            hint={tText("theEmailAddressComesFromYourAccount")}
           />
         )}
         <AppSelect
-          label="移動手段"
+          label={tText("transportation")}
           value={draft.transport}
           onValueChange={(v) => change("transport", v)}
           disabled={busy}
-          options={["未選択", "車", "バイク", "公共交通", "自転車", "徒歩"].map(
-            (label, i) => ({ label, value: i === 0 ? "" : label }),
-          )}
+          options={[
+            sourceText("notSelected_600"),
+            sourceText("car"),
+            sourceText("motorcycle"),
+            sourceText("publicTransport"),
+            sourceText("bicycle"),
+            sourceText("walking"),
+          ].map((label, i) => ({ label, value: i === 0 ? "" : label }))}
         />
       </Panel>
       <Panel>
-        <SectionTitle>公開・スカウト設定</SectionTitle>
+        <SectionTitle>{tText("visibilityAndScoutSettings")}</SectionTitle>
         <AppInput
-          label="職種"
+          label={tText("occupation")}
           value={draft.occupation ?? ""}
           onChangeText={(v) => change("occupation", v)}
           maxLength={120}
         />
-        <Text>プロフィールを企業の人材検索に公開する</Text>
+        <Text>{tText("makeMyProfileAvailableInCompanyTalent")}</Text>
         <AppSwitch
-          accessibilityLabel="プロフィールを企業の人材検索に公開する"
+          accessibilityLabel={tText("makeMyProfileAvailableInCompanyTalent")}
           value={draft.publicProfile ?? false}
           onValueChange={(v) => change("publicProfile", v)}
         />
-        <Text>スカウト・オファーを受け取る</Text>
+        <Text>{tText("receiveScoutsAndOffers")}</Text>
         <AppSwitch
-          accessibilityLabel="スカウト・オファーを受け取る"
+          accessibilityLabel={tText("receiveScoutsAndOffers")}
           value={draft.allowScout ?? false}
           onValueChange={(v) => change("allowScout", v)}
         />
       </Panel>
       <Panel>
-        <SectionTitle>自己紹介・スキル</SectionTitle>
-        <AppTextArea label="自己紹介" {...field("bio")} maxLength={2000} />
+        <SectionTitle>{tText("aboutMeAndSkills")}</SectionTitle>
         <AppTextArea
-          label="趣味・興味"
+          label={tText("aboutMe")}
+          {...field("bio")}
+          maxLength={2000}
+        />
+        <AppTextArea
+          label={tText("hobbiesAndInterests")}
           {...field("hobbies")}
           maxLength={1000}
         />
         <AppTagInput
-          label="スキル"
+          label={tText("skills")}
           value={draft.skills}
           onValueChange={(v) => change("skills", v)}
           disabled={busy}
-          suggestions={["Java", "React", "TypeScript", "Excel", "デザイン"]}
+          suggestions={[
+            "Java",
+            "React",
+            "TypeScript",
+            "Excel",
+            sourceText("design"),
+          ]}
         />
       </Panel>
       {!!error && (
@@ -195,7 +213,7 @@ export default function ProfilePanel() {
       )}
       <View style={s.actions}>
         <AppButton
-          label="変更を戻す"
+          label={tText("revertChanges")}
           outline
           onPress={() => {
             if (!busy) {
@@ -206,7 +224,7 @@ export default function ProfilePanel() {
           }}
         />
         <AppButton
-          label={busy ? "保存中…" : "プロフィールを保存"}
+          label={busy ? sourceText("saving") : sourceText("saveProfile")}
           onPress={() => void save()}
         />
       </View>

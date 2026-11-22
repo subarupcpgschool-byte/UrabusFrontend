@@ -1,6 +1,8 @@
+import { useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { COLORS } from "@/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 const MAX_WIDTH = 1280;
 
@@ -9,6 +11,8 @@ type Props = {
 };
 
 export function AppHeader({ title }: Props) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <View style={styles.header}>
       <View style={styles.inner}>

@@ -1,3 +1,8 @@
+import { translateText } from "@/i18n/display";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { useAuth } from "@/auth/AuthProvider";
 import { C } from "@/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -6,9 +11,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
-  Pressable,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -19,23 +22,23 @@ const WORKSPACE_MOCK_ENABLED = false;
 type Panel = "通知" | "お気に入り" | "メッセージ";
 type Item = { label: string; path?: Href; panel?: Panel };
 const companyPreview: Item[] = WORKSPACE_MOCK_ENABLED
-  ? [{ label: "企業管理", path: "/company" }]
+  ? [{ label: sourceText("companyManagement"), path: "/company" }]
   : [];
 const publicItems: Item[] = [
-  { label: "求人を探す", path: "/jobs" },
-  { label: "企業を探す", path: "/companies" },
-  { label: "評価について", path: "/reviews" },
-  { label: "料金", path: "/price" },
-  { label: "ご利用ガイド", path: "/guide" },
+  { label: sourceText("findJobs"), path: "/jobs" },
+  { label: sourceText("findCompanies"), path: "/companies" },
+  { label: sourceText("aboutReviews"), path: "/reviews" },
+  { label: sourceText("pricing_579"), path: "/price" },
+  { label: sourceText("userGuide"), path: "/guide" },
   ...(WORKSPACE_MOCK_ENABLED
-    ? [{ label: "マイページ", path: "/mypage" as Href }]
+    ? [{ label: sourceText("myPage"), path: "/mypage" as Href }]
     : []),
 ];
 const memberItems: Item[] = [
-  { label: "求人を探す", path: "/jobs" },
-  { label: "企業を探す", path: "/companies" },
-  { label: "お気に入り", path: "/favorites" },
-  { label: "メッセージ", path: "/messages" },
+  { label: sourceText("findJobs"), path: "/jobs" },
+  { label: sourceText("findCompanies"), path: "/companies" },
+  { label: sourceText("favorites"), path: "/favorites" },
+  { label: sourceText("messages"), path: "/messages" },
 ];
 
 /** All public/search/management screens share authentication and navigation here. */
@@ -46,6 +49,8 @@ export function Header({
   desktop?: boolean;
   onNavigate?: (path: Href) => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { user, ready } = useAuth();
   const workspace = useWorkspace();
   const { width } = useWindowDimensions();
@@ -61,7 +66,7 @@ export function Header({
   const items = [
     ...(user ? memberItems : publicItems),
     ...(user?.accountType === "COMPANY" || user?.accountType === "EMPLOYEE"
-      ? [{ label: "企業管理", path: "/company" as Href }]
+      ? [{ label: sourceText("companyManagement"), path: "/company" as Href }]
       : companyPreview),
   ];
   const navigate = (path: Href) => {
@@ -77,11 +82,11 @@ export function Header({
   const icon = (name: keyof typeof Ionicons.glyphMap, label: Panel) => (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={translateText(label)}
       onPress={() => {
         setOpen(false);
-        if (label === "お気に入り") navigate("/favorites");
-        else if (label === "メッセージ") navigate("/messages");
+        if (label === sourceText("favorites")) navigate("/favorites");
+        else if (label === sourceText("messages")) navigate("/messages");
         else setPanel(label);
       }}
       style={({
@@ -132,21 +137,27 @@ export function Header({
       <View style={[s.inner, displayWidth < 480 && { paddingHorizontal: 12 }]}>
         <Logo
           onHome={() => navigate("/")}
-          width={displayWidth < 480 ? 145 : 200}
+          width={displayWidth < 360 ? 110 : displayWidth < 480 ? 135 : 200}
         />
         {wide && <View style={s.nav}>{links(false)}</View>}
         <View style={s.actions}>
+          <LanguageSwitcher compact={displayWidth < 600} />
           {!ready ? (
-            <View accessibilityLabel="ログイン状態を確認中" style={s.loading}>
+            <View
+              accessibilityLabel={tText("checkingLoginStatus")}
+              style={s.loading}
+            >
               <ActivityIndicator color={C.blue} />
             </View>
           ) : user ? (
             <>
-              {icon("notifications-outline", "通知")}
-              {wide && icon("heart-outline", "お気に入り")}
+              {icon("notifications-outline", sourceText("notifications"))}
+              {wide && icon("heart-outline", sourceText("favorites"))}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${user.displayName}のアカウント`}
+                accessibilityLabel={translateText(
+                  sourceFormat("sAccount", { v0: user.displayName }, ["v0"]),
+                )}
                 onPress={() => navigate("/mypage")}
                 style={({
                   hovered,
@@ -157,12 +168,12 @@ export function Header({
                 }) => [s.account, (hovered || pressed) && s.soft]}
               >
                 <View style={s.avatar}>
-                  <Text style={s.initial}>
+                  <Text localize={false} style={s.initial}>
                     {Array.from(user.displayName.trim())[0] || "U"}
                   </Text>
                 </View>
                 {(wide || displayWidth >= 600) && (
-                  <Text numberOfLines={1} style={s.name}>
+                  <Text localize={false} numberOfLines={1} style={s.name}>
                     {user.displayName}
                   </Text>
                 )}
@@ -175,7 +186,7 @@ export function Header({
                 onPress={() => navigate("/auth")}
                 style={s.iconText}
               >
-                <Text style={s.login}>ログイン</Text>
+                <Text style={s.login}>{tText("logIn")}</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -190,14 +201,16 @@ export function Header({
                   hovered?: boolean;
                 }) => [s.register, (hovered || pressed) && { opacity: 0.8 }]}
               >
-                <Text style={s.registerText}>新規登録</Text>
+                <Text style={s.registerText}>{tText("signUp_582")}</Text>
               </Pressable>
             </>
           ) : null}
           {!wide && (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={open ? "メニューを閉じる" : "メニューを開く"}
+              accessibilityLabel={translateText(
+                open ? sourceText("closeMenu") : sourceText("openMenu"),
+              )}
               accessibilityState={{ expanded: open }}
               onPress={() => setOpen((v) => !v)}
               style={s.icon}
@@ -218,7 +231,7 @@ export function Header({
             onPress={() => navigate("/auth")}
             style={s.iconText}
           >
-            <Text style={s.login}>ログイン</Text>
+            <Text style={s.login}>{tText("logIn")}</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -227,7 +240,7 @@ export function Header({
             }
             style={s.register}
           >
-            <Text style={s.registerText}>新規登録</Text>
+            <Text style={s.registerText}>{tText("signUp_582")}</Text>
           </Pressable>
         </View>
       )}
@@ -240,8 +253,8 @@ export function Header({
               onPress={() => navigate("/mypage")}
               style={s.mobileItem}
             >
-              <Text style={s.navText} numberOfLines={1}>
-                {user.displayName} ／ マイページ
+              <Text localize={false} style={s.navText} numberOfLines={1}>
+                {user.displayName} {tText("myPage_585")}
               </Text>
             </Pressable>
           )}
@@ -256,7 +269,7 @@ export function Header({
         <View style={s.overlay}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="閉じる"
+            accessibilityLabel={tText("close")}
             style={StyleSheet.absoluteFill}
             onPress={() => setPanel(null)}
           />
@@ -267,7 +280,7 @@ export function Header({
               </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="閉じる"
+                accessibilityLabel={tText("close")}
                 onPress={() => setPanel(null)}
                 style={s.icon}
               >
@@ -284,8 +297,11 @@ export function Header({
                     navigate({ pathname: "/messages", params: { room: r.id } })
                   }
                 >
-                  <Text style={s.description}>
-                    {r.company} ／ {r.title}（未読{r.unread}件）
+                  <Text localize={false} style={s.description}>
+                    {r.company} ／ {r.title}
+                    {tText("unread")}
+                    {r.unread}
+                    {tText("total")}
                   </Text>
                 </Pressable>
               ))}
@@ -294,7 +310,7 @@ export function Header({
             ) : (
               !workspace.rooms.some((r) => r.unread > 0) && (
                 <Text style={s.description}>
-                  未読のメッセージはありません。
+                  {tText("thereAreNoUnreadMessages")}
                 </Text>
               )
             )}
@@ -303,7 +319,7 @@ export function Header({
               onPress={() => setPanel(null)}
               style={s.register}
             >
-              <Text style={s.registerText}>閉じる</Text>
+              <Text style={s.registerText}>{tText("close")}</Text>
             </Pressable>
           </View>
         </View>

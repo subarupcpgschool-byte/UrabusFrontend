@@ -1,5 +1,8 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useEffect, useState } from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import { dataRequest } from "@/api/platform";
@@ -33,6 +36,8 @@ const empty: PublicCompany = {
   version: 0,
 };
 export default function PublicCompanyEditor() {
+  "use no memo";
+  useLocaleVersion();
   const { token, user } = useAuth();
   const r = useResource<PublicCompany[]>(
     token ? "/me/company-public" : null,
@@ -61,7 +66,7 @@ export default function PublicCompanyEditor() {
       (lat && !Number.isFinite(Number(lat))) ||
       (lng && !Number.isFinite(Number(lng)))
     ) {
-      setError("緯度・経度は両方とも有効な数値で入力してください。");
+      setError(sourceText("enterValidNumbersForBothLatitudeAnd"));
       return;
     }
     setBusy(true);
@@ -79,7 +84,7 @@ export default function PublicCompanyEditor() {
         "PUT",
       );
       setEditing(false);
-      setNotice("公開情報を保存しました。");
+      setNotice(sourceText("publicInformationSaved"));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -88,77 +93,83 @@ export default function PublicCompanyEditor() {
   }
   return (
     <Panel>
-      <SectionTitle>企業の公開情報</SectionTitle>
+      <SectionTitle>{tText("publicCompanyInformation")}</SectionTitle>
       <ResourceStatus loading={r.loading} error={r.error} onRetry={r.refresh} />
       {editing ? (
         <>
           <AppTextArea
-            label="企業紹介"
+            label={tText("companyIntroduction")}
             value={draft.description}
             maxLength={8000}
             onChangeText={(v) => setDraft((d) => ({ ...d, description: v }))}
           />
           <AppInput
-            label="企業サイトURL"
+            label={tText("companyWebsiteUrl")}
             value={draft.website}
             onChangeText={(v) => setDraft((d) => ({ ...d, website: v }))}
           />
           <AppInput
-            label="ロゴ画像URL"
+            label={tText("logoImageUrl")}
             value={draft.logoUrl}
             onChangeText={(v) => setDraft((d) => ({ ...d, logoUrl: v }))}
           />
           <AppInput
-            label="一覧の表示文字"
+            label={tText("companyInitialsForLists")}
             value={draft.mark}
             maxLength={8}
             onChangeText={(v) => setDraft((d) => ({ ...d, mark: v }))}
           />
           <AppInput
-            label="表示色"
+            label={tText("displayColor")}
             value={draft.markColor}
             onChangeText={(v) => setDraft((d) => ({ ...d, markColor: v }))}
           />
           <AppInput
-            label="拠点の緯度（地図検索用）"
+            label={tText("officeLatitudeForMapSearch")}
             value={lat}
             onChangeText={setLat}
             keyboardType="numbers-and-punctuation"
           />
           <AppInput
-            label="拠点の経度（地図検索用）"
+            label={tText("officeLongitudeForMapSearch")}
             value={lng}
             onChangeText={setLng}
             keyboardType="numbers-and-punctuation"
           />
-          <Text>企業と募集を公開する</Text>
+          <Text>{tText("publishCompanyAndPostings")}</Text>
           <AppSwitch
-            accessibilityLabel="企業と募集を公開する"
+            accessibilityLabel={tText("publishCompanyAndPostings")}
             value={draft.publicCompany}
             onValueChange={(v) => setDraft((d) => ({ ...d, publicCompany: v }))}
           />
           <View style={{ flexDirection: "row", gap: 10 }}>
             <AppButton
-              label="キャンセル"
+              label={tText("cancel")}
               outline
               onPress={() => {
                 if (!busy) setEditing(false);
               }}
             />
             <AppButton
-              label={busy ? "保存中…" : "保存"}
+              label={busy ? sourceText("saving") : sourceText("save_384")}
               onPress={() => void save()}
             />
           </View>
         </>
       ) : (
         <>
-          <BodyText>{saved.description || "企業紹介は未登録です。"}</BodyText>
+          <BodyText localize={false}>
+            {saved.description || tText("noCompanyIntroductionHasBeenAdded")}
+          </BodyText>
           <BodyText>{saved.website}</BodyText>
-          <BodyText>{saved.publicCompany ? "公開中" : "非公開"}</BodyText>
+          <BodyText>
+            {saved.publicCompany
+              ? sourceText("published")
+              : sourceText("private")}
+          </BodyText>
           {user?.accountType === "COMPANY" && !r.error && (
             <AppButton
-              label="公開情報を編集"
+              label={tText("editPublicInformation")}
               outline
               onPress={() => {
                 setNotice("");

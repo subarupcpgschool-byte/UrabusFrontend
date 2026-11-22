@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { useIsFocused, usePreventRemove } from '@react-navigation/native';
-import { router, useNavigation, usePathname, type Href } from 'expo-router';
-import { Platform } from 'react-native';
+import { useEffect, useRef, useState } from "react";
+import { useIsFocused, usePreventRemove } from "@react-navigation/native";
+import { router, useNavigation, usePathname, type Href } from "expo-router";
+import { Platform } from "react-native";
 
 export function useSettingsExitGuard(dirty: boolean, discard: () => void) {
   const navigation = useNavigation();
@@ -16,24 +16,30 @@ export function useSettingsExitGuard(dirty: boolean, discard: () => void) {
   });
 
   useEffect(() => {
-    if (Platform.OS !== 'web' || !block) return;
-    webEntry.current = { url: window.location.href, state: window.history.state };
+    if (Platform.OS !== "web" || !block) return;
+    webEntry.current = {
+      url: window.location.href,
+      state: window.history.state,
+    };
     const beforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
-      event.returnValue = '';
+      event.returnValue = "";
     };
     const onHistoryChange = (event: PopStateEvent) => {
       if (window.location.href === webEntry.current?.url) return;
       // Forward navigation can leave this screen in the stack, so it may not trigger beforeRemove.
       event.stopImmediatePropagation();
       const state = event.state;
-      setPending(() => () => window.dispatchEvent(new PopStateEvent('popstate', { state })));
+      setPending(
+        () => () =>
+          window.dispatchEvent(new PopStateEvent("popstate", { state })),
+      );
     };
-    window.addEventListener('beforeunload', beforeUnload);
-    window.addEventListener('popstate', onHistoryChange, true);
+    window.addEventListener("beforeunload", beforeUnload);
+    window.addEventListener("popstate", onHistoryChange, true);
     return () => {
-      window.removeEventListener('beforeunload', beforeUnload);
-      window.removeEventListener('popstate', onHistoryChange, true);
+      window.removeEventListener("beforeunload", beforeUnload);
+      window.removeEventListener("popstate", onHistoryChange, true);
     };
   }, [block]);
 
@@ -45,7 +51,7 @@ export function useSettingsExitGuard(dirty: boolean, discard: () => void) {
   }, [block]);
 
   function navigate(path: Href) {
-    const nextPath = typeof path === 'string' ? path : path.pathname;
+    const nextPath = typeof path === "string" ? path : path.pathname;
     if (nextPath === pathname) return;
     if (block) setPending(() => () => router.push(path));
     else router.push(path);
@@ -54,8 +60,8 @@ export function useSettingsExitGuard(dirty: boolean, discard: () => void) {
   function stay() {
     // A browser back action changes the address before the stack guard runs.
     const entry = webEntry.current;
-    if (Platform.OS === 'web' && entry && window.location.href !== entry.url) {
-      window.history.pushState(entry.state, '', entry.url);
+    if (Platform.OS === "web" && entry && window.location.href !== entry.url) {
+      window.history.pushState(entry.state, "", entry.url);
     }
     setPending(null);
   }

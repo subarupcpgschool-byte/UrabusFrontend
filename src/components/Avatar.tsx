@@ -1,5 +1,7 @@
+import { useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { COLORS } from "@/theme/colors";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 type Props = {
   name: string;
@@ -7,6 +9,8 @@ type Props = {
 };
 
 export function Avatar({ name, size = 52 }: Props) {
+  "use no memo";
+  useLocaleVersion();
   const chars = name.replace(/\s/g, "").slice(0, 2);
 
   return (

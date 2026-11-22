@@ -1,13 +1,15 @@
+import { translateText } from "@/i18n/display";
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { tText, useLocaleVersion, localeTag } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { ConfirmAction } from "@/api/ApiUI";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import { dataRequest, type Page } from "@/api/platform";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -21,7 +23,7 @@ import { useWorkspace, type Attachment, type Room } from "./WorkspaceProvider";
 import { saveAttachment } from "./attachments";
 import { AttachmentView } from "./AttachmentView";
 const format = (at: number) =>
-  new Date(at).toLocaleString("ja-JP", {
+  new Date(at).toLocaleString(localeTag(), {
     month: "numeric",
     day: "numeric",
     hour: "2-digit",
@@ -40,6 +42,8 @@ export default function MessageWorkspace({
     roomId?: string;
   };
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { width } = useWindowDimensions(),
     compact = width < 900;
   const { room: requested } = useLocalSearchParams<{ room?: string }>();
@@ -98,16 +102,14 @@ export default function MessageWorkspace({
   const room = baseRoom
     ? {
         ...baseRoom,
-        messages: [...messageData.data.items]
-          .reverse()
-          .map((m) => ({
-            ...m,
-            at: Date.parse(m.createdAt),
-            attachments: m.attachments.map((a) => ({
-              ...a,
-              uri: `/api/platform-data/attachments/${a.id}`,
-            })),
+        messages: [...messageData.data.items].reverse().map((m) => ({
+          ...m,
+          at: Date.parse(m.createdAt),
+          attachments: m.attachments.map((a) => ({
+            ...a,
+            uri: `/api/platform-data/attachments/${a.id}`,
           })),
+        })),
       }
     : undefined;
   const change = (id: string | null) => {
@@ -190,7 +192,7 @@ export default function MessageWorkspace({
         bytes > 200 * 1024 * 1024 ||
         picked.assets.some((a) => (a.size || 0) > 20 * 1024 * 1024)
       )
-        throw new Error("添付は10件まで、1件20MBまでです。");
+        throw new Error(sourceText("attachUpTo10FilesEachNo"));
       const saved: Attachment[] = [];
       for (const asset of picked.assets)
         saved.push(await saveAttachment(asset, room.id, token!));
@@ -198,7 +200,7 @@ export default function MessageWorkspace({
         setAttachments((current) => [...current, ...saved]);
     } catch (e) {
       setProblem(
-        e instanceof Error ? e.message : "ファイルを添付できませんでした。",
+        e instanceof Error ? e.message : sourceText("unableToAttachTheFile"),
       );
     } finally {
       setBusy(false);
@@ -207,18 +209,18 @@ export default function MessageWorkspace({
   if (!user && !mockMode)
     return (
       <AppButton
-        label="ログインしてメッセージを見る"
+        label={tText("logInToViewMessages")}
         onPress={() => router.push("/auth")}
       />
     );
-  if (!ready) return <Text>{error || "読み込み中…"}</Text>;
+  if (!ready) return <Text>{error || sourceText("loading")}</Text>;
   const chip = (label: string, active: boolean, onPress: () => void) => (
     <AppTag key={label} label={label} selected={active} onPress={onPress} />
   );
   return (
     <View style={{ gap: 10 }}>
       <Text style={s.notice}>
-        メッセージはサーバーに保存されます。会話は10秒ごとに更新されます。
+        {tText("messagesAreStoredOnTheServerConversations")}
       </Text>
       {!!error && (
         <Text accessibilityRole="alert" style={s.error}>
@@ -234,15 +236,19 @@ export default function MessageWorkspace({
       >
         {!conversationOnly && (!compact || !room) && (
           <View style={[s.sidebar, compact && { width: "100%" }]}>
-            <Text style={s.heading}>メッセージ一覧</Text>
+            <Text style={s.heading}>{tText("messageList")}</Text>
             <View style={s.chips}>
-              {chip("すべて", kind === "all", () => setKind("all"))}
-              {chip("企業", kind === "company", () => setKind("company"))}
-              {chip("案件", kind === "job", () => setKind("job"))}
+              {chip(sourceText("all"), kind === "all", () => setKind("all"))}
+              {chip(sourceText("company"), kind === "company", () =>
+                setKind("company"),
+              )}
+              {chip(sourceText("opportunities"), kind === "job", () =>
+                setKind("job"),
+              )}
             </View>
             <AppInput
-              accessibilityLabel="企業名・案件名で検索"
-              placeholder="企業名・案件名で検索"
+              accessibilityLabel={tText("searchByCompanyOrOpportunity")}
+              placeholder={tText("searchByCompanyOrOpportunity")}
               value={query}
               onChangeText={setQuery}
               style={s.input}
@@ -251,23 +257,31 @@ export default function MessageWorkspace({
               {(["active", "unread", "archived", "all"] as const).map(
                 (value, i) =>
                   chip(
-                    ["進行中", "未読", "アーカイブ", "全件"][i],
+                    [
+                      sourceText("active"),
+                      sourceText("unread_1249"),
+                      sourceText("archived"),
+                      sourceText("all_1251"),
+                    ][i],
                     filter === value,
                     () => setFilter(value),
                   ),
               )}
             </View>
             <AppSelect
-              accessibilityLabel="メッセージの並び替え"
+              accessibilityLabel={tText("messageSortOrder")}
               value={sort}
               onValueChange={setSort}
               options={[
-                { value: "new", label: "更新が新しい順" },
-                { value: "old", label: "古い順" },
-                { value: "name", label: "企業名順" },
+                { value: "new", label: sourceText("mostRecentlyUpdated") },
+                { value: "old", label: sourceText("oldestFirst") },
+                { value: "name", label: sourceText("companyName_1254") },
               ]}
             />
-            <Text style={s.meta}>{visible.length}件</Text>
+            <Text style={s.meta}>
+              {visible.length}
+              {tText("total_199")}
+            </Text>
             <ScrollView>
               {visible.map((r) => (
                 <Pressable
@@ -281,30 +295,34 @@ export default function MessageWorkspace({
                 >
                   <View style={s.chips}>
                     <Text style={s.kind}>
-                      {r.kind === "company" ? "企業" : "案件"}
+                      {r.kind === "company"
+                        ? sourceText("company")
+                        : sourceText("opportunities")}
                     </Text>
                     {r.unread > 0 && <Text style={s.unread}>{r.unread}</Text>}
                   </View>
-                  <Text style={s.roomTitle}>{r.company}</Text>
-                  <Text style={s.meta} numberOfLines={1}>
+                  <Text localize={false} style={s.roomTitle}>
+                    {r.company}
+                  </Text>
+                  <Text localize={false} style={s.meta} numberOfLines={1}>
                     {r.title}
                   </Text>
-                  <Text style={s.preview} numberOfLines={1}>
+                  <Text localize={false} style={s.preview} numberOfLines={1}>
                     {r.messages.at(-1)?.text ||
                       r.messages.at(-1)?.attachments[0]?.name ||
-                      "選択して会話を表示"}
+                      tText("selectToViewTheConversation")}
                   </Text>
                   <Text style={s.meta}>{format(latest(r))}</Text>
                 </Pressable>
               ))}
               {!visible.length && (
                 <View style={s.empty}>
-                  <Text>該当するメッセージはありません。</Text>
+                  <Text>{tText("noMatchingMessages")}</Text>
                   <Text style={s.meta}>
-                    お気に入りの企業・案件から会話を開けます。
+                    {tText("openConversationsFromFavoriteCompaniesOrJobs")}
                   </Text>
                   <AppButton
-                    label="お気に入りを開く"
+                    label={tText("openFavorites")}
                     outline
                     onPress={() => router.push("/favorites")}
                   />
@@ -322,9 +340,9 @@ export default function MessageWorkspace({
                   size={44}
                   color="#2563eb"
                 />
-                <Text style={s.heading}>会話を選択してください</Text>
+                <Text style={s.heading}>{tText("selectAConversation")}</Text>
                 <Text style={s.meta}>
-                  左の一覧から選ぶと、ここにメッセージが表示されます。
+                  {tText("selectAConversationFromTheListOn")}
                 </Text>
               </View>
             ) : (
@@ -333,15 +351,19 @@ export default function MessageWorkspace({
                   {compact && !conversationOnly && (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="一覧に戻る"
+                      accessibilityLabel={tText("backToList")}
                       onPress={() => change(null)}
                     >
                       <Ionicons name="arrow-back" size={24} />
                     </Pressable>
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={s.roomTitle}>{room.company}</Text>
-                    <Text style={s.meta}>{room.title}</Text>
+                    <Text localize={false} style={s.roomTitle}>
+                      {room.company}
+                    </Text>
+                    <Text localize={false} style={s.meta}>
+                      {room.title}
+                    </Text>
                   </View>
                   <Pressable
                     accessibilityRole="button"
@@ -350,7 +372,9 @@ export default function MessageWorkspace({
                     }
                   >
                     <Text style={s.link}>
-                      {room.archived ? "再開する" : "アーカイブ"}
+                      {room.archived
+                        ? sourceText("resumeConversation")
+                        : sourceText("archived")}
                     </Text>
                   </Pressable>
                 </View>
@@ -362,15 +386,18 @@ export default function MessageWorkspace({
                 <View style={{ flexDirection: "row", gap: 8, padding: 8 }}>
                   {messagePage > 1 && (
                     <AppButton
-                      label="新しい20件"
+                      label={tText("newer20")}
                       outline
                       onPress={() => setMessagePage((p) => p - 1)}
                     />
                   )}
-                  <Text>{messageData.data.total}件</Text>
+                  <Text>
+                    {messageData.data.total}
+                    {tText("total_199")}
+                  </Text>
                   {messagePage * 20 < messageData.data.total && (
                     <AppButton
-                      label="以前の20件"
+                      label={tText("older20")}
                       outline
                       onPress={() => setMessagePage((p) => p + 1)}
                     />
@@ -385,13 +412,15 @@ export default function MessageWorkspace({
                   }
                 >
                   {!room.messages.length && (
-                    <Text style={s.meta}>
-                      最初のメッセージを作成してください。
-                    </Text>
+                    <Text style={s.meta}>{tText("writeTheFirstMessage")}</Text>
                   )}
                   {room.messages.map((m) => (
                     <View key={m.id} style={[s.bubble, m.mine && s.mine]}>
-                      {!!m.text && <Text style={s.message}>{m.text}</Text>}
+                      {!!m.text && (
+                        <Text localize={false} style={s.message}>
+                          {m.text}
+                        </Text>
+                      )}
                       {m.attachments.map((a) => (
                         <AttachmentView key={a.id} attachment={a} />
                       ))}
@@ -401,7 +430,7 @@ export default function MessageWorkspace({
                           style={{ flexDirection: "row", gap: 8, marginTop: 6 }}
                         >
                           <AppButton
-                            label="編集"
+                            label={tText("edit")}
                             outline
                             onPress={() => {
                               if (busy) return;
@@ -412,9 +441,9 @@ export default function MessageWorkspace({
                             }}
                           />
                           <ConfirmAction
-                            label="削除"
+                            label={tText("delete")}
                             danger
-                            message="このメッセージを削除しますか？"
+                            message={tText("deleteThisMessage")}
                             onConfirm={async () => {
                               await dataRequest(
                                 `/rooms/${room.id}/messages/${m.id}?version=${m.version}`,
@@ -443,9 +472,9 @@ export default function MessageWorkspace({
                         gap: 8,
                       }}
                     >
-                      <Text>メッセージを編集中</Text>
+                      <Text>{tText("editingMessage")}</Text>
                       <AppButton
-                        label="編集をやめる"
+                        label={tText("stopEditing")}
                         outline
                         onPress={() => {
                           if (!busy) {
@@ -474,7 +503,13 @@ export default function MessageWorkspace({
                           </Text>
                           <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={`${a.name}の添付を取り消す`}
+                            accessibilityLabel={translateText(
+                              sourceFormat(
+                                "removeAttachment",
+                                { v0: a.name },
+                                [],
+                              ),
+                            )}
                             onPress={() =>
                               setAttachments((v) =>
                                 v.filter((x) => x.id !== a.id),
@@ -494,7 +529,7 @@ export default function MessageWorkspace({
                   <View style={s.composeRow}>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="画像・動画・ファイルを添付"
+                      accessibilityLabel={tText("attachImageVideoOrFile")}
                       disabled={busy}
                       onPress={() => void attach()}
                       style={s.icon}
@@ -506,8 +541,8 @@ export default function MessageWorkspace({
                       )}
                     </Pressable>
                     <AppTextArea
-                      accessibilityLabel="メッセージを入力"
-                      placeholder="メッセージを入力"
+                      accessibilityLabel={tText("enterAMessage")}
+                      placeholder={tText("enterAMessage")}
                       value={text}
                       maxLength={8000}
                       onChangeText={setText}
@@ -518,7 +553,7 @@ export default function MessageWorkspace({
                     />
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="メッセージを送信"
+                      accessibilityLabel={tText("sendMessage")}
                       disabled={busy || (!text.trim() && !attachments.length)}
                       onPress={() => {
                         if (busy) return;
@@ -561,7 +596,7 @@ export default function MessageWorkspace({
                     </Pressable>
                   </View>
                   <Text style={s.meta}>
-                    画像・動画・PDF・CSVなど／10件まで・1件20MBまで
+                    {tText("imagesVideosPdfCsvAndMoreUp")}
                   </Text>
                 </View>
               </>

@@ -1,3 +1,7 @@
+import { translateText } from "@/i18n/display";
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import {
   EvaluationButton,
   EvaluationModal,
@@ -10,7 +14,7 @@ import { dataRequest, query, type Page } from "@/api/platform";
 import type { InteractionRow } from "@/api/models";
 import { ConfirmAction } from "@/api/ApiUI";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AppPage from "@/components/layout/AppPage";
 import { AppSelect } from "@/components/form";
@@ -38,11 +42,13 @@ export default function ApplicationsWorkspace({
   mode = "selection",
   embedded = false,
 }: { mode?: "selection" | "ratings"; embedded?: boolean } = {}) {
+  "use no memo";
+  useLocaleVersion();
   const [ratingOpen, setRatingOpen] = useState(false);
   const evaluations = useEvaluations();
   const { token } = useAuth();
   const mockMode = false;
-  const [filter, setFilter] = useState<ApplicationFilter>("すべて"),
+  const [filter, setFilter] = useState<ApplicationFilter>(sourceText("all")),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState<string | null>(null),
     [expanded, setExpanded] = useState(true),
@@ -63,7 +69,7 @@ export default function ApplicationsWorkspace({
       ? "/interactions?" +
           query({
             kind,
-            status: filter === "すべて" ? "" : filter,
+            status: filter === sourceText("all") ? "" : filter,
             employment: employmentType,
             sort: sortKey,
             direction,
@@ -101,14 +107,22 @@ export default function ApplicationsWorkspace({
   }
   function pagination(position: string) {
     return (
-      <View accessibilityLabel={`${position}のページング`} style={s.pagination}>
+      <View
+        accessibilityLabel={translateText(
+          sourceFormat("pagination", { v0: position }, []),
+        )}
+        style={s.pagination}
+      >
         <Text style={s.meta}>
-          {result.start}–{result.end} / {result.filtered.length}件
+          {result.start}–{result.end} / {result.filtered.length}
+          {tText("total_199")}
         </Text>
         <View style={s.pageButtons}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${position} 前のページ`}
+            accessibilityLabel={translateText(
+              sourceFormat("previousPage_863", { v0: position }, []),
+            )}
             disabled={result.current === 1}
             onPress={() => changePage(result.current - 1)}
             style={[s.pageButton, result.current === 1 && s.disabled]}
@@ -124,7 +138,9 @@ export default function ApplicationsWorkspace({
             <Pressable
               key={n}
               accessibilityRole="button"
-              accessibilityLabel={`${position} ${n}ページ`}
+              accessibilityLabel={translateText(
+                sourceFormat("page_864", { v0: position, v1: n }, []),
+              )}
               accessibilityState={{ selected: n === result.current }}
               onPress={() => changePage(n)}
               style={[s.pageButton, n === result.current && s.active]}
@@ -138,7 +154,9 @@ export default function ApplicationsWorkspace({
           ))}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${position} 次のページ`}
+            accessibilityLabel={translateText(
+              sourceFormat("nextPage_865", { v0: position }, []),
+            )}
             disabled={result.current === result.pages}
             onPress={() => changePage(result.current + 1)}
             style={[
@@ -165,30 +183,32 @@ export default function ApplicationsWorkspace({
         {(!compact || !mobileDetail) && (
           <View style={[s.list, compact && { flex: undefined, width: "100%" }]}>
             <Text style={s.heading}>
-              {mode === "ratings" ? "評価一覧" : "選考・オファー一覧"}
+              {mode === "ratings"
+                ? sourceText("reviewList")
+                : sourceText("applicationsAndOffers")}
             </Text>
             <AppSelect
-              label="やり取りの種類"
+              label={tText("interactionType")}
               value={kind}
               onValueChange={(value) => {
                 setKind(value as InteractionKind | "");
                 resetSelection();
               }}
               options={[
-                { label: "すべてのやり取り", value: "" },
+                { label: sourceText("allInteractions"), value: "" },
                 ...INTERACTION_KINDS,
               ]}
             />
             <View
               accessibilityRole="tablist"
-              accessibilityLabel="選考・オファー状況フィルター"
+              accessibilityLabel={tText("applicationAndOfferStatusFilters")}
               style={s.filters}
             >
               {FILTERS.map((value) => (
                 <Pressable
                   key={value}
                   accessibilityRole="tab"
-                  accessibilityLabel={value}
+                  accessibilityLabel={translateText(value)}
                   accessibilityState={{ selected: filter === value }}
                   onPress={() => changeFilter(value)}
                   style={[s.filter, filter === value && s.active]}
@@ -205,20 +225,20 @@ export default function ApplicationsWorkspace({
               ))}
             </View>
             <AppSelect
-              label="雇用形態"
+              label={tText("employmentType")}
               value={employmentType}
               onValueChange={(value) => {
                 setEmploymentType(value);
                 resetSelection();
               }}
               options={[
-                { label: "すべての雇用形態", value: "" },
+                { label: sourceText("allEmploymentTypes"), value: "" },
                 ...APPLICATION_TYPES.map((value) => ({ label: value, value })),
               ]}
             />
             <View style={s.sortRow}>
               <AppSelect
-                label="並び替え"
+                label={tText("sortBy")}
                 value={sortKey}
                 onValueChange={(value) => {
                   setSortKey(value as SortKey);
@@ -226,12 +246,12 @@ export default function ApplicationsWorkspace({
                 }}
                 containerStyle={{ flex: 1 }}
                 options={[
-                  { label: "更新日時", value: "updatedAt" },
-                  { label: "状況", value: "status" },
+                  { label: sourceText("lastUpdated"), value: "updatedAt" },
+                  { label: sourceText("status"), value: "status" },
                 ]}
               />
               <AppSelect
-                label="並び順"
+                label={tText("sortDirection")}
                 value={direction}
                 onValueChange={(value) => {
                   setDirection(value as SortDirection);
@@ -239,15 +259,14 @@ export default function ApplicationsWorkspace({
                 }}
                 containerStyle={{ flex: 1 }}
                 options={[
-                  { label: "昇順", value: "asc" },
-                  { label: "降順", value: "desc" },
+                  { label: sourceText("ascending"), value: "asc" },
+                  { label: sourceText("descending"), value: "desc" },
                 ]}
               />
             </View>
             {sortKey === "status" && (
               <Text style={s.meta}>
-                状況の昇順：未返信 → 選考中 → 面談 → オファー検討中 → 内定 →
-                不採用 → 見送り → 内定辞退 → 内定取り消し
+                {tText("statusOrderUnansweredInSelectionMeetingConsidering")}
               </Text>
             )}
             <ResourceStatus
@@ -256,7 +275,7 @@ export default function ApplicationsWorkspace({
               onRetry={resource.refresh}
               privateData
             />
-            {pagination("上部")}
+            {pagination(sourceText("top"))}
             <ScrollView
               style={s.cards}
               contentContainerStyle={{ gap: 10, paddingBottom: 6 }}
@@ -265,7 +284,13 @@ export default function ApplicationsWorkspace({
                 <Pressable
                   key={a.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`${a.company}の${kindLabel(a.kind)}${a.id}を選択`}
+                  accessibilityLabel={translateText(
+                    sourceFormat(
+                      "select",
+                      { v0: a.company, v1: kindLabel(a.kind), v2: a.id },
+                      [],
+                    ),
+                  )}
                   accessibilityState={{ selected: selected === a.id }}
                   onPress={() => {
                     setSelected(a.id);
@@ -280,17 +305,19 @@ export default function ApplicationsWorkspace({
                   ]}
                 >
                   <View style={s.row}>
-                    <Text style={s.company}>{a.company}</Text>
+                    <Text localize={false} style={s.company}>
+                      {a.company}
+                    </Text>
                     <StatusBadge
                       label={outcomeLabel(a)}
                       tone={
                         a.afterResult ||
-                        a.companyResult === "不採用" ||
-                        a.companyResult === "見送り"
+                        a.companyResult === sourceText("notSelected") ||
+                        a.companyResult === sourceText("notProceeding")
                           ? "red"
-                          : a.companyResult === "内定"
+                          : a.companyResult === sourceText("jobOffer")
                             ? "green"
-                            : a.status === "面談"
+                            : a.status === sourceText("meeting")
                               ? "blue"
                               : "yellow"
                       }
@@ -299,15 +326,15 @@ export default function ApplicationsWorkspace({
                   {mode === "ratings" && (
                     <Text style={s.meta}>
                       {evaluations.records.some((r) => r.applicationId === a.id)
-                        ? "評価済み"
-                        : "未評価"}
+                        ? sourceText("reviewed")
+                        : sourceText("notReviewed")}
                     </Text>
                   )}
                   <Text style={s.kind}>
                     {kindLabel(a.kind)} ／{" "}
                     {a.kind === "application"
-                      ? "あなたから応募"
-                      : "企業から受信"}
+                      ? sourceText("appliedByYou")
+                      : sourceText("receivedFromCompany")}
                   </Text>
                   <Text numberOfLines={2} style={s.cardTitle}>
                     {a.title}
@@ -319,7 +346,8 @@ export default function ApplicationsWorkspace({
                     {a.employmentType} ／ {applicationPay(a)}
                   </Text>
                   <Text style={s.meta}>
-                    更新：{formatUpdatedAt(a.updatedAt)}
+                    {tText("updated_877")}
+                    {formatUpdatedAt(a.updatedAt)}
                   </Text>
                   <View style={s.row}>
                     <Text style={[s.meta, { flex: 1 }]}>
@@ -330,11 +358,11 @@ export default function ApplicationsWorkspace({
               ))}
               {!result.items.length && (
                 <Text style={s.empty}>
-                  条件に一致するやり取りはありません。
+                  {tText("noInteractionsMatchYourFilters")}
                 </Text>
               )}
             </ScrollView>
-            {pagination("下部")}
+            {pagination(sourceText("bottom"))}
           </View>
         )}
         {(!compact || mobileDetail) && (
@@ -343,7 +371,7 @@ export default function ApplicationsWorkspace({
           >
             {compact && (
               <AppButton
-                label="一覧に戻る"
+                label={tText("backToList")}
                 outline
                 onPress={() => setMobileDetail(false)}
               />
@@ -361,7 +389,9 @@ export default function ApplicationsWorkspace({
                       <View style={s.conditionHeader}>
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel="募集・提案条件を開閉"
+                          accessibilityLabel={tText(
+                            "expandOrCollapsePostingAndProposedTerms",
+                          )}
                           accessibilityState={{ expanded }}
                           onPress={() => setExpanded((v) => !v)}
                           style={[s.row, { flex: 1 }]}
@@ -371,7 +401,9 @@ export default function ApplicationsWorkspace({
                             size={22}
                             color="#2563EB"
                           />
-                          <Text style={s.heading}>募集・提案条件</Text>
+                          <Text style={s.heading}>
+                            {tText("postingAndProposedTerms")}
+                          </Text>
                           <Ionicons
                             name={expanded ? "chevron-up" : "chevron-down"}
                             size={20}
@@ -384,24 +416,37 @@ export default function ApplicationsWorkspace({
                         />
                       </View>
                       <View style={s.row}>
-                        <Text style={s.company}>{application.company}</Text>
+                        <Text localize={false} style={s.company}>
+                          {application.company}
+                        </Text>
                         <StatusBadge label={outcomeLabel(application)} />
                       </View>
-                      <Text style={s.cardTitle}>{application.title}</Text>
+                      <Text localize={false} style={s.cardTitle}>
+                        {application.title}
+                      </Text>
                       {expanded && (
                         <View style={s.facts}>
                           {[
-                            ["やり取りの種類", kindLabel(application.kind)],
-                            ["雇用形態", application.employmentType],
-                            ["給与・報酬", applicationPay(application)],
-                            ["勤務地", application.location],
-                            ["働き方", application.workStyle],
+                            [
+                              sourceText("interactionType"),
+                              kindLabel(application.kind),
+                            ],
+                            [
+                              sourceText("employmentType"),
+                              application.employmentType,
+                            ],
+                            [sourceText("pay"), applicationPay(application)],
+                            [sourceText("workLocation"), application.location],
+                            [
+                              sourceText("workArrangements"),
+                              application.workStyle,
+                            ],
                             [
                               eventDateLabel(application.kind),
                               formatUpdatedAt(application.appliedAt),
                             ],
                             [
-                              "更新日時",
+                              sourceText("lastUpdated"),
                               formatUpdatedAt(application.updatedAt),
                             ],
                           ].map(([label, value]) => (
@@ -416,7 +461,9 @@ export default function ApplicationsWorkspace({
                         {progressSteps(application).steps.map((step, i) => (
                           <View key={step} style={s.step}>
                             <View
-                              accessibilityLabel={`${step}：${i <= progressSteps(application).current ? "到達済み" : "未到達"}`}
+                              accessibilityLabel={translateText(
+                                `${translateText(step)}：${translateText(i <= progressSteps(application).current ? sourceText("reached") : sourceText("notReached"))}`,
+                              )}
                               style={[
                                 s.dot,
                                 i <= progressSteps(application).current &&
@@ -433,32 +480,34 @@ export default function ApplicationsWorkspace({
                       {application.companyResult && (
                         <View style={s.outcome}>
                           <Text style={s.value}>
-                            企業の判定：{application.companyResult}
+                            {tText("companyDecision_885")}
+                            {application.companyResult}
                           </Text>
                           {application.afterResult && (
                             <Text style={s.value}>
-                              {application.afterResult === "内定辞退"
-                                ? "ユーザーの対応"
-                                : "企業の対応"}
+                              {application.afterResult ===
+                              sourceText("offerDeclined")
+                                ? sourceText("userResponse")
+                                : sourceText("companyResponse")}
                               ：{application.afterResult}
                             </Text>
                           )}
                         </View>
                       )}
-                      {application.companyResult === "内定" &&
+                      {application.companyResult === sourceText("jobOffer") &&
                         !application.afterResult && (
                           <ConfirmAction
-                            label="内定を辞退する"
+                            label={tText("declineTheJobOffer")}
                             danger
-                            message="内定を辞退します。この操作は取り消せません。"
+                            message={tText("declineThisJobOfferThisCannotBe")}
                             onConfirm={() =>
                               dataRequest(
                                 `/interactions/${application.id}`,
                                 token,
                                 {
                                   stage: application.stage,
-                                  companyResult: "内定",
-                                  afterResult: "内定辞退",
+                                  companyResult: sourceText("jobOffer"),
+                                  afterResult: sourceText("offerDeclined"),
                                   version: application.version,
                                 },
                                 "PUT",
@@ -475,10 +524,10 @@ export default function ApplicationsWorkspace({
                         color="#94A3B8"
                       />
                       <Text style={s.heading}>
-                        募集・提案条件が表示されます
+                        {tText("postingAndProposedTermsAppearHere")}
                       </Text>
                       <Text style={s.meta}>
-                        左の一覧からやり取りを選択してください。
+                        {tText("selectAnInteractionFromTheListOn")}
                       </Text>
                     </View>
                   )}
@@ -503,8 +552,12 @@ export default function ApplicationsWorkspace({
                         size={42}
                         color="#94A3B8"
                       />
-                      <Text style={s.heading}>メッセージが表示されます</Text>
-                      <Text style={s.meta}>左のカードを選択してください。</Text>
+                      <Text style={s.heading}>
+                        {tText("messagesAppearHere")}
+                      </Text>
+                      <Text style={s.meta}>
+                        {tText("selectACardOnTheLeft")}
+                      </Text>
                     </View>
                   </Panel>
                 )}
@@ -527,10 +580,18 @@ export default function ApplicationsWorkspace({
     content
   ) : (
     <AppPage
-      title={mode === "ratings" ? "評価" : "選考・オファー状況"}
+      title={translateText(
+        mode === "ratings"
+          ? sourceText("reviews")
+          : sourceText("applicationsAndOffers_641"),
+      )}
       subtitle=""
       role="user"
-      activeMenu={mode === "ratings" ? "評価" : "選考・オファー状況"}
+      activeMenu={
+        mode === "ratings"
+          ? sourceText("reviews")
+          : sourceText("applicationsAndOffers_641")
+      }
     >
       {content}
     </AppPage>

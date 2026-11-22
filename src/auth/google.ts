@@ -1,19 +1,32 @@
+import { sourceText } from "@/i18n/source";
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { API_BASE } from "./api";
 export type RegistrationAccountType = "GENERAL" | "COMPANY";
 
-export async function startGoogle(accountType?: RegistrationAccountType, businessName?: string): Promise<string | null> {
-  const registrationQuery = accountType ? `&mode=register&accountType=${encodeURIComponent(accountType)}` : "";
-  const businessQuery = accountType === "COMPANY" && businessName ? `&businessName=${encodeURIComponent(businessName)}` : "";
+export async function startGoogle(
+  accountType?: RegistrationAccountType,
+  businessName?: string,
+): Promise<string | null> {
+  const registrationQuery = accountType
+    ? `&mode=register&accountType=${encodeURIComponent(accountType)}`
+    : "";
+  const businessQuery =
+    accountType === "COMPANY" && businessName
+      ? `&businessName=${encodeURIComponent(businessName)}`
+      : "";
   const url = `${API_BASE}/api/platform-auth/google/start?platform=${Platform.OS === "web" ? "web" : "native"}${registrationQuery}${businessQuery}`;
-  if (Platform.OS === "web") { window.location.assign(url); return null; }
+  if (Platform.OS === "web") {
+    window.location.assign(url);
+    return null;
+  }
   const redirect = Linking.createURL("auth-callback");
   const result = await WebBrowser.openAuthSessionAsync(url, redirect);
   if (result.type !== "success") return null;
   const parsed = Linking.parse(result.url);
-  if (parsed.queryParams?.error) throw new Error("Googleログインを完了できませんでした。手動登録済みの場合は確認メールを開いてください。");
+  if (parsed.queryParams?.error)
+    throw new Error(sourceText("googleSignInCouldNotBeCompleted_576"));
   const ticket = parsed.queryParams?.ticket;
   return typeof ticket === "string" ? ticket : null;
 }

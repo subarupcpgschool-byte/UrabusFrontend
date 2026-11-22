@@ -1,5 +1,8 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useState } from "react";
-import { View, Text, Modal, ScrollView } from "react-native";
+import { View, Modal, ScrollView } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import { dataRequest } from "@/api/platform";
@@ -28,6 +31,8 @@ const empty = (): ResumeRow => ({
   version: 0,
 });
 export default function ResumePage() {
+  "use no memo";
+  useLocaleVersion();
   const { token } = useAuth();
   const r = useResource<ResumeRow[]>(token ? "/me/resumes" : null, [], true);
   const [draft, setDraft] = useState<ResumeRow | null>(null),
@@ -39,7 +44,7 @@ export default function ResumePage() {
   async function save() {
     if (!draft || busy) return;
     if (!draft.title.trim()) {
-      setError("タイトルを入力してください。");
+      setError(sourceText("enterATitle"));
       return;
     }
     setBusy(true);
@@ -64,7 +69,12 @@ export default function ResumePage() {
     }
   }
   return (
-    <AppPage title="経歴書" subtitle="" role="user" activeMenu="経歴書">
+    <AppPage
+      title={tText("resume")}
+      subtitle=""
+      role="user"
+      activeMenu={sourceText("resume")}
+    >
       <ResourceStatus
         loading={r.loading}
         error={r.error}
@@ -73,7 +83,7 @@ export default function ResumePage() {
       />
       {token && (
         <AppButton
-          label="経歴書を作成＋"
+          label={tText("createResume")}
           onPress={() => {
             setError("");
             setDraft(empty());
@@ -82,14 +92,16 @@ export default function ResumePage() {
       )}
       {r.data.map((row) => (
         <Panel key={row.id}>
-          <SectionTitle>{row.title}</SectionTitle>
-          <BodyText>{row.body.summary || "自己PRは未記入です。"}</BodyText>
+          <SectionTitle localize={false}>{row.title}</SectionTitle>
+          <BodyText localize={false}>
+            {row.body.summary || tText("noPersonalSummaryHasBeenEntered")}
+          </BodyText>
           <BodyText>
-            {row.publicResume ? "公開中" : "非公開"} ／ 更新日{" "}
-            {row.updatedAt.slice(0, 10)}
+            {row.publicResume ? sourceText("published") : sourceText("private")}{" "}
+            {tText("updated")} {row.updatedAt.slice(0, 10)}
           </BodyText>
           <AppButton
-            label="編集・詳細"
+            label={tText("editOrView")}
             outline
             onPress={() => {
               setError("");
@@ -97,9 +109,9 @@ export default function ResumePage() {
             }}
           />
           <ConfirmAction
-            label="削除"
+            label={tText("delete")}
             danger
-            message="この経歴書を削除しますか？ 提出済みの内容は応募時の履歴に残ります。"
+            message={tText("deleteThisResumePreviouslySubmittedContentWill")}
             onConfirm={() =>
               dataRequest(
                 `/me/resumes/${row.id}?version=${row.version}`,
@@ -112,7 +124,7 @@ export default function ResumePage() {
         </Panel>
       ))}
       {token && !r.loading && !r.error && !r.data.length && (
-        <BodyText>経歴書はまだ登録されていません。</BodyText>
+        <BodyText>{tText("noResumesHaveBeenRegistered")}</BodyText>
       )}
       <Modal
         transparent
@@ -142,40 +154,42 @@ export default function ResumePage() {
             {draft && (
               <Panel>
                 <SectionTitle>
-                  {draft.id ? "経歴書を編集" : "経歴書を作成"}
+                  {draft.id
+                    ? sourceText("editResume")
+                    : sourceText("createResume_555")}
                 </SectionTitle>
                 <AppInput
-                  label="タイトル"
+                  label={tText("title")}
                   required
                   value={draft.title}
                   onChangeText={(v) => field("title", v)}
                   maxLength={120}
                 />
                 <AppTextArea
-                  label="自己PR"
+                  label={tText("personalSummary")}
                   value={draft.body.summary || ""}
                   onChangeText={(v) =>
                     field("body", { ...draft.body, summary: v })
                   }
                 />
                 <AppTagInput
-                  label="スキル"
+                  label={tText("skills")}
                   value={draft.body.skills || []}
                   onValueChange={(v) =>
                     field("body", { ...draft.body, skills: v })
                   }
                 />
-                <Text>企業の人材検索に公開する</Text>
+                <Text>{tText("makeAvailableInCompanyTalentSearch")}</Text>
                 <AppSwitch
-                  accessibilityLabel="経歴書を公開する"
+                  accessibilityLabel={tText("publishResume")}
                   value={draft.publicResume}
                   onValueChange={(v) => field("publicResume", v)}
                 />
-                <SectionTitle>職務経歴</SectionTitle>
+                <SectionTitle>{tText("workExperience")}</SectionTitle>
                 {draft.body.employmentHistory?.map((job, index) => (
                   <Panel key={index}>
                     <AppInput
-                      label="勤務先"
+                      label={tText("employer")}
                       value={job.company}
                       onChangeText={(v) =>
                         field("body", {
@@ -187,7 +201,7 @@ export default function ResumePage() {
                       }
                     />
                     <AppInput
-                      label="職種・役職"
+                      label={tText("jobTitleOrPosition")}
                       value={job.position}
                       onChangeText={(v) =>
                         field("body", {
@@ -199,7 +213,7 @@ export default function ResumePage() {
                       }
                     />
                     <AppDatePicker
-                      label="開始日"
+                      label={tText("startDate")}
                       value={job.startDate}
                       onValueChange={(v) =>
                         field("body", {
@@ -212,7 +226,7 @@ export default function ResumePage() {
                       }
                     />
                     <AppDatePicker
-                      label="終了日（未入力は在職中）"
+                      label={tText("endDateBlankIfStillEmployed")}
                       value={job.endDate || ""}
                       onValueChange={(v) =>
                         field("body", {
@@ -225,7 +239,7 @@ export default function ResumePage() {
                       }
                     />
                     <AppTextArea
-                      label="仕事内容"
+                      label={tText("jobDescription")}
                       value={job.description}
                       onChangeText={(v) =>
                         field("body", {
@@ -238,7 +252,7 @@ export default function ResumePage() {
                       }
                     />
                     <AppButton
-                      label="この職歴を削除"
+                      label={tText("removeWorkExperience")}
                       outline
                       onPress={() =>
                         field("body", {
@@ -253,7 +267,7 @@ export default function ResumePage() {
                   </Panel>
                 ))}
                 <AppButton
-                  label="職務経歴を追加＋"
+                  label={tText("addWorkExperience")}
                   outline
                   onPress={() =>
                     field("body", {
@@ -271,11 +285,11 @@ export default function ResumePage() {
                     })
                   }
                 />
-                <SectionTitle>学歴</SectionTitle>
+                <SectionTitle>{tText("education")}</SectionTitle>
                 {draft.body.education?.map((school, index) => (
                   <Panel key={index}>
                     <AppInput
-                      label="学校名"
+                      label={tText("schoolName")}
                       value={school.school}
                       onChangeText={(v) =>
                         field("body", {
@@ -287,7 +301,7 @@ export default function ResumePage() {
                       }
                     />
                     <AppInput
-                      label="学部・学科"
+                      label={tText("departmentOrMajor")}
                       value={school.department}
                       onChangeText={(v) =>
                         field("body", {
@@ -299,7 +313,7 @@ export default function ResumePage() {
                       }
                     />
                     <AppDatePicker
-                      label="卒業日"
+                      label={tText("graduationDate")}
                       value={school.graduatedAt}
                       onValueChange={(v) =>
                         field("body", {
@@ -311,7 +325,7 @@ export default function ResumePage() {
                       }
                     />
                     <AppButton
-                      label="この学歴を削除"
+                      label={tText("removeEducation")}
                       outline
                       onPress={() =>
                         field("body", {
@@ -325,7 +339,7 @@ export default function ResumePage() {
                   </Panel>
                 ))}
                 <AppButton
-                  label="学歴を追加＋"
+                  label={tText("addEducation")}
                   outline
                   onPress={() =>
                     field("body", {
@@ -344,14 +358,14 @@ export default function ResumePage() {
                 )}
                 <View style={{ flexDirection: "row", gap: 12 }}>
                   <AppButton
-                    label="閉じる"
+                    label={tText("close")}
                     outline
                     onPress={() => {
                       if (!busy) setDraft(null);
                     }}
                   />
                   <AppButton
-                    label={busy ? "保存中…" : "保存"}
+                    label={busy ? sourceText("saving") : sourceText("save_384")}
                     onPress={() => void save()}
                   />
                 </View>

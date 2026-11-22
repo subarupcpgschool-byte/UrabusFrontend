@@ -1,3 +1,5 @@
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
 import { Link } from "expo-router";
 import { View } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
@@ -11,6 +13,8 @@ import {
   KpiRow,
 } from "@/components/ui/AppUI";
 export default function LiveDashboard() {
+  "use no memo";
+  useLocaleVersion();
   const { token } = useAuth();
   const r = useResource<{
     interactions: {
@@ -23,10 +27,10 @@ export default function LiveDashboard() {
   }>(token ? "/dashboard" : null, { interactions: [], contracts: [] }, true);
   return (
     <AppPage
-      title="ダッシュボード"
+      title={tText("dashboard")}
       subtitle=""
       role="company"
-      activeMenu="ダッシュボード"
+      activeMenu={sourceText("dashboard")}
     >
       <ResourceStatus
         loading={r.loading}
@@ -40,24 +44,28 @@ export default function LiveDashboard() {
             key={i.kind}
             label={
               i.kind === "application"
-                ? "応募"
+                ? sourceText("application")
                 : i.kind === "scout"
-                  ? "スカウト"
-                  : "オファー"
+                  ? sourceText("scout")
+                  : sourceText("offer")
             }
-            value={`${i.count}件`}
-            change={`進行中 ${i.inProgress} ／ 内定 ${i.accepted}`}
+            value={sourceFormat("total_654", { v0: i.count }, [])}
+            change={sourceFormat(
+              "inProgressJobOffers",
+              { v0: i.inProgress, v1: i.accepted },
+              [],
+            )}
           />
         ))}
       </KpiRow>
       <Panel>
-        <SectionTitle>採用メニュー</SectionTitle>
+        <SectionTitle>{tText("hiringMenu")}</SectionTitle>
         {[
-          ["/company/applications", "応募・選考管理"],
-          ["/company/jobs", "求人管理"],
-          ["/company/talent", "人材検索"],
-          ["/company/employees", "社員一覧"],
-          ["/company/settings", "企業・権限"],
+          ["/company/applications", sourceText("applicationsAndSelection")],
+          ["/company/jobs", sourceText("jobManagement")],
+          ["/company/talent", sourceText("talentSearch")],
+          ["/company/employees", sourceText("employeeList_932")],
+          ["/company/settings", sourceText("companyAndPermissions")],
         ].map(([href, title]) => (
           <Link key={href} href={href as never}>
             <BodyText>{title}　›</BodyText>

@@ -1,3 +1,5 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion, localeTag } from "@/i18n/display";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import AppPage from "@/components/layout/AppPage";
@@ -12,6 +14,8 @@ import {
   metricFields,
 } from "@/features/operator/ResourceEditor";
 export default function MonitorPage() {
+  "use no memo";
+  useLocaleVersion();
   const { token } = useAuth();
   const r = useResource<{
     metrics: {
@@ -34,7 +38,12 @@ export default function MonitorPage() {
     true,
   );
   return (
-    <AppPage title="モニター" subtitle="" role="operator" activeMenu="モニター">
+    <AppPage
+      title={tText("monitoring")}
+      subtitle=""
+      role="operator"
+      activeMenu={sourceText("monitoring")}
+    >
       <ResourceStatus
         loading={r.loading}
         error={r.error}
@@ -42,10 +51,16 @@ export default function MonitorPage() {
         privateData
       />
       <Panel>
-        <SectionTitle>過去24時間の計測結果</SectionTitle>
+        <SectionTitle>{tText("measurementsFromThePast24Hours")}</SectionTitle>
         {r.data.metrics.length ? (
           <DataTable
-            headers={["サービス", "計測項目", "合計", "平均", "件数"]}
+            headers={[
+              sourceText("services"),
+              sourceText("metric"),
+              sourceText("total_447"),
+              sourceText("average"),
+              sourceText("count"),
+            ]}
             rows={r.data.metrics.map((m) => [
               m.service,
               m.metric,
@@ -55,23 +70,29 @@ export default function MonitorPage() {
             ])}
           />
         ) : (
-          <BodyText>計測データはまだありません。</BodyText>
+          <BodyText>{tText("noMeasurementsHaveBeenRecorded")}</BodyText>
         )}
       </Panel>
       <Panel>
-        <SectionTitle>アラーム対応状況</SectionTitle>
+        <SectionTitle>{tText("alertResponseStatus")}</SectionTitle>
         {r.data.alarms.map((a) => (
           <BodyText key={a.status}>
-            {a.status}：{a.count}件
+            {a.status}：{a.count}
+            {tText("total_199")}
           </BodyText>
         ))}
       </Panel>
       <Panel>
-        <SectionTitle>直近のイベント</SectionTitle>
+        <SectionTitle>{tText("recentEvents")}</SectionTitle>
         <DataTable
-          headers={["日時", "サービス", "内容", "重要度"]}
+          headers={[
+            sourceText("dateAndTime"),
+            sourceText("services"),
+            sourceText("content"),
+            sourceText("severity"),
+          ]}
           rows={r.data.recentEvents.map((e) => [
-            new Date(e.occurredAt).toLocaleString("ja-JP"),
+            new Date(e.occurredAt).toLocaleString(localeTag()),
             e.service,
             e.message,
             e.severity,
@@ -81,7 +102,7 @@ export default function MonitorPage() {
       {!r.error && (
         <ResourceEditor
           path="/operator/metrics"
-          title="計測値"
+          title={tText("measuredValue")}
           fields={metricFields}
         />
       )}

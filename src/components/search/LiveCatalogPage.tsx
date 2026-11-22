@@ -1,5 +1,9 @@
+import { translateText } from "@/i18n/display";
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useState } from "react";
-import { View, Text, useWindowDimensions } from "react-native";
+import { View, useWindowDimensions } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import { query, type Page } from "@/api/platform";
@@ -22,6 +26,8 @@ export default function LiveCatalogPage({
 }: {
   kind: "jobs" | "companies";
 }) {
+  "use no memo";
+  useLocaleVersion();
   const params = useLocalSearchParams<{
     keyword?: string;
     location?: string;
@@ -77,7 +83,9 @@ export default function LiveCatalogPage({
   };
   return (
     <SearchPageShell
-      title={kind === "jobs" ? "求人検索" : "企業検索"}
+      title={translateText(
+        kind === "jobs" ? sourceText("jobSearch") : sourceText("companySearch"),
+      )}
       subtitle=""
       activeNav={kind === "jobs" ? "jobs" : "companies"}
     >
@@ -103,9 +111,13 @@ export default function LiveCatalogPage({
           }}
         >
           <SearchResultHeader
-            label="検索結果"
+            label={tText("searchResults")}
             count={resource.data.total}
-            sort={sort === "rating" ? "評価が高い順" : "更新が新しい順"}
+            sort={
+              sort === "rating"
+                ? sourceText("highestRatedFirst")
+                : sourceText("mostRecentlyUpdated")
+            }
             onChangeSort={() => {
               setSort((v) => (v === "rating" ? "updatedAt" : "rating"));
               setPage(1);
@@ -147,7 +159,9 @@ export default function LiveCatalogPage({
             !resource.error &&
             !resource.data.items.length && (
               <Text>
-                条件に一致する{kind === "jobs" ? "求人" : "企業"}はありません。
+                {tText("matching")}
+                {kind === "jobs" ? sourceText("job") : sourceText("company")}
+                {tText("wereNotFound")}
               </Text>
             )}
           <Pager page={page} total={resource.data.total} onChange={setPage} />

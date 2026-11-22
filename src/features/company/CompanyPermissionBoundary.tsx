@@ -1,3 +1,6 @@
+import { translateText } from "@/i18n/display";
+import { sourceText } from "@/i18n/source";
+import { useLocaleVersion } from "@/i18n/display";
 import { useEffect, useState, type ReactNode } from "react";
 import AppPage from "@/components/layout/AppPage";
 import { BodyText, Panel } from "@/components/ui/AppUI";
@@ -26,7 +29,9 @@ export function useCompanyPermission(permission: PermissionKey) {
           setResult({
             token,
             error:
-              e instanceof Error ? e.message : "権限を確認できませんでした。",
+              e instanceof Error
+                ? e.message
+                : sourceText("unableToCheckPermissions"),
           });
       });
     return () => {
@@ -88,16 +93,22 @@ export function CompanyPermissionBoundary({
   title: string;
   children: ReactNode;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const check = useCompanyPermission(permission);
   if (check.ready && check.allowed) return <>{children}</>;
   const text = !check.ready
-    ? "権限を確認中…"
+    ? sourceText("checkingPermissions")
     : check.assignedOnly
-      ? "対象案件の応募者はまだ表示できるデータがありません。"
-      : check.error ||
-        "この画面を利用する権限がありません。企業オーナーに確認してください。";
+      ? sourceText("thereIsNoApplicantDataAvailableFor")
+      : check.error || sourceText("youDoNotHaveAccessToThis");
   return (
-    <AppPage title={title} subtitle="" role="company" activeMenu={title}>
+    <AppPage
+      title={translateText(title)}
+      subtitle=""
+      role="company"
+      activeMenu={title}
+    >
       <Panel>
         <BodyText>{text}</BodyText>
       </Panel>

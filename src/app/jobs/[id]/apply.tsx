@@ -1,5 +1,8 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useState } from "react";
-import { Text } from "react-native";
+
 import { router, useLocalSearchParams } from "expo-router";
 import AppPage from "@/components/layout/AppPage";
 import {
@@ -14,6 +17,8 @@ import { useResource, ResourceStatus } from "@/api/useResource";
 import { dataRequest } from "@/api/platform";
 import type { JobRow, ResumeRow } from "@/api/models";
 export default function ApplyPage() {
+  "use no memo";
+  useLocaleVersion();
   const { id = "" } = useLocalSearchParams<{ id: string }>();
   const { user, token } = useAuth();
   const job = useResource<JobRow | null>(id ? `/jobs/${id}` : null, null);
@@ -30,7 +35,7 @@ export default function ApplyPage() {
   async function apply() {
     if (!token || !job.data || busy || done) return;
     if (user?.accountType !== "GENERAL") {
-      setError("一般ユーザーのみ応募できます。");
+      setError(sourceText("onlyIndividualUsersCanApply"));
       return;
     }
     setBusy(true);
@@ -50,7 +55,7 @@ export default function ApplyPage() {
     }
   }
   return (
-    <AppPage title="求人応募" role="user" subtitle="">
+    <AppPage title={tText("jobApplication")} role="user" subtitle="">
       <ResourceStatus
         loading={job.loading || resumes.loading}
         error={job.error || resumes.error}
@@ -62,32 +67,32 @@ export default function ApplyPage() {
       />
       {job.data && token && (
         <Panel>
-          <SectionTitle>{job.data.title}</SectionTitle>
-          <BodyText>
+          <SectionTitle localize={false}>{job.data.title}</SectionTitle>
+          <BodyText localize={false}>
             {job.data.companyName} ／ {job.data.location}
           </BodyText>
           {done ? (
             <>
-              <BodyText>応募を送信しました。</BodyText>
+              <BodyText>{tText("applicationSent")}</BodyText>
               <AppButton
-                label="選考・オファー状況を開く"
+                label={tText("openApplicationsAndOffers")}
                 onPress={() => router.push("/user/applications")}
               />
             </>
           ) : (
             <>
               <AppSelect
-                label="提出する経歴書"
+                label={tText("resumeToSubmit")}
                 value={resumeId}
                 onValueChange={setResumeId}
                 options={[
-                  { value: "", label: "経歴書を提出しない" },
+                  { value: "", label: sourceText("doNotSubmitAResume") },
                   ...resumes.data.map((r) => ({ value: r.id, label: r.title })),
                 ]}
                 disabled={busy}
               />
               <AppTextArea
-                label="企業へのメッセージ"
+                label={tText("messageToTheCompany")}
                 value={message}
                 onChangeText={setMessage}
                 maxLength={8000}
@@ -99,7 +104,9 @@ export default function ApplyPage() {
                 </Text>
               )}
               <AppButton
-                label={busy ? "送信中…" : "この内容で応募する"}
+                label={
+                  busy ? sourceText("sending") : sourceText("submitApplication")
+                }
                 onPress={() => void apply()}
               />
             </>

@@ -1,3 +1,5 @@
+import { sourceText } from "@/i18n/source";
+import { useLocaleVersion } from "@/i18n/display";
 import { createContext, useContext, type ReactNode } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource } from "@/api/useResource";
@@ -35,6 +37,8 @@ type Context = {
 };
 const C = createContext<Context | null>(null);
 export function AccountProvider({ children }: { children: ReactNode }) {
+  "use no memo";
+  useLocaleVersion();
   const { user, token, ready } = useAuth();
   const enabled = !!token && user?.accountType === "GENERAL";
   const profile = useResource<SavedProfile[]>(
@@ -60,7 +64,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     company: c.company,
     jobId: c.recruitmentId ?? undefined,
     title: c.title,
-    period: `${c.startDate || "未定"}〜${c.endDate || ""}`,
+    period: `${c.startDate || sourceText("toBeDecided")}〜${c.endDate || ""}`,
     status: c.status,
   }));
   const saved = profile.data[0];
@@ -109,7 +113,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           reviews.refresh();
         },
         saveProfile: async (p) => {
-          if (!token) throw new Error("ログインしてください。");
+          if (!token) throw new Error(sourceText("pleaseLogIn"));
           const error = profileError(p);
           if (error) throw new Error(error);
           await dataRequest(
@@ -126,7 +130,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           );
         },
         saveReview: async (contractId, rating, comment) => {
-          if (!token) throw new Error("ログインしてください。");
+          if (!token) throw new Error(sourceText("pleaseLogIn"));
           const error = reviewError(rating, comment);
           if (error) throw new Error(error);
           const prior = reviews.data.find(
@@ -157,6 +161,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 }
 export function useAccount() {
   const c = useContext(C);
-  if (!c) throw new Error("AccountProviderが必要です");
+  if (!c) throw new Error(sourceText("accountproviderIsRequired"));
   return c;
 }

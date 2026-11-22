@@ -1,12 +1,9 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { AppTag } from "@/components/form";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 import FavoriteButton from "./FavoriteButton";
 import { SEARCH_COLORS as C, SEARCH_SHADOW } from "./theme";
 import type { JobSearchItem } from "./types";
@@ -20,6 +17,8 @@ export default function JobSearchCard({
   onPressDetail: (id: number | string) => void;
   onPressApply: (id: number | string) => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const { width } = useWindowDimensions();
   return (
     <View style={[s.card, width < 600 && { flexDirection: "column" }]}>
@@ -29,8 +28,12 @@ export default function JobSearchCard({
       <View style={s.body}>
         <View style={s.head}>
           <View style={{ flex: 1 }}>
-            <Text style={s.title}>{item.title}</Text>
-            <Text style={s.company}>{item.companyName}</Text>
+            <Text localize={false} style={s.title}>
+              {item.title}
+            </Text>
+            <Text localize={false} style={s.company}>
+              {item.companyName}
+            </Text>
           </View>
           <FavoriteButton label={item.title} item={item} kind="job" />
         </View>
@@ -42,12 +45,13 @@ export default function JobSearchCard({
           <Tag label={item.employmentType} />
           {true && (
             <Text style={s.rating}>
-              ★ {item.rating.toFixed(1)}（{item.reviewCount}件）
+              ★ {item.rating.toFixed(1)}（{item.reviewCount}
+              {tText("total")}
             </Text>
           )}
         </View>
         <Text style={s.salary}>
-          {false ? "月給 " : ""}
+          {false ? sourceText("monthlyPay") : ""}
           {item.salary}
         </Text>
         <View style={s.tags}>
@@ -55,20 +59,27 @@ export default function JobSearchCard({
             <Tag key={tag} label={tag} purple={i % 2 === 1} />
           ))}
         </View>
-        <Text style={s.description}>{item.description}</Text>
+        <Text localize={false} style={s.description}>
+          {item.description}
+        </Text>
         <View style={s.actions}>
           <Button
-            label="詳細を見る"
+            label={tText("viewDetails")}
             outline
             onPress={() => onPressDetail(item.id)}
           />
-          <Button label="応募する" onPress={() => onPressApply(item.id)} />
+          <Button
+            label={tText("apply")}
+            onPress={() => onPressApply(item.id)}
+          />
         </View>
       </View>
     </View>
   );
 }
 function Tag({ label, purple = false }: { label: string; purple?: boolean }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <AppTag
       label={label}
@@ -85,6 +96,8 @@ function Button({
   outline?: boolean;
   onPress: () => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <Pressable
       onPress={onPress}

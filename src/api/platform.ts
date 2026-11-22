@@ -1,3 +1,4 @@
+import { sourceText } from "@/i18n/source";
 import { API_BASE } from "@/auth/api";
 export class ApiError extends Error {
   constructor(
@@ -63,7 +64,7 @@ export async function dataRequest<T>(
         : await response.json().catch(() => ({}));
     if (!response.ok)
       throw new ApiError(
-        value?.message || "処理できませんでした。再読み込みしてください。",
+        value?.message || sourceText("unableToCompleteTheActionPleaseReload"),
         response.status,
       );
     if (method !== "GET") invalidateData();
@@ -73,9 +74,7 @@ export async function dataRequest<T>(
       error instanceof TypeError ||
       (error instanceof Error && error.name === "AbortError")
     )
-      throw new Error(
-        "サーバーに接続できません。接続先・通信状態を確認してください。",
-      );
+      throw new Error(sourceText("cannotConnectToTheServerCheckThe"));
     throw error;
   } finally {
     clearTimeout(timer);

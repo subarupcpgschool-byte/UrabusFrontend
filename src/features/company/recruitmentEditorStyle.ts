@@ -1,4 +1,7 @@
-export const recruitmentPlaceholder = '募集内容を入力するか、「＋」からブロックを追加';
+import { sourceText } from "@/i18n/source";
+export const recruitmentPlaceholder = sourceText(
+  "enterPostingContentOrUseToAdd",
+);
 
 export const recruitmentEditorCss = `
   .tiptap { color: #18334f; font: 16px/1.7 system-ui, sans-serif; overflow-wrap: anywhere; }

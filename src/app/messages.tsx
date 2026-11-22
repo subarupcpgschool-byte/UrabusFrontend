@@ -1,3 +1,15 @@
-import AppPage from '@/components/layout/AppPage';
-import MessageWorkspace from '@/features/workspace/MessageWorkspace';
-export default function MessagesPage(){return <AppPage title="メッセージ" subtitle="企業・案件ごとに、やり取りをまとめて管理できます。"><MessageWorkspace/></AppPage>;}
+import { tText, useLocaleVersion } from "@/i18n/display";
+import AppPage from "@/components/layout/AppPage";
+import MessageWorkspace from "@/features/workspace/MessageWorkspace";
+export default function MessagesPage() {
+  "use no memo";
+  useLocaleVersion();
+  return (
+    <AppPage
+      title={tText("messages")}
+      subtitle={tText("manageInteractionsSeparatelyForEachCompanyOr")}
+    >
+      <MessageWorkspace />
+    </AppPage>
+  );
+}

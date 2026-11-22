@@ -1,7 +1,10 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Alert, Pressable, Text } from "@/i18n/native";
 import { companyHref } from "@/features/account/companyNavigation";
 import { MockBanner } from "@/features/workspace/MockBanner";
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import AppPage from "@/components/layout/AppPage";
 import { AppButton } from "@/components/ui/AppUI";
@@ -17,17 +20,19 @@ import {
   type Favorite,
 } from "@/features/workspace/WorkspaceProvider";
 export default function FavoritesPage() {
+  "use no memo";
+  useLocaleVersion();
   const [tab, setTab] = useState<Favorite["kind"]>("company");
   const { user } = useAuth();
   const { favorites, ready, error, openRoom, mockMode } = useWorkspace();
   return (
     <AppPage
-      title="お気に入り"
-      subtitle="気になる企業や案件を、まとめて確認できます。"
+      title={tText("favorites")}
+      subtitle={tText("keepYourFavoriteCompaniesAndJobsIn")}
     >
       {!user && !mockMode ? (
         <AppButton
-          label="ログインしてお気に入りを見る"
+          label={tText("logInToSeeFavorites")}
           onPress={() => router.push("/auth")}
         />
       ) : (
@@ -43,24 +48,33 @@ export default function FavoritesPage() {
                 style={[s.tab, tab === kind && s.active]}
               >
                 <Text style={[s.tabText, tab === kind && { color: "#fff" }]}>
-                  {kind === "company" ? "企業" : "案件"}（
-                  {favorites.filter((f) => f.kind === kind).length}）
+                  {kind === "company"
+                    ? sourceText("company")
+                    : sourceText("opportunities")}
+                  （{favorites.filter((f) => f.kind === kind).length}）
                 </Text>
               </Pressable>
             ))}
           </View>
           {!!error && <Text accessibilityRole="alert">{error}</Text>}
           {!ready ? (
-            <Text>読み込み中…</Text>
+            <Text>{tText("loading")}</Text>
           ) : favorites.filter((f) => f.kind === tab).length === 0 ? (
             <View style={s.empty}>
               <Text style={s.heading}>
-                お気に入りの{tab === "company" ? "企業" : "案件"}
-                はまだありません
+                {tText("favorite")}
+                {tab === "company"
+                  ? sourceText("company")
+                  : sourceText("opportunities")}
+                {tText("haveNotBeenAddedYet")}
               </Text>
-              <Text>検索結果のハート・ブックマークから登録できます。</Text>
+              <Text>{tText("useTheHeartOrBookmarkIconsIn")}</Text>
               <AppButton
-                label={tab === "company" ? "企業を探す" : "求人を探す"}
+                label={
+                  tab === "company"
+                    ? sourceText("findCompanies")
+                    : sourceText("findJobs")
+                }
                 onPress={() =>
                   router.push(tab === "company" ? "/companies" : "/jobs")
                 }
@@ -97,7 +111,7 @@ export default function FavoritesPage() {
                     )}
                     <View style={{ alignItems: "flex-end" }}>
                       <AppButton
-                        label="メッセージを開く"
+                        label={tText("openMessages")}
                         outline
                         onPress={() =>
                           void (async () => {
@@ -115,7 +129,7 @@ export default function FavoritesPage() {
                               params: { room: id },
                             });
                           })().catch((e) =>
-                            Alert.alert("メッセージ", e.message),
+                            Alert.alert(sourceText("messages"), e.message),
                           )
                         }
                       />

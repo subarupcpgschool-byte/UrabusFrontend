@@ -1,3 +1,6 @@
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import type { Page } from "@/api/platform";
 import { jobItem, type JobRow, type CompanyRow } from "@/api/models";
@@ -14,17 +17,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 
 import {
-  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from "react-native";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 function Search({ mobile }: { mobile: boolean }) {
+  "use no memo";
+  useLocaleVersion();
   const [keyword, setKeyword] = useState("");
   const [location, setLocation] = useState("");
   return (
@@ -35,7 +38,7 @@ function Search({ mobile }: { mobile: boolean }) {
           variant="plain"
           value={keyword}
           onChangeText={setKeyword}
-          placeholder="職種・スキル・企業名"
+          placeholder={tText("jobTitleSkillsOrCompany")}
           style={s.input}
         />
       </View>
@@ -46,7 +49,7 @@ function Search({ mobile }: { mobile: boolean }) {
           variant="plain"
           value={location}
           onChangeText={setLocation}
-          placeholder="勤務地・リモート"
+          placeholder={tText("locationOrRemoteWork")}
           style={s.input}
         />
       </View>
@@ -64,22 +67,42 @@ function Search({ mobile }: { mobile: boolean }) {
         ]}
       >
         <Ionicons name="search" size={18} color={C.white} />
-        <Text style={s.searchButtonText}>求人を検索</Text>
+        <Text style={s.searchButtonText}>{tText("searchJobs")}</Text>
       </Pressable>
     </View>
   );
 }
 
 function Flow({ tablet }: { tablet: boolean }) {
+  "use no memo";
+  useLocaleVersion();
   const items: [IconName, string, string][] = [
-    ["document-text-outline", "求人掲載", "魅力を伝えて応募を待つ"],
-    ["chatbubbles-outline", "直接チャット", "気になることを確認"],
-    ["checkmark-circle", "採用決定", "納得してスムーズに採用"],
-    ["star-outline", "相互評価", "信頼を次のつながりへ"],
+    [
+      "document-text-outline",
+      sourceText("postAJob"),
+      sourceText("showWhatMakesYourOpportunityAttractive"),
+    ],
+    [
+      "chatbubbles-outline",
+      sourceText("directChat"),
+      sourceText("askBeforeYouApply"),
+    ],
+    [
+      "checkmark-circle",
+      sourceText("hiringDecision"),
+      sourceText("agreeOnTheTermsAndHireWith"),
+    ],
+    [
+      "star-outline",
+      sourceText("mutualReviews"),
+      sourceText("buildTrustForYourNextOpportunity"),
+    ],
   ];
   return (
     <View style={s.visual}>
-      <Text style={s.visualTitle}>評価がつくから、ミスマッチを減らせる</Text>
+      <Text style={s.visualTitle}>
+        {tText("reviewsHelpYouFindTheRightFit")}
+      </Text>
       <View style={s.flow}>
         {items.map(([icon, title, text], i) => (
           <View key={title} style={s.flowGroup}>
@@ -105,11 +128,9 @@ function Flow({ tablet }: { tablet: boolean }) {
       <View style={[s.proofRow, !tablet && { flexDirection: "column" }]}>
         <Review company />
         <View style={s.chat}>
-          <Text style={s.chatText}>
-            仕事内容について、もう少し聞いてもいいですか？
-          </Text>
+          <Text style={s.chatText}>{tText("couldYouTellMeMoreAboutThe")}</Text>
           <Text style={[s.chatText, s.chatReply]}>
-            もちろんです！気になる点をお話しします。
+            {tText("ofCourseWhatWouldYouLikeTo")}
           </Text>
         </View>
         <Review />
@@ -119,15 +140,17 @@ function Flow({ tablet }: { tablet: boolean }) {
 }
 
 function Review({ company = false }: { company?: boolean }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <View style={s.review}>
       <Text style={s.reviewName}>
         {company
-          ? "企業の対応・募集条件を評価"
-          : "働いた経験・仕事の品質を評価"}
+          ? sourceText("reviewTheCompanySCommunicationAndJob")
+          : sourceText("reviewWorkExperienceAndQuality")}
       </Text>
       <Text style={s.quote}>
-        実際のやり取りに基づく相互評価を確認できます。
+        {tText("seeMutualReviewsBasedOnRealInteractions")}
       </Text>
     </View>
   );
@@ -144,6 +167,8 @@ function Feature({
   text: string;
   green?: boolean;
 }) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <View style={s.feature}>
       <View style={[s.featureIcon, green && { backgroundColor: C.greenSoft }]}>
@@ -158,11 +183,33 @@ function Feature({
 }
 
 function Footer({ desktop }: { desktop: boolean }) {
+  "use no memo";
+  useLocaleVersion();
   const cols = [
-    ["サービス", "求人を探す", "企業を探す", "評価について"],
-    ["ご利用者様へ", "ログイン", "よくある質問", "お問い合わせ"],
-    ["企業様へ", "求人掲載の流れ", "料金について", "採用成功事例"],
-    ["運営会社", "会社概要", "利用規約", "プライバシーポリシー"],
+    [
+      sourceText("services"),
+      sourceText("findJobs"),
+      sourceText("findCompanies"),
+      sourceText("aboutReviews"),
+    ],
+    [
+      sourceText("forJobSeekers"),
+      sourceText("logIn"),
+      sourceText("frequentlyAskedQuestions"),
+      sourceText("contactUs"),
+    ],
+    [
+      sourceText("forCompanies"),
+      sourceText("howToPostAJob"),
+      sourceText("pricing"),
+      sourceText("hiringSuccessStories"),
+    ],
+    [
+      sourceText("companyInformation"),
+      sourceText("aboutUs"),
+      sourceText("termsOfService"),
+      sourceText("privacyPolicy"),
+    ],
   ];
   return (
     <View style={s.footer}>
@@ -170,7 +217,7 @@ function Footer({ desktop }: { desktop: boolean }) {
         <View style={s.footerBrand}>
           <Logo backgroundColor="white" />
           <Text style={s.footerDesc}>
-            評価でつながる直接雇用プラットフォーム。企業と働く人の信頼をつなぎ、より良い雇用の未来をつくります。
+            {tText("aDirectHiringPlatformBuiltOnReviews")}
           </Text>
         </View>
         <View style={s.footerCols}>
@@ -192,6 +239,8 @@ function Footer({ desktop }: { desktop: boolean }) {
 }
 
 export default function HomeScreen() {
+  "use no memo";
+  useLocaleVersion();
   const jobs = useResource<Page<JobRow>>("/jobs?pageSize=3&sort=updatedAt", {
     items: [],
     total: 0,
@@ -215,16 +264,28 @@ export default function HomeScreen() {
         <View style={[s.content, { paddingHorizontal: padding }]}>
           <View style={[s.hero, desktop && s.heroDesktop]}>
             <View style={[s.heroCopy, desktop && { flex: 1 }]}>
-              <Text style={s.badge}>採用成功報酬 0円</Text>
+              <Text style={s.badge}>{tText("noHiringSuccessFees")}</Text>
 
               <Search mobile={!tablet} />
               <View style={s.metrics}>
                 {[
                   ...(!jobs.loading && !jobs.error
-                    ? [`${jobs.data.total.toLocaleString()}件の公開求人`]
+                    ? [
+                        sourceFormat(
+                          "openJobs",
+                          { v0: jobs.data.total.toLocaleString() },
+                          [],
+                        ),
+                      ]
                     : []),
                   ...(!companies.loading && !companies.error
-                    ? [`${companies.data.total.toLocaleString()}社の企業`]
+                    ? [
+                        sourceFormat(
+                          "companies",
+                          { v0: companies.data.total.toLocaleString() },
+                          [],
+                        ),
+                      ]
                     : []),
                 ].map((x) => (
                   <View key={x} style={s.metric}>
@@ -253,13 +314,13 @@ export default function HomeScreen() {
               ]}
             >
               <View>
-                <Text style={s.sectionTitle}>新着求人</Text>
+                <Text style={s.sectionTitle}>{tText("latestJobs")}</Text>
                 <Text style={s.sectionSub}>
-                  実際に働いた人の評価を確認して応募できます。
+                  {tText("readReviewsFromPeopleWhoHaveWorked")}
                 </Text>
               </View>
               <Pressable onPress={() => router.push("/jobs")} style={s.more}>
-                <Text style={s.moreText}>求人をもっと見る</Text>
+                <Text style={s.moreText}>{tText("seeMoreJobs")}</Text>
                 <Ionicons name="arrow-forward" size={18} color={C.blueDark} />
               </Pressable>
             </View>
@@ -268,15 +329,19 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={s.filters}
             >
-              {["すべて", "未経験OK", "リモート可", "正社員", "業務委託"].map(
-                (x, i) => (
-                  <View key={x} style={[s.filter, i === 0 && s.filterActive]}>
-                    <Text style={[s.filterText, i === 0 && { color: C.white }]}>
-                      {x}
-                    </Text>
-                  </View>
-                ),
-              )}
+              {[
+                sourceText("all"),
+                sourceText("noExperienceRequired"),
+                sourceText("remoteWorkAvailable"),
+                sourceText("fullTimeEmployee"),
+                sourceText("freelanceContractWork"),
+              ].map((x, i) => (
+                <View key={x} style={[s.filter, i === 0 && s.filterActive]}>
+                  <Text style={[s.filterText, i === 0 && { color: C.white }]}>
+                    {x}
+                  </Text>
+                </View>
+              ))}
             </ScrollView>
             <View style={[s.jobGrid, !desktop && { flexDirection: "column" }]}>
               <ResourceStatus
@@ -296,43 +361,55 @@ export default function HomeScreen() {
                 </View>
               ))}
               {!jobs.loading && !jobs.error && !jobs.data.items.length && (
-                <Text>公開中の求人はまだありません。</Text>
+                <Text>{tText("thereAreNoOpenJobsYet")}</Text>
               )}
             </View>
           </View>
           <View style={s.section}>
             <Text style={s.sectionTitle}>
-              信頼できる採用を、もっとシンプルに
+              {tText("simplerHiringYouCanTrust")}
             </Text>
             <Text style={s.sectionSub}>
-              応募前から採用後まで、安心してつながれる仕組みを用意しています。
+              {tText("supportFromYourFirstApplicationThroughEmployment")}
             </Text>
             <View style={[s.features, !desktop && { flexDirection: "column" }]}>
               <Feature
                 icon="chatbubbles-outline"
-                title="直接チャット"
-                text="応募前の質問から採用後の連絡まで、企業と直接やり取りできます。"
+                title={tText("directChat")}
+                text={tText("chatDirectlyWithCompaniesFromQuestionsBefore")}
               />
               <Feature
                 icon="ribbon-outline"
-                title="相互評価"
-                text="企業とユーザー双方が評価し合い、信頼できる情報を可視化します。"
+                title={tText("mutualReviews")}
+                text={tText("companiesAndUsersReviewEachOtherTo")}
                 green
               />
               <Feature
                 icon="wallet-outline"
-                title="透明な料金"
-                text="採用成功報酬は不要。わかりやすい料金で採用を支援します。"
+                title={tText("transparentPricing")}
+                text={tText("noHiringSuccessFeesClearPricingTo")}
               />
             </View>
           </View>
           <View style={s.process}>
-            <Text style={s.processHeading}>利用の流れ</Text>
+            <Text style={s.processHeading}>{tText("howItWorks")}</Text>
             <View style={[s.steps, !tablet && { flexDirection: "column" }]}>
               {[
-                ["search-outline", "求人を探す", "条件や評価を参考に検索"],
-                ["chatbubbles-outline", "企業と話す", "直接チャットで質問"],
-                ["people-outline", "採用・評価", "働いた後は評価を共有"],
+                [
+                  "search-outline",
+                  sourceText("findJobs"),
+                  sourceText("searchByTermsAndReviews"),
+                ],
+                [
+                  "chatbubbles-outline",
+                  sourceText("talkToTheCompany"),
+                  sourceText("askQuestionsDirectlyInChat"),
+                ],
+                [
+                  "people-outline",
+                  sourceText("hiringAndReviews"),
+                  sourceText("shareYourExperienceAfterWorkingTogether"),
+                ],
               ].map(([icon, title, text], i) => (
                 <View key={title} style={s.step}>
                   <Text style={s.stepNo}>{i + 1}</Text>
@@ -356,16 +433,18 @@ export default function HomeScreen() {
             ]}
           >
             <View style={{ flex: 1 }}>
-              <Text style={s.ctaTitle}>新しい働き方を、ここから。</Text>
+              <Text style={s.ctaTitle}>
+                {tText("findYourNextWayOfWorking")}
+              </Text>
               <Text style={s.ctaText}>
-                あなたに合った働き方や人材を、信頼できるつながりから見つけましょう。
+                {tText("findTheRightOpportunityOrTalentThrough")}
               </Text>
             </View>
             <View
               style={[s.ctaButtons, !tablet && { flexDirection: "column" }]}
             >
-              <Button label="無料で求人を探す　→" />
-              <Button label="無料で求人を掲載する　→" outline />
+              <Button label={tText("findJobsForFree")} />
+              <Button label={tText("postJobsForFree")} outline />
             </View>
           </View>
         </View>

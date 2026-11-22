@@ -1,25 +1,31 @@
-import { getDocumentAsync } from 'expo-document-picker';
-import { File } from 'expo-file-system';
+import { sourceText } from "@/i18n/source";
+import { getDocumentAsync } from "expo-document-picker";
+import { File } from "expo-file-system";
 
 const MAX_CSS_BYTES = 32 * 1024;
 
 export async function pickArticleCss() {
-  const result = await getDocumentAsync({ type: ['text/css', 'application/octet-stream'], base64: false });
+  const result = await getDocumentAsync({
+    type: ["text/css", "application/octet-stream"],
+    base64: false,
+  });
   const asset = result.assets?.[0];
   if (!asset) return null;
 
   try {
-    if (!asset.name.toLowerCase().endsWith('.css')) {
-      throw new Error('拡張子が .css のファイルを選択してください。');
+    if (!asset.name.toLowerCase().endsWith(".css")) {
+      throw new Error(sourceText("selectAFileWithTheCssExtension"));
     }
     const file = asset.file ?? new File(asset.uri);
-    if (file.size > MAX_CSS_BYTES) throw new Error('CSSファイルは32KB以内にしてください。');
+    if (file.size > MAX_CSS_BYTES)
+      throw new Error(sourceText("cssFilesMustBeNoLargerThan"));
     const css = (await file.text()).trim();
-    if (!css || css.includes('\u0000') || css.includes('\uFFFD')) {
-      throw new Error('UTF-8の空でないCSSファイルを選択してください。');
+    if (!css || css.includes("\u0000") || css.includes("\uFFFD")) {
+      throw new Error(sourceText("selectANonEmptyUtf8Css"));
     }
     return css;
   } finally {
-    if (asset.file && asset.uri.startsWith('blob:')) URL.revokeObjectURL(asset.uri);
+    if (asset.file && asset.uri.startsWith("blob:"))
+      URL.revokeObjectURL(asset.uri);
   }
 }

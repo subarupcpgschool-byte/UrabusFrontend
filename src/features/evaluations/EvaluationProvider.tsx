@@ -1,3 +1,5 @@
+import { sourceText } from "@/i18n/source";
+import { useLocaleVersion } from "@/i18n/display";
 import {
   createContext,
   useContext,
@@ -20,6 +22,8 @@ type Context = {
 };
 const C = createContext<Context | null>(null);
 export function EvaluationProvider({ children }: { children: ReactNode }) {
+  "use no memo";
+  useLocaleVersion();
   const { token, user, ready } = useAuth();
   const [now, setNow] = useState(Date.now);
   const resource = useResource<EvaluationRow[]>(
@@ -45,7 +49,7 @@ export function EvaluationProvider({ children }: { children: ReactNode }) {
       publishAt: r.publishAt,
     }));
   async function submit(id: string, draft: EvaluationDraft) {
-    if (!token) throw new Error("ログインしてください。");
+    if (!token) throw new Error(sourceText("pleaseLogIn"));
     const invalid = validateDraft(draft);
     if (invalid) throw new Error(invalid);
     const existing = resource.data.find(
@@ -79,7 +83,7 @@ export function EvaluationProvider({ children }: { children: ReactNode }) {
               r.direction === "USER_TO_COMPANY",
           );
           if (!record || record.mode === "automatic")
-            throw new Error("削除できる手動評価が見つかりません。");
+            throw new Error(sourceText("noManualReviewIsAvailableToDelete"));
           await dataRequest(
             `/evaluations/${record.id}?version=${record.version}`,
             token,
@@ -95,6 +99,6 @@ export function EvaluationProvider({ children }: { children: ReactNode }) {
 }
 export function useEvaluations() {
   const c = useContext(C);
-  if (!c) throw new Error("EvaluationProviderが必要です");
+  if (!c) throw new Error(sourceText("evaluationproviderIsRequired"));
   return c;
 }

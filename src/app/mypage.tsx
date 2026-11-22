@@ -1,5 +1,8 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { router, useLocalSearchParams } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import AppPage from "@/components/layout/AppPage";
 import { AppButton } from "@/components/ui/AppUI";
 import { useAuth } from "@/auth/AuthProvider";
@@ -10,47 +13,49 @@ import { Tabs } from "@/features/account/Tabs";
 import MessageWorkspace from "@/features/workspace/MessageWorkspace";
 
 const options = [
-  { value: "profile", label: "プロフィール" },
-  { value: "messages", label: "メッセージ" },
-  { value: "received", label: "受けた評価" },
+  { value: "profile", label: sourceText("profile") },
+  { value: "messages", label: sourceText("messages") },
+  { value: "received", label: sourceText("reviewsReceived") },
 ];
 export default function MyPage() {
+  "use no memo";
+  useLocaleVersion();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const current = options.some((o) => o.value === tab) ? tab! : "profile";
   const { user } = useAuth();
   const { ready, error, data, mockMode, refresh } = useAccount();
   return (
     <AppPage
-      title="マイページ"
-      subtitle="プロフィール、契約先とのやり取り、評価をまとめて管理します。"
+      title={tText("myPage")}
+      subtitle={tText("manageYourProfileContractsMessagesAndReviews")}
       role="user"
-      activeMenu="マイページ"
+      activeMenu={sourceText("myPage")}
     >
       {mockMode && (
         <View style={s.banner}>
-          <Text style={s.bannerTitle}>サンプルデータで表示中</Text>
+          <Text style={s.bannerTitle}>{tText("showingSampleData")}</Text>
           <Text style={s.hint}>
-            契約・評価は架空のサンプルです。プロフィールと記入した評価はこの端末に保存します。
+            {tText("contractsAndReviewsAreFictionalSamplesProfile")}
           </Text>
         </View>
       )}
       {!user && !mockMode ? (
         <AppButton
-          label="ログインしてマイページを開く"
+          label={tText("logInToOpenMyPage")}
           onPress={() => router.push("/auth")}
         />
       ) : !ready || error ? (
         <View>
           <Text accessibilityRole={error ? "alert" : undefined}>
-            {error || "読み込み中…"}
+            {error || sourceText("loading")}
           </Text>
-          {!!error && <AppButton label="再読み込み" onPress={refresh} />}
+          {!!error && <AppButton label={tText("reload")} onPress={refresh} />}
         </View>
       ) : (
         <>
           <View style={s.identity}>
             <View style={s.avatar}>
-              <Text style={s.initial}>
+              <Text localize={false} style={s.initial}>
                 {
                   Array.from(
                     data?.profile.familyName || user?.displayName || "U",
@@ -59,19 +64,19 @@ export default function MyPage() {
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.name}>
+              <Text localize={false} style={s.name}>
                 {[data?.profile.familyName, data?.profile.givenName]
                   .filter(Boolean)
                   .join(" ") ||
                   user?.displayName ||
-                  "プロフィール未設定"}
+                  tText("profileNotConfigured")}
               </Text>
-              <Text style={s.hint}>
-                {user?.email || "サンプルプロフィール"}
+              <Text localize={false} style={s.hint}>
+                {user?.email || tText("sampleProfile")}
               </Text>
             </View>
             <AppButton
-              label="アカウント設定"
+              label={tText("accountSettings")}
               outline
               onPress={() => router.push("/auth")}
             />
@@ -80,7 +85,7 @@ export default function MyPage() {
             options={options}
             value={current}
             onChange={(value) => router.setParams({ tab: value })}
-            label="マイページの表示切り替え"
+            label={tText("switchMyPageView")}
           />
           <View style={current === "profile" ? undefined : { display: "none" }}>
             <ProfilePanel />

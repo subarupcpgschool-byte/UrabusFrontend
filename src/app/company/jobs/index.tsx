@@ -1,7 +1,11 @@
+import { translateText } from "@/i18n/display";
+import { sourceText, sourceFormat } from "@/i18n/source";
+import { tText, useLocaleVersion, localeTag } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import { dataRequest } from "@/api/platform";
 import { useEffect, useRef, useState } from "react";
-import { Modal, Platform, Text, View } from "react-native";
+import { Modal, Platform, View } from "react-native";
 import AppPage from "@/components/layout/AppPage";
 import {
   AppCheckbox,
@@ -34,26 +38,26 @@ import { choices } from "@/features/company/recruitmentOptions";
 
 const path = "/company-recruitments";
 const labels = {
-  title: "募集タイトル",
-  kind: "募集区分",
-  employment: "雇用形態",
-  location: "勤務地",
-  compensation: "給与・報酬",
-  description: "旧形式の仕事内容",
-  requirements: "応募条件",
-  startDate: "開始日",
-  endDate: "終了日",
-  publishTime: "公開時刻",
-  hidden: "非表示",
-  blocks: "旧形式の募集内容",
-  articleHtml: "募集内容",
-  articleCss: "記事個別CSS",
-  publicationStatus: "掲載状態",
+  title: sourceText("postingTitle"),
+  kind: sourceText("postingType"),
+  employment: sourceText("employmentType"),
+  location: sourceText("workLocation"),
+  compensation: sourceText("pay"),
+  description: sourceText("jobDescriptionLegacyFormat"),
+  requirements: sourceText("requirements"),
+  startDate: sourceText("startDate"),
+  endDate: sourceText("endDate"),
+  publishTime: sourceText("publicationTime"),
+  hidden: sourceText("hidden"),
+  blocks: sourceText("postingContentLegacyFormat"),
+  articleHtml: sourceText("postingContent"),
+  articleCss: sourceText("postingSpecificCss"),
+  publicationStatus: sourceText("publicationStatus"),
 };
 const emptyDraft = {
   title: "",
   kind: "JOB",
-  employment: "正社員",
+  employment: sourceText("fullTimeEmployee"),
   location: "",
   compensation: "",
   description: "",
@@ -97,10 +101,12 @@ function visibility(draft: Draft) {
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
-  if (draft.hidden) return "非表示";
-  if (validDate(draft.startDate) && draft.startDate > today) return "開始前";
-  if (validDate(draft.endDate) && draft.endDate < today) return "終了";
-  return "期間内";
+  if (draft.hidden) return sourceText("hidden");
+  if (validDate(draft.startDate) && draft.startDate > today)
+    return sourceText("notStarted");
+  if (validDate(draft.endDate) && draft.endDate < today)
+    return sourceText("ended");
+  return sourceText("withinPostingPeriod");
 }
 type Job = {
   id: string;
@@ -114,11 +120,11 @@ type Job = {
 };
 function publicationLabel(item: Job) {
   const states: Record<string, string> = {
-    DRAFT: "非公開",
-    PUBLISHED: "公開中",
-    SCHEDULED: "予約公開",
-    BLOCKED: "公開停止",
-    EXPIRED: "募集終了",
+    DRAFT: sourceText("private"),
+    PUBLISHED: sourceText("published"),
+    SCHEDULED: sourceText("scheduled"),
+    BLOCKED: sourceText("publicationStopped"),
+    EXPIRED: sourceText("postingEnded"),
   };
   return (
     states[item.publication_status ?? ""] ??
@@ -157,18 +163,20 @@ type History = {
 };
 
 export default function CompanyJobsPage() {
+  "use no memo";
+  useLocaleVersion();
   const { token, user, ready } = useAuth();
   const allowed =
     user?.accountType === "COMPANY" || user?.accountType === "EMPLOYEE";
   return (
     <AppPage
-      title="求人作成・管理"
+      title={tText("createAndManagePostings")}
       subtitle=""
       role="company"
-      activeMenu="求人管理"
+      activeMenu={sourceText("jobManagement")}
     >
       {!ready ? (
-        <BodyText>読み込み中…</BodyText>
+        <BodyText>{tText("loading")}</BodyText>
       ) : token && allowed ? (
         <RecruitmentManager
           key={token}
@@ -180,9 +188,7 @@ export default function CompanyJobsPage() {
         />
       ) : (
         <Panel>
-          <BodyText>
-            企業アカウントまたは所属企業の従業員アカウントでログインしてください。
-          </BodyText>
+          <BodyText>{tText("logInWithACompanyAccountOr")}</BodyText>
         </Panel>
       )}
     </AppPage>
@@ -196,6 +202,8 @@ function RecruitmentManager({
   token: string;
   companyName?: string | null;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const locations = useResource<{ value: string; label: string }[]>(
     "/options?category=prefecture",
     [],
@@ -282,7 +290,11 @@ function RecruitmentManager({
     try {
       await action();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "処理できませんでした。");
+      setError(
+        e instanceof Error
+          ? e.message
+          : sourceText("unableToCompleteTheAction"),
+      );
     } finally {
       setBusy(false);
     }
@@ -313,7 +325,9 @@ function RecruitmentManager({
     setData((previous) =>
       previous ? { ...previous, commonCss: result.css } : previous,
     );
-    setNotice(css ? "共通CSSを更新しました。" : "共通CSSを解除しました。");
+    setNotice(
+      css ? sourceText("sharedCssUpdated") : sourceText("sharedCssRemoved"),
+    );
   }
 
   const [publicationConfirm, setPublicationConfirm] = useState<{
@@ -357,12 +371,12 @@ function RecruitmentManager({
     setPublicationConfirm(null);
     setNotice(
       mode === "PRIVATE"
-        ? "非公開で保存しました。"
+        ? sourceText("savedPrivately")
         : mode === "SCHEDULE"
-          ? "予約公開を設定しました。開始日時に掲載枠を再確認します。"
+          ? sourceText("publicationScheduledAvailableSlotsWillBeChecked")
           : job
-            ? "募集を更新しました。"
-            : "募集を作成しました。",
+            ? sourceText("postingUpdated")
+            : sourceText("postingCreated"),
     );
     await refresh();
   }
@@ -370,7 +384,7 @@ function RecruitmentManager({
   async function save() {
     if (!draft) return;
     if (!editorRef.current)
-      throw new Error("エディタの読み込みが完了してから保存してください。");
+      throw new Error(sourceText("waitForTheEditorToFinishLoading"));
     const html = await editorRef.current.getHTML();
     const input = {
       ...draft,
@@ -384,7 +398,7 @@ function RecruitmentManager({
       description: "",
     };
     if (!input.title || !input.location || !input.compensation) {
-      throw new Error("募集タイトル、勤務地、給与・報酬を入力してください。");
+      throw new Error(sourceText("enterAPostingTitleLocationAndPay"));
     }
     if (
       /^(年収|月給|時給) /.test(input.compensation) &&
@@ -393,30 +407,26 @@ function RecruitmentManager({
       ) ||
         Number(input.compensation.replace(/[^0-9.]/g, "")) <= 0)
     ) {
-      throw new Error("金額には0より大きい数値を入力してください。");
+      throw new Error(sourceText("enterAnAmountGreaterThanZero"));
     }
     if (input.requirements.length > 4000)
-      throw new Error("応募条件が長すぎます。選択数を減らしてください。");
+      throw new Error(sourceText("requirementsAreTooLongSelectFewerItems"));
     if (html.length > MAX_ARTICLE_HTML)
-      throw new Error("募集内容が長すぎます。内容を短くしてください。");
+      throw new Error(sourceText("thePostingContentIsTooLongShorten"));
     if (
       [input.startDate, input.endDate].some((date) => date && !validDate(date))
     ) {
-      throw new Error(
-        "開始日と終了日は YYYY-MM-DD 形式で正しい日付を入力してください。",
-      );
+      throw new Error(sourceText("enterValidStartAndEndDatesIn"));
     }
     if (input.startDate && input.endDate && input.startDate > input.endDate) {
-      throw new Error("終了日は開始日以降にしてください。");
+      throw new Error(sourceText("theEndDateMustBeOnOr"));
     }
     if (
       input.publishTime &&
       (!input.startDate ||
         !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(input.publishTime))
     )
-      throw new Error(
-        "公開時刻は開始日と00:00〜23:59の形式で入力してください。",
-      );
+      throw new Error(sourceText("specifyAStartDateAndAPublication"));
     const check = await checkPublication(input);
     if (check.decision === "LIMIT" || check.decision === "SCHEDULED") {
       setPublicationConfirm({ input, check });
@@ -463,13 +473,22 @@ function RecruitmentManager({
           <Panel style={{ width: "100%", maxWidth: 560 }}>
             <SectionTitle>
               {publicationConfirm?.check.decision === "LIMIT"
-                ? "掲載上限に達しています"
-                : "予約公開の確認"}
+                ? sourceText("publicationLimitReached")
+                : sourceText("confirmScheduledPublication")}
             </SectionTitle>
             <BodyText>
               {publicationConfirm?.check.decision === "LIMIT"
-                ? `${publicationConfirm.check.plan}の${publicationConfirm.check.kindLabel}の上限は${publicationConfirm.check.limit}件です。この募集以外に同じ区分で${publicationConfirm.check.publishedOthers}件公開中のため、公開できません。非公開で保存するか、保存せず編集を終了してください。`
-                : `開始日時（日本時間）に予約公開します。開始時点で同じ募集区分の掲載上限に達している場合は非公開のまま停止し、求人管理にアラートを表示します。`}
+                ? sourceFormat(
+                    "theLimitForIsThereAreAlready",
+                    {
+                      v0: publicationConfirm.check.plan,
+                      v1: publicationConfirm.check.kindLabel,
+                      v2: publicationConfirm.check.limit,
+                      v3: publicationConfirm.check.publishedOthers,
+                    },
+                    [],
+                  )
+                : sourceText("publicationIsScheduledForTheStartTime")}
             </BodyText>
             {!!error && (
               <Text accessibilityRole="alert" style={{ color: "#B42318" }}>
@@ -478,7 +497,7 @@ function RecruitmentManager({
             )}
             {publicationConfirm?.check.decision === "SCHEDULED" && (
               <AppButton
-                label="予約公開する"
+                label={tText("schedulePublication")}
                 disabled={busy}
                 onPress={() => {
                   if (publicationConfirm)
@@ -489,7 +508,7 @@ function RecruitmentManager({
               />
             )}
             <AppButton
-              label="非公開で保存する"
+              label={tText("savePrivately")}
               disabled={busy}
               onPress={() => {
                 if (publicationConfirm)
@@ -500,7 +519,7 @@ function RecruitmentManager({
             />
             {publicationConfirm?.check.decision === "LIMIT" && (
               <AppButton
-                label="保存せず編集を終了"
+                label={tText("exitWithoutSaving")}
                 outline
                 disabled={busy}
                 onPress={() => {
@@ -510,7 +529,7 @@ function RecruitmentManager({
               />
             )}
             <AppButton
-              label="編集に戻る"
+              label={tText("backToEditing")}
               outline
               disabled={busy}
               onPress={() => setPublicationConfirm(null)}
@@ -527,25 +546,31 @@ function RecruitmentManager({
       {!data ? (
         <Panel>
           <BodyText>
-            {error ? "募集を取得できませんでした。" : "読み込み中…"}
+            {error ? sourceText("unableToLoadPostings") : sourceText("loading")}
           </BodyText>
           {error && (
-            <AppButton label="再読み込み" onPress={() => void run(refresh)} />
+            <AppButton
+              label={tText("reload")}
+              onPress={() => void run(refresh)}
+            />
           )}
         </Panel>
       ) : (
         <>
           {data.owner && (
             <Panel>
-              <SectionTitle>全記事の共通CSS</SectionTitle>
+              <SectionTitle>{tText("sharedCssForAllPostings")}</SectionTitle>
+              <BodyText>{tText("appliesToThisCompanySJobAnd")}</BodyText>
               <BodyText>
-                この企業の求人・企業募集記事の本文に適用します。UTF-8の .css
-                ファイル（32KBまで）を選択してください。
+                {data.commonCss
+                  ? sourceText("applied")
+                  : sourceText("notConfigured")}
               </BodyText>
-              <BodyText>{data.commonCss ? "適用中" : "未設定"}</BodyText>
               <AppButton
                 label={
-                  data.commonCss ? "共通CSSを差し替え" : "共通CSSをアップロード"
+                  data.commonCss
+                    ? sourceText("replaceSharedCss")
+                    : sourceText("uploadSharedCss")
                 }
                 outline
                 onPress={() =>
@@ -557,7 +582,7 @@ function RecruitmentManager({
               />
               {!!data.commonCss && (
                 <AppButton
-                  label="共通CSSを解除"
+                  label={tText("removeSharedCss")}
                   outline
                   onPress={() => void run(() => saveCommonCss(""))}
                 />
@@ -565,18 +590,22 @@ function RecruitmentManager({
             </Panel>
           )}
           <Panel>
-            <SectionTitle>求人・企業募集一覧</SectionTitle>
+            <SectionTitle>
+              {tText("jobAndCompanyRecruitmentPostings")}
+            </SectionTitle>
             {data.publicationPlan && (
               <BodyText>
-                {data.publicationPlan.name} ／ 求人募集：
+                {data.publicationPlan.name} {tText("jobPostings")}
                 {data.publicationPlan.jobsPublished} /{" "}
-                {data.publicationPlan.jobLimit}件 ／ 企業募集：
+                {data.publicationPlan.jobLimit}
+                {tText("companyRecruitment")}
                 {data.publicationPlan.companiesPublished} /{" "}
-                {data.publicationPlan.companyLimit}件
+                {data.publicationPlan.companyLimit}
+                {tText("total_199")}
               </BodyText>
             )}
             <AppButton
-              label="掲載状態を更新"
+              label={tText("refreshPublicationStatus")}
               outline
               disabled={busy}
               onPress={() => void run(refresh)}
@@ -584,7 +613,7 @@ function RecruitmentManager({
 
             {data.canCreate && (
               <AppButton
-                label="募集を作成"
+                label={tText("createPosting")}
                 onPress={() => {
                   if (busy) return;
                   open(null);
@@ -594,13 +623,13 @@ function RecruitmentManager({
               />
             )}
             {data.jobs.length === 0 && (
-              <BodyText>閲覧できる募集はありません。</BodyText>
+              <BodyText>{tText("thereAreNoPostingsYouCanView")}</BodyText>
             )}
             {data.jobs.map((item) => (
               <View key={item.id} style={{ gap: 6 }}>
                 <AppButton
                   outline={item.id !== selected}
-                  label={`${item.deleted_at ? "［削除済み］" : ""}${readDraft(item.document).title}［${publicationLabel(item)}］`}
+                  label={`${translateText(item.deleted_at ? sourceText("deleted") : "")}${readDraft(item.document).title}［${translateText(publicationLabel(item))}］`}
                   onPress={() => open(item.id)}
                 />
                 {!item.deleted_at && item.publication_status === "BLOCKED" && (
@@ -618,12 +647,12 @@ function RecruitmentManager({
                     <Text style={{ color: "#B91C1C", fontWeight: "700" }}>
                       ⚠{" "}
                       {readDraft(item.document).kind === "COMPANY_RECRUITMENT"
-                        ? "企業募集"
-                        : "求人募集"}
-                      の掲載上限により公開できません
+                        ? sourceText("companyRecruitment_309")
+                        : sourceText("jobPostings_310")}
+                      {tText("cannotBePublishedBecauseItsLimitHas")}
                     </Text>
                     <BodyText>
-                      公開枠を空けて編集・保存すると、再度公開を確認できます。
+                      {tText("freeAPublicationSlotThenEditAnd")}
                     </BodyText>
                   </View>
                 )}
@@ -633,7 +662,9 @@ function RecruitmentManager({
           {draft ? (
             <Panel>
               <SectionTitle>
-                {job ? "募集を編集" : "求人・企業募集を作成"}
+                {job
+                  ? sourceText("editPosting")
+                  : sourceText("createAJobOrCompanyRecruitmentPosting")}
               </SectionTitle>
               <View
                 onLayout={(event) =>
@@ -652,8 +683,11 @@ function RecruitmentManager({
                       disabled={busy}
                       onValueChange={(value) => setField("kind", value)}
                       options={[
-                        { label: "求人", value: "JOB" },
-                        { label: "企業の募集", value: "COMPANY_RECRUITMENT" },
+                        { label: sourceText("job"), value: "JOB" },
+                        {
+                          label: sourceText("companyRecruitment_316"),
+                          value: "COMPANY_RECRUITMENT",
+                        },
                       ]}
                     />
                     <AppSelect
@@ -690,45 +724,43 @@ function RecruitmentManager({
                       setField("location", values[0] || "")
                     }
                   />
-                  <SectionTitle>給与・報酬</SectionTitle>
+                  <SectionTitle>{tText("pay")}</SectionTitle>
                   <CompensationInput
                     value={draft.compensation}
                     disabled={busy}
                     onChange={(value) => setField("compensation", value)}
                   />
-                  <SectionTitle>募集期間と表示設定</SectionTitle>
-                  <BodyText>
-                    日付は日本時間です。開始日が空欄なら開始制限なし、終了日が空欄なら無期限です。
-                  </BodyText>
+                  <SectionTitle>
+                    {tText("postingPeriodAndVisibility")}
+                  </SectionTitle>
+                  <BodyText>{tText("datesUseJapanTimeLeaveTheStart")}</BodyText>
                   <View style={fieldRow}>
                     <AppDatePicker
                       containerStyle={fieldCell}
-                      label="開始日（任意）"
+                      label={tText("startDateOptional")}
                       value={draft.startDate}
                       disabled={busy}
                       onValueChange={(value) => setField("startDate", value)}
                     />
                     <AppDatePicker
                       containerStyle={fieldCell}
-                      label="終了日（任意）"
+                      label={tText("endDateOptional")}
                       value={draft.endDate}
                       disabled={busy}
                       onValueChange={(value) => setField("endDate", value)}
                     />
                   </View>
                   <AppInput
-                    label="公開時刻（日本時間・任意）"
+                    label={tText("publicationTimeJapanTimeOptional")}
                     placeholder="00:00"
                     value={draft.publishTime}
                     maxLength={5}
                     editable={!busy}
                     onChangeText={(value) => setField("publishTime", value)}
                   />
-                  <BodyText>
-                    開始日を指定した場合に使用します。空欄は00:00です。予約時点では掲載枠を確保せず、開始日時に判定します。
-                  </BodyText>
+                  <BodyText>{tText("usedWhenAStartDateIsSpecified")}</BodyText>
                   <AppCheckbox
-                    label="非表示にする"
+                    label={tText("hideThisPosting")}
                     checked={draft.hidden}
                     disabled={busy}
                     onValueChange={(hidden) =>
@@ -737,16 +769,18 @@ function RecruitmentManager({
                       )
                     }
                   />
-                  <SectionTitle>この記事の個別CSS</SectionTitle>
+                  <SectionTitle>{tText("cssForThisPosting")}</SectionTitle>
                   <BodyText>
-                    {draft.articleCss ? "設定済み" : "未設定"} ／
-                    記事の保存時に確定します。同じ優先度では個別CSSが共通CSSに優先します。
+                    {draft.articleCss
+                      ? sourceText("configured")
+                      : sourceText("notConfigured")}{" "}
+                    {tText("appliedWhenThePostingIsSavedPosting")}
                   </BodyText>
                   <AppButton
                     label={
                       draft.articleCss
-                        ? "個別CSSを差し替え"
-                        : "個別CSSをアップロード"
+                        ? sourceText("replacePostingCss")
+                        : sourceText("uploadPostingCss")
                     }
                     outline
                     onPress={() =>
@@ -758,17 +792,19 @@ function RecruitmentManager({
                   />
                   {!!draft.articleCss && (
                     <AppButton
-                      label="個別CSSを解除"
+                      label={tText("removePostingCss")}
                       outline
                       onPress={() => {
                         if (!busy) setField("articleCss", "");
                       }}
                     />
                   )}
-                  <SectionTitle>募集内容</SectionTitle>
+                  <SectionTitle>{tText("postingContent")}</SectionTitle>
                   <AppButton
                     label={
-                      previewOpen ? "プレビューを非表示" : "プレビューを表示"
+                      previewOpen
+                        ? sourceText("hidePreview")
+                        : sourceText("showPreview")
                     }
                     outline
                     onPress={() => setPreviewOpen((open) => !open)}
@@ -816,15 +852,15 @@ function RecruitmentManager({
                   <AppButton
                     label={
                       uploading
-                        ? "画像をアップロード中…"
+                        ? sourceText("uploadingImage")
                         : working
-                          ? "保存中…"
-                          : "保存する"
+                          ? sourceText("saving")
+                          : sourceText("save")
                     }
                     onPress={() => void run(save)}
                   />
                   <AppButton
-                    label="キャンセル"
+                    label={tText("cancel")}
                     outline
                     onPress={() => {
                       if (!busy) setDraft(null);
@@ -847,10 +883,11 @@ function RecruitmentManager({
             job &&
             saved && (
               <Panel>
-                <SectionTitle>{saved.title}</SectionTitle>
+                <SectionTitle localize={false}>{saved.title}</SectionTitle>
                 <BodyText>
-                  {publicationLabel(job)} ／ {saved.startDate || "開始制限なし"}{" "}
-                  〜 {saved.endDate || "無期限"}
+                  {publicationLabel(job)} ／{" "}
+                  {saved.startDate || sourceText("noStartRestriction")} 〜{" "}
+                  {saved.endDate || sourceText("noEndDate")}
                 </BodyText>
                 <RecruitmentArticle
                   html={saved.articleHtml}
@@ -870,14 +907,14 @@ function RecruitmentManager({
                     {labels[key]}　
                     {key === "kind"
                       ? saved.kind === "JOB"
-                        ? "求人"
-                        : "企業の募集"
+                        ? sourceText("job")
+                        : sourceText("companyRecruitment_316")
                       : saved[key] || "—"}
                   </BodyText>
                 ))}
                 {!job.deleted_at && job.can_edit && (
                   <AppButton
-                    label="編集"
+                    label={tText("edit")}
                     onPress={() => {
                       if (!busy) {
                         setInitialArticle(saved.articleHtml);
@@ -888,7 +925,7 @@ function RecruitmentManager({
                 )}
                 {!job.deleted_at && data.owner && (
                   <AppButton
-                    label="従業員の閲覧・編集権限"
+                    label={tText("employeeViewingAndEditingAccess")}
                     outline
                     onPress={() =>
                       void run(async () =>
@@ -900,7 +937,11 @@ function RecruitmentManager({
                 {!job.deleted_at && (job.can_delete ?? data.owner) && (
                   <>
                     <AppButton
-                      label={deleteConfirm ? "削除を確定する" : "削除"}
+                      label={
+                        deleteConfirm
+                          ? sourceText("confirmDeletion_338")
+                          : sourceText("delete")
+                      }
                       danger
                       onPress={() => {
                         if (busy) return;
@@ -913,14 +954,14 @@ function RecruitmentManager({
                           setDeleteConfirm(false);
                           setGrants(null);
                           setHistory(null);
-                          setNotice("募集を削除しました。");
+                          setNotice(sourceText("postingDeleted"));
                           await refresh();
                         });
                       }}
                     />
                     {deleteConfirm && (
                       <AppButton
-                        label="削除をキャンセル"
+                        label={tText("cancelDeletion")}
                         outline
                         onPress={() => setDeleteConfirm(false)}
                       />
@@ -928,7 +969,7 @@ function RecruitmentManager({
                   </>
                 )}
                 <AppButton
-                  label="変更履歴を表示"
+                  label={tText("viewChangeHistory")}
                   outline
                   onPress={() =>
                     void run(async () =>
@@ -943,12 +984,12 @@ function RecruitmentManager({
           )}
           {job && !job.deleted_at && grants && (
             <Panel>
-              <SectionTitle>求人別の権限</SectionTitle>
-              <BodyText>
-                編集を許可した従業員は、編集に必要な募集内容も表示できます。
-              </BodyText>
+              <SectionTitle>{tText("postingSpecificPermissions")}</SectionTitle>
+              <BodyText>{tText("employeesAllowedToEditCanAlsoView")}</BodyText>
               {data.employees.length === 0 && (
-                <BodyText>登録済みの従業員がいません。</BodyText>
+                <BodyText>
+                  {tText("noEmployeesHaveBeenRegistered_343")}
+                </BodyText>
               )}
               {data.employees.map((employee) => {
                 const grant = grants.find(
@@ -968,15 +1009,17 @@ function RecruitmentManager({
                 }
                 return (
                   <View key={employee.id} style={{ gap: 8 }}>
-                    <BodyText>{employee.display_name}</BodyText>
+                    <BodyText localize={false}>
+                      {employee.display_name}
+                    </BodyText>
                     <AppCheckbox
-                      label="閲覧"
+                      label={tText("view")}
                       checked={grant.canView}
                       disabled={busy}
                       onValueChange={(canView) => change({ ...grant, canView })}
                     />
                     <AppCheckbox
-                      label="編集"
+                      label={tText("edit")}
                       checked={grant.canEdit}
                       disabled={busy}
                       onValueChange={(canEdit) => change({ ...grant, canEdit })}
@@ -985,12 +1028,12 @@ function RecruitmentManager({
                 );
               })}
               <AppButton
-                label="権限を保存"
+                label={tText("savePermissions")}
                 onPress={() =>
                   void run(async () => {
                     await request(`/${job.id}/access`, grants);
                     setHistory(null);
-                    setNotice("権限を保存しました。");
+                    setNotice(sourceText("permissionsSaved"));
                   })
                 }
               />
@@ -998,9 +1041,9 @@ function RecruitmentManager({
           )}
           {history && (
             <Panel>
-              <SectionTitle>変更履歴（最新100件）</SectionTitle>
+              <SectionTitle>{tText("changeHistoryLatest100")}</SectionTitle>
               {history.length === 0 && (
-                <BodyText>変更履歴はありません。</BodyText>
+                <BodyText>{tText("thereIsNoChangeHistory")}</BodyText>
               )}
               {history.map((row, index) => (
                 <HistoryEntry key={index} row={row} />
@@ -1009,18 +1052,20 @@ function RecruitmentManager({
           )}
           {data.owner && (
             <Panel>
-              <SectionTitle>従業員の作成・全件編集権限</SectionTitle>
+              <SectionTitle>
+                {tText("employeeCreationAndEditingPermissions")}
+              </SectionTitle>
               {data.employees.map((employee) => (
                 <View key={employee.id} style={{ gap: 8 }}>
-                  <BodyText>{employee.display_name}</BodyText>
+                  <BodyText localize={false}>{employee.display_name}</BodyText>
                   {employee.role_managed ? (
                     <BodyText>
-                      この従業員の権限は「企業・権限」の役割一覧で変更できます。
+                      {tText("changeThisEmployeeSPermissionsInThe")}
                     </BodyText>
                   ) : (
                     <>
                       <AppCheckbox
-                        label="求人・企業募集の作成"
+                        label={tText("createJobAndCompanyRecruitmentPostings")}
                         checked={employee.can_create}
                         disabled={busy}
                         onValueChange={(value) =>
@@ -1030,7 +1075,7 @@ function RecruitmentManager({
                         }
                       />
                       <AppCheckbox
-                        label="自社の全求人・募集の編集"
+                        label={tText("editAllCompanyPostings")}
                         checked={employee.edit_all}
                         disabled={busy || !employee.can_create}
                         onValueChange={(value) =>
@@ -1044,7 +1089,9 @@ function RecruitmentManager({
                 </View>
               ))}
               {data.employees.length === 0 && (
-                <BodyText>従業員管理から従業員を登録してください。</BodyText>
+                <BodyText>
+                  {tText("addEmployeesInEmployeeManagementFirst")}
+                </BodyText>
               )}
             </Panel>
           )}
@@ -1055,11 +1102,13 @@ function RecruitmentManager({
 }
 
 function HistoryEntry({ row }: { row: History }) {
+  "use no memo";
+  useLocaleVersion();
   const actionLabel = {
-    CREATE: "作成",
-    EDIT: "編集",
-    DELETE: "削除",
-    ACCESS: "求人別権限の変更",
+    CREATE: sourceText("create_354"),
+    EDIT: sourceText("edit"),
+    DELETE: sourceText("delete"),
+    ACCESS: sourceText("postingPermissionChanges"),
   };
   const before = row.before_value ? JSON.parse(row.before_value) : {};
   const after = row.after_value ? JSON.parse(row.after_value) : {};
@@ -1070,7 +1119,7 @@ function HistoryEntry({ row }: { row: History }) {
     <View style={{ gap: 4, paddingVertical: 8 }}>
       <Text>
         {label} ／ {row.actor_name} ／{" "}
-        {new Date(row.changed_at).toLocaleString("ja-JP")}
+        {new Date(row.changed_at).toLocaleString(localeTag())}
       </Text>
       {row.action === "ACCESS" ? (
         <BodyText>
@@ -1084,9 +1133,9 @@ function HistoryEntry({ row }: { row: History }) {
           .map((key) =>
             key === "articleHtml" ? (
               <View key={key} style={{ gap: 8 }}>
-                <BodyText>募集内容（変更前）</BodyText>
+                <BodyText>{tText("postingContentBefore")}</BodyText>
                 <RecruitmentArticle html={historyValue(before[key])} />
-                <BodyText>募集内容（変更後）</BodyText>
+                <BodyText>{tText("postingContentAfter")}</BodyText>
                 <RecruitmentArticle html={historyValue(after[key])} />
               </View>
             ) : (
@@ -1107,13 +1156,19 @@ function historyValue(value: unknown): string {
       value
         .map(
           (block: { kind: string; bold: boolean; text: string; url: string }) =>
-            [block.kind, block.bold ? "太字" : "", block.text, block.url]
+            [
+              block.kind,
+              block.bold ? sourceText("bold") : "",
+              block.text,
+              block.url,
+            ]
               .filter(Boolean)
               .join(" / "),
         )
         .join(" | ") || "—"
     );
   }
-  if (typeof value === "boolean") return value ? "はい" : "いいえ";
+  if (typeof value === "boolean")
+    return value ? sourceText("yes") : sourceText("no");
   return typeof value === "string" && value ? value : "—";
 }

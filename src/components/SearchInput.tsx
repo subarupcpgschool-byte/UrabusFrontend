@@ -1,3 +1,5 @@
+import { translateText } from "@/i18n/display";
+import { useLocaleVersion } from "@/i18n/display";
 import { INPUT_THEME } from "@/theme/inputTheme";
 import { AppInput } from "@/components/form";
 import { COLORS } from "@/theme/colors";
@@ -11,13 +13,16 @@ type Props = {
 };
 
 export function SearchInput({ value, onChangeText, placeholder }: Props) {
+  "use no memo";
+  useLocaleVersion();
   return (
     <View style={styles.wrap}>
       <Ionicons name="search-outline" size={22} color={COLORS.textMuted} />
-      <AppInput variant="plain"
+      <AppInput
+        variant="plain"
         value={value}
         onChangeText={onChangeText}
-        placeholder={placeholder}
+        placeholder={translateText(placeholder)}
         style={styles.input}
       />
     </View>
@@ -36,5 +41,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  input: {outlineWidth: 0,flex: 1},
+  input: { outlineWidth: 0, flex: 1 },
 });

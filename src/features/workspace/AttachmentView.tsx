@@ -1,10 +1,16 @@
+import { translateText } from "@/i18n/display";
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { useAuth } from "@/auth/AuthProvider";
 import { useEffect, useState } from "react";
-import { Image, Linking, Pressable, Text, View } from "react-native";
+import { Image, Linking, View } from "react-native";
 import { VideoView, useVideoPlayer } from "expo-video";
 import type { Attachment } from "./WorkspaceProvider";
 import { resolveAttachment, releaseAttachment } from "./attachments";
 function Video({ uri }: { uri: string }) {
+  "use no memo";
+  useLocaleVersion();
   const player = useVideoPlayer(uri);
   return (
     <VideoView
@@ -17,6 +23,8 @@ function Video({ uri }: { uri: string }) {
   );
 }
 export function AttachmentView({ attachment }: { attachment: Attachment }) {
+  "use no memo";
+  useLocaleVersion();
   const { token } = useAuth();
   const [uri, setUri] = useState(""),
     [error, setError] = useState("");
@@ -33,7 +41,7 @@ export function AttachmentView({ attachment }: { attachment: Attachment }) {
         else releaseAttachment(value);
       })
       .catch(() => {
-        if (active) setError("ファイルを読み込めません");
+        if (active) setError(sourceText("unableToLoadTheFile"));
       });
     return () => {
       active = false;
@@ -45,7 +53,7 @@ export function AttachmentView({ attachment }: { attachment: Attachment }) {
       {error ? (
         <Text>{error}</Text>
       ) : !uri ? (
-        <Text>読み込み中…</Text>
+        <Text>{tText("loading")}</Text>
       ) : (
         <>
           {attachment.mime.startsWith("image/") ? (
@@ -66,7 +74,7 @@ export function AttachmentView({ attachment }: { attachment: Attachment }) {
             accessibilityRole="button"
             onPress={() => {
               void Linking.openURL(uri).catch(() =>
-                setError("この端末ではファイルを開けません"),
+                setError(sourceText("thisDeviceCannotOpenTheFile")),
               );
             }}
           >
@@ -76,8 +84,8 @@ export function AttachmentView({ attachment }: { attachment: Attachment }) {
             >
               📎 {attachment.name}（
               {attachment.size < 1024 * 1024
-                ? `${Math.max(1, Math.ceil(attachment.size / 1024))} KB`
-                : `${(attachment.size / 1024 / 1024).toFixed(1)} MB`}
+                ? `${translateText(Math.max(1, Math.ceil(attachment.size / 1024)))} KB`
+                : `${translateText((attachment.size / 1024 / 1024).toFixed(1))} MB`}
               ）
             </Text>
           </Pressable>

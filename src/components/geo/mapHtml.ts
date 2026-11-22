@@ -1,7 +1,8 @@
-import type { SearchArea } from './types';
+import { tText } from "@/i18n/display";
+import type { SearchArea } from "./types";
 // UMD runs inside the map document, outside Metro's module graph.
 export function mapHtml(area: SearchArea) {
-  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"><style>html,body,#map{height:100%;margin:0}#status{position:absolute;top:8px;left:8px;background:white;padding:6px;font:12px sans-serif;z-index:2}</style></head><body><div id="map"></div><div id="status">地図を読み込み中…</div><script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script><script>
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"><style>html,body,#map{height:100%;margin:0}#status{position:absolute;top:8px;left:8px;background:white;padding:6px;font:12px sans-serif;z-index:2}</style></head><body><div id="map"></div><div id="status">${tText("loadingMap")}</div><script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script><script>
 const initial=${JSON.stringify(area)};let area=initial;const status=document.getElementById('status');
 function send(data){if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(JSON.stringify(data));else window.parent.postMessage(data,'*');}
 try {
@@ -11,9 +12,9 @@ function polygon(){const coords=[];const lat=area.latitude*Math.PI/180,lon=area.
 function draw(){marker.setLngLat([area.longitude,area.latitude]);if(map.getSource('radius'))map.getSource('radius').setData(polygon());}
 map.on('load',()=>{status.style.display='none';map.addSource('radius',{type:'geojson',data:polygon()});map.addLayer({id:'radius-fill',type:'fill',source:'radius',paint:{'fill-color':'#159A69','fill-opacity':.14}});map.addLayer({id:'radius-line',type:'line',source:'radius',paint:{'line-color':'#159A69','line-width':2}});send({type:'ready'});});
 map.on('click',e=>{area={...area,latitude:e.lngLat.lat,longitude:e.lngLat.lng};draw();send({type:'center',latitude:area.latitude,longitude:area.longitude});});
-map.on('error',()=>{status.style.display='block';status.textContent='地図を読み込めません。通信状態を確認してください。';});
+map.on('error',()=>{status.style.display='block';status.textContent=${JSON.stringify(tText("unableToLoadTheMapCheckYour"))};});
 window.updateSearchArea=function(next){area=next;draw();const zoom=area.radiusKm===0?16:Math.max(2,Math.min(16,Math.log2(40075016*Math.cos(area.latitude*Math.PI/180)*Math.max(200,map.getContainer().clientWidth)/(512*area.radiusKm*2400))));map.easeTo({center:[area.longitude,area.latitude],zoom:zoom});};
-window.addEventListener('message',e=>{if(e.source!==window.parent)return;if(e.data&&e.data.type==='update')window.updateSearchArea(e.data.area);});
-}catch(e){status.textContent='地図を読み込めません。通信状態を確認してください。';}
+window.addEventListener('message',e=>{if(e.source!==window.parent)return;if(e.data&&e.data.type==='language'&&status.style.display!=='none')status.textContent=e.data.loading; if(e.data&&e.data.type==='update')window.updateSearchArea(e.data.area);});
+}catch(e){status.textContent=${JSON.stringify(tText("unableToLoadTheMapCheckYour"))};}
 </script></body></html>`;
 }

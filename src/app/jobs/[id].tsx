@@ -1,6 +1,9 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import { dataRequest } from "@/api/platform";
@@ -22,6 +25,8 @@ import {
 } from "@/features/company/RecruitmentArticle";
 import PublishedCompanyEvaluations from "@/features/evaluations/PublishedCompanyEvaluations";
 export default function JobDetailPage() {
+  "use no memo";
+  useLocaleVersion();
   const { id = "" } = useLocalSearchParams<{ id: string }>();
   const resource = useResource<JobRow | null>(id ? `/jobs/${id}` : null, null);
   const { user, token } = useAuth();
@@ -47,7 +52,7 @@ export default function JobDetailPage() {
     }
   }
   return (
-    <AppPage title="求人詳細" subtitle="">
+    <AppPage title={tText("jobDetails")} subtitle="">
       <ResourceStatus
         loading={resource.loading}
         error={resource.error}
@@ -57,11 +62,14 @@ export default function JobDetailPage() {
         <TwoColumn>
           <View style={{ flex: 2, minWidth: 260, gap: 14 }}>
             <Panel>
-              <Text style={{ fontSize: 20, fontWeight: "700" }}>
+              <Text
+                localize={false}
+                style={{ fontSize: 20, fontWeight: "700" }}
+              >
                 {job.title}
               </Text>
               <AppButton
-                label={job.companyName + "の企業情報"}
+                label={job.companyName + sourceText("companyInformation_424")}
                 outline
                 onPress={() =>
                   router.push(`/companies/${row.companyId}` as never)
@@ -77,7 +85,7 @@ export default function JobDetailPage() {
               <Text>{job.salary}</Text>
             </Panel>
             <Panel>
-              <SectionTitle>募集内容</SectionTitle>
+              <SectionTitle>{tText("postingContent")}</SectionTitle>
               <RecruitmentArticle
                 html={articleHtml(row.document)}
                 articleCss={row.document.articleCss || ""}
@@ -85,32 +93,38 @@ export default function JobDetailPage() {
               />
             </Panel>
             <Panel>
-              <SectionTitle>応募条件・募集期間</SectionTitle>
-              <BodyText>{row.document.requirements || "未登録"}</BodyText>
+              <SectionTitle>
+                {tText("requirementsAndPostingPeriod")}
+              </SectionTitle>
               <BodyText>
-                {row.document.startDate || "開始制限なし"} 〜{" "}
-                {row.document.endDate || "無期限"}
+                {row.document.requirements || sourceText("notRegistered")}
+              </BodyText>
+              <BodyText>
+                {row.document.startDate || sourceText("noStartRestriction")} 〜{" "}
+                {row.document.endDate || sourceText("noEndDate")}
               </BodyText>
             </Panel>
             <PublishedCompanyEvaluations companyId={row.companyId} />
           </View>
           <View style={{ flex: 1, minWidth: 240, gap: 14 }}>
             <Panel>
-              <SectionTitle>応募・お問い合わせ</SectionTitle>
+              <SectionTitle>{tText("applyOrContact")}</SectionTitle>
               <Text>{job.salary}</Text>
               <AppButton
-                label="応募する"
+                label={tText("apply")}
                 onPress={() => router.push(`/jobs/${id}/apply` as never)}
               />
               <FavoriteButton label={job.title} item={job} kind="job" />
               <AppButton
-                label={busy ? "処理中…" : "メッセージを開く"}
+                label={
+                  busy ? sourceText("processing") : sourceText("openMessages")
+                }
                 outline
                 onPress={() => void contact()}
               />
               {!!token && (
                 <AppButton
-                  label="求人比較に追加"
+                  label={tText("addToJobComparison")}
                   outline
                   onPress={() => {
                     if (busy) return;

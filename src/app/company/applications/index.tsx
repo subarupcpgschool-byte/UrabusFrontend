@@ -1,5 +1,8 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text, Pressable } from "@/i18n/native";
 import { useEffect, useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import { dataRequest, query, type Page } from "@/api/platform";
@@ -27,6 +30,8 @@ import {
   outcomeLabel,
 } from "@/features/applications/data";
 function Content() {
+  "use no memo";
+  useLocaleVersion();
   const { token } = useAuth();
   const [status, setStatus] = useState(""),
     [kind, setKind] = useState(""),
@@ -87,10 +92,10 @@ function Content() {
   }
   return (
     <AppPage
-      title="応募・選考管理"
+      title={tText("applicationsAndSelection")}
       subtitle=""
       role="company"
-      activeMenu="応募・選考管理"
+      activeMenu={sourceText("applicationsAndSelection")}
     >
       <ResourceStatus
         loading={r.loading}
@@ -100,25 +105,28 @@ function Content() {
       />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
         <Panel style={{ flex: 3, minWidth: 260 }}>
-          <SectionTitle>選考・オファー一覧</SectionTitle>
+          <SectionTitle>{tText("applicationsAndOffers")}</SectionTitle>
           <AppSelect
-            label="種類"
+            label={tText("type")}
             value={kind}
             onValueChange={(v) => {
               setKind(v);
               setPage(1);
             }}
-            options={[{ value: "", label: "すべて" }, ...INTERACTION_KINDS]}
+            options={[
+              { value: "", label: sourceText("all") },
+              ...INTERACTION_KINDS,
+            ]}
           />
           <AppSelect
-            label="状況"
+            label={tText("status")}
             value={status}
             onValueChange={(v) => {
               setStatus(v);
               setPage(1);
             }}
             options={FILTERS.map((v) => ({
-              value: v === "すべて" ? "" : v,
+              value: v === sourceText("all") ? "" : v,
               label: v,
             }))}
           />
@@ -146,7 +154,7 @@ function Content() {
             </Pressable>
           ))}
           {!r.loading && !r.error && !r.data.total && (
-            <BodyText>該当するやり取りはありません。</BodyText>
+            <BodyText>{tText("noMatchingInteractions")}</BodyText>
           )}
           <Pager page={page} total={r.data.total} onChange={setPage} />
         </Panel>
@@ -155,12 +163,12 @@ function Content() {
             <>
               <Panel>
                 <SectionTitle>{item.name}</SectionTitle>
-                <BodyText>
+                <BodyText localize={false}>
                   {item.title} ／ {item.location} ／ {item.salary}
                 </BodyText>
                 <StatusBadge label={outcomeLabel(item)} />
                 <AppSelect
-                  label="選考段階"
+                  label={tText("selectionStage")}
                   value={stage}
                   onValueChange={setStage}
                   disabled={
@@ -169,18 +177,23 @@ function Content() {
                   options={[
                     {
                       value: "0",
-                      label: item.kind === "application" ? "応募" : "受信",
+                      label:
+                        item.kind === "application"
+                          ? sourceText("application")
+                          : sourceText("received"),
                     },
                     {
                       value: "1",
                       label:
-                        item.kind === "application" ? "書類選考" : "条件確認",
+                        item.kind === "application"
+                          ? sourceText("applicationScreening")
+                          : sourceText("reviewTerms"),
                     },
-                    { value: "2", label: "面談" },
+                    { value: "2", label: sourceText("meeting") },
                   ]}
                 />
                 <AppSelect
-                  label="企業の結果"
+                  label={tText("companyDecision")}
                   value={result}
                   onValueChange={(v) => {
                     setResult(v);
@@ -190,35 +203,48 @@ function Content() {
                     item.canEdit === false || !!item.companyResult || busy
                   }
                   options={[
-                    { value: "", label: "未確定" },
-                    { value: "内定", label: "内定" },
+                    { value: "", label: sourceText("pending") },
                     {
-                      value: item.kind === "application" ? "不採用" : "見送り",
-                      label: item.kind === "application" ? "不採用" : "見送り",
+                      value: sourceText("jobOffer"),
+                      label: sourceText("jobOffer"),
+                    },
+                    {
+                      value:
+                        item.kind === "application"
+                          ? sourceText("notSelected")
+                          : sourceText("notProceeding"),
+                      label:
+                        item.kind === "application"
+                          ? sourceText("notSelected")
+                          : sourceText("notProceeding"),
                     },
                   ]}
                 />
                 {!item.companyResult && item.canEdit !== false && (
                   <AppButton
-                    label={busy ? "処理中…" : "選考状況を更新"}
+                    label={
+                      busy
+                        ? sourceText("processing")
+                        : sourceText("updateSelectionStatus")
+                    }
                     onPress={() => void save()}
                   />
                 )}{" "}
-                {item.companyResult === "内定" &&
+                {item.companyResult === sourceText("jobOffer") &&
                   !item.afterResult &&
                   item.canEdit !== false && (
                     <ConfirmAction
-                      label="内定を取り消す"
+                      label={tText("withdrawTheJobOffer")}
                       danger
-                      message="内定を取り消します。この操作は取り消せません。"
+                      message={tText("withdrawThisJobOfferThisCannotBe")}
                       onConfirm={() =>
                         dataRequest(
                           `/interactions/${item.id}`,
                           token,
                           {
                             stage: item.stage,
-                            companyResult: "内定",
-                            afterResult: "内定取り消し",
+                            companyResult: sourceText("jobOffer"),
+                            afterResult: sourceText("offerWithdrawn"),
                             version: item.version,
                           },
                           "PUT",
@@ -228,9 +254,9 @@ function Content() {
                   )}{" "}
                 {item.canDelete && (
                   <ConfirmAction
-                    label="一覧から削除"
+                    label={tText("removeFromList")}
                     danger
-                    message="このやり取りを削除しますか？"
+                    message={tText("deleteThisInteraction")}
                     onConfirm={() =>
                       dataRequest(
                         `/interactions/${item.id}?version=${item.version}`,
@@ -248,13 +274,16 @@ function Content() {
                 )}
               </Panel>
               <Tabs
-                label="応募者の詳細"
+                label={tText("applicantDetails")}
                 value={tab}
                 onChange={setTab}
                 options={[
-                  { value: "messages", label: "メッセージ" },
-                  { value: "resume", label: "提出された経歴書" },
-                  { value: "contract", label: "契約・評価" },
+                  { value: "messages", label: sourceText("messages") },
+                  { value: "resume", label: sourceText("submittedResume") },
+                  {
+                    value: "contract",
+                    label: sourceText("contractsAndReviews"),
+                  },
                 ]}
               />
               {tab === "messages" && (
@@ -279,12 +308,12 @@ function Content() {
                   />
                   {resume.data.map((v, i) => (
                     <View key={i}>
-                      <SectionTitle>{v.title}</SectionTitle>
+                      <SectionTitle localize={false}>{v.title}</SectionTitle>
                       <ResumeDetails body={v.body} />
                     </View>
                   ))}
                   {!resume.loading && !resume.data.length && (
-                    <BodyText>提出された経歴書はありません。</BodyText>
+                    <BodyText>{tText("noResumeWasSubmitted")}</BodyText>
                   )}
                 </Panel>
               )}
@@ -294,7 +323,7 @@ function Content() {
             </>
           ) : (
             <Panel>
-              <BodyText>一覧から選択してください。</BodyText>
+              <BodyText>{tText("selectAnItemFromTheList")}</BodyText>
             </Panel>
           )}
         </View>
@@ -303,8 +332,13 @@ function Content() {
   );
 }
 export default function CompanyApplications() {
+  "use no memo";
+  useLocaleVersion();
   return (
-    <CompanyPermissionBoundary permission="applicants" title="応募・選考管理">
+    <CompanyPermissionBoundary
+      permission="applicants"
+      title={tText("applicationsAndSelection")}
+    >
       <Content />
     </CompanyPermissionBoundary>
   );

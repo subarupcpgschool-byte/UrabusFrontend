@@ -1,7 +1,11 @@
+import { translateText } from "@/i18n/display";
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Pressable, Text } from "@/i18n/native";
 import { AppInput, AppCheckbox, AppRadioGroup } from "@/components/form";
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import AppPage from "@/components/layout/AppPage";
 import { Panel } from "@/components/ui/AppUI";
 import { SEARCH_COLORS as C } from "@/components/search/theme";
@@ -9,79 +13,357 @@ import { authRequest, type AuthSession } from "@/auth/api";
 import { useAuth } from "@/auth/AuthProvider";
 import { startGoogle, type RegistrationAccountType } from "@/auth/google";
 const accountTypes = [
-  { label: "一般ユーザー", value: "GENERAL" },
-  { label: "企業", value: "COMPANY" },
+  { label: sourceText("individualUser"), value: "GENERAL" },
+  { label: sourceText("company"), value: "COMPANY" },
 ];
 
 export default function AuthPage() {
+  "use no memo";
+  useLocaleVersion();
   const params = useLocalSearchParams<{ mode?: string }>();
   const [register, setRegister] = useState(params.mode === "register");
-  useEffect(() => { setRegister(params.mode === "register"); }, [params.mode]);
-  const [accountType, setAccountType] = useState<RegistrationAccountType | "">("");
+  useEffect(() => {
+    setRegister(params.mode === "register");
+  }, [params.mode]);
+  const [accountType, setAccountType] = useState<RegistrationAccountType | "">(
+    "",
+  );
   const [businessName, setBusinessName] = useState("");
-  const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState(""); const [name, setName] = useState("");
-  const [visible, setVisible] = useState(false); const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState(""); const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [name, setName] = useState("");
+  const [visible, setVisible] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const { user, acceptSession, logout, ready } = useAuth();
   async function run(action: () => Promise<void>) {
-    if (busy) return; setBusy(true); setError(""); setMessage("");
-    try { await action(); } catch (e) { setError(e instanceof Error ? e.message : "処理に失敗しました。"); } finally { setBusy(false); }
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      await action();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : sourceText("theActionFailed"));
+    } finally {
+      setBusy(false);
+    }
   }
-  function validEmail() { if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) throw new Error("正しいメールアドレスを入力してください。"); }
+  function validEmail() {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+      throw new Error(sourceText("enterAValidEmailAddress"));
+  }
   async function submit() {
     validEmail();
-    if (!password) throw new Error("パスワードを入力してください。");
+    if (!password) throw new Error(sourceText("enterYourPassword"));
     if (register) {
-      if (!accountType) throw new Error("登録区分を選択してください。");
-      if (!name.trim()) throw new Error("お名前を入力してください。");
-      if (password.length < 8) throw new Error("パスワードは8文字以上で入力してください。");
-      if (password !== confirm) throw new Error("確認用パスワードが一致しません。");
-      const result = await authRequest<{ message: string }>("/register", { email: email.trim(), password, displayName: name.trim(), accountType, businessName: accountType === "COMPANY" ? businessName.trim() || undefined : undefined });
-      setPassword(""); setConfirm(""); setMessage(result.message);
+      if (!accountType) throw new Error(sourceText("selectAnAccountType"));
+      if (!name.trim()) throw new Error(sourceText("enterYourName"));
+      if (password.length < 8)
+        throw new Error(sourceText("useAPasswordWithAtLeast8"));
+      if (password !== confirm)
+        throw new Error(sourceText("thePasswordConfirmationDoesNotMatch"));
+      const result = await authRequest<{ message: string }>("/register", {
+        email: email.trim(),
+        password,
+        displayName: name.trim(),
+        accountType,
+        businessName:
+          accountType === "COMPANY"
+            ? businessName.trim() || undefined
+            : undefined,
+      });
+      setPassword("");
+      setConfirm("");
+      setMessage(result.message);
     } else {
-      await acceptSession(await authRequest<AuthSession>("/login", { email: email.trim(), password }));
-      setPassword(""); router.replace("/");
+      await acceptSession(
+        await authRequest<AuthSession>("/login", {
+          email: email.trim(),
+          password,
+        }),
+      );
+      setPassword("");
+      router.replace("/");
     }
   }
   async function google() {
-    if (register && !accountType) throw new Error("登録区分を選択してください。");
-    const ticket = await startGoogle(register && accountType ? accountType : undefined, businessName.trim());
-    if (ticket) { router.replace({ pathname: "/auth-callback", params: { ticket } }); }
+    if (register && !accountType)
+      throw new Error(sourceText("selectAnAccountType"));
+    const ticket = await startGoogle(
+      register && accountType ? accountType : undefined,
+      businessName.trim(),
+    );
+    if (ticket) {
+      router.replace({ pathname: "/auth-callback", params: { ticket } });
+    }
   }
-  const button = (label: string, onPress: () => void, outline = false) => <Pressable accessibilityRole="button" disabled={busy || !ready} onPress={onPress} style={({ pressed }) => [s.button, outline && s.outline, (pressed || busy || !ready) && { opacity: 0.6 }]}><Text style={[s.buttonText, outline && { color: C.text }]}>{label}</Text></Pressable>;
-  return <AppPage title={register ? "ユーザー登録" : "ログイン"} subtitle="GlobalWorkersを無料で始めましょう"><View style={s.wrap}><Panel style={s.card}>
-    {!ready ? <ActivityIndicator color={C.primary} /> : user ? <>
-      <Text style={s.title}>ログイン中</Text><Text style={s.info}>{user.displayName} さん</Text><Text style={s.info}>{user.email}</Text>
-      <Text style={s.info}>{user.googleLinked ? "Googleアカウント連携済み" : "メールアドレスでログイン中"}</Text>
-      {button("トップ画面へ", () => router.replace("/"))}{button("ログアウト", () => void run(logout), true)}
-    </> : <>
-      <Text style={s.title}>{register ? "無料ユーザー登録" : "アカウントへログイン"}</Text>
-      {register && <AppRadioGroup label="登録区分" required options={accountTypes}
-        value={accountType} onValueChange={value => {
-          if (value === "GENERAL" || value === "COMPANY") setAccountType(value);
-        }} disabled={busy} />}
-      {register && accountType === "COMPANY" && <>
-        <AppInput label="屋号・法人名（任意）" value={businessName} onChangeText={setBusinessName}
-          editable={!busy} maxLength={100} placeholder="例　すばる商店" />
-        <Text style={s.info}>事業を始めている方は屋号または法人名を登録できます。従業員の登録にはこの情報が必要です。</Text>
-      </>}
-      {(!register || !!accountType) && <>
-        {button(register ? "Googleで登録する" : "Googleでログイン", () => void run(google), true)}
-        <Text style={s.divider}>またはメールアドレスで{register ? "登録" : "ログイン"}</Text>
-      </>}
-      {register && <AppInput label="お名前" required accessibilityLabel="お名前" value={name} onChangeText={setName} editable={!busy} maxLength={100} placeholder="山田 太郎" style={s.input} />}
-      <AppInput label="メールアドレス" required accessibilityLabel="メールアドレス" value={email} onChangeText={setEmail} editable={!busy} maxLength={254} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" placeholder="example@example.jp" style={s.input} />
-      <AppInput label="パスワード" required accessibilityLabel="パスワード" value={password} onChangeText={setPassword} editable={!busy} secureTextEntry={!visible} autoCapitalize="none" autoCorrect={false} autoComplete={register ? "new-password" : "current-password"} placeholder={register ? "8文字以上" : "パスワード"} style={s.input} />
-      {register && <AppInput label="パスワード（確認）" required accessibilityLabel="確認用パスワード" value={confirm} onChangeText={setConfirm} editable={!busy} secureTextEntry={!visible} autoCapitalize="none" autoCorrect={false} placeholder="もう一度入力" style={s.input} />}
-      <AppCheckbox label="パスワードを表示" checked={visible} onValueChange={setVisible} disabled={busy}/>
-      {register && <Text style={s.info}>登録後、確認メールのリンクを開くと承認が完了します。承認後にログインできます。</Text>}
-      {button(busy ? "処理中…" : register ? "確認メールを送信" : "ログイン", () => void run(submit))}
-      <Pressable disabled={busy} onPress={() => { setRegister(v => !v); setAccountType(""); setBusinessName(""); setPassword(""); setConfirm(""); setMessage(""); setError(""); }}><Text style={s.link}>{register ? "ログイン画面へ戻る" : "アカウントを作成する"}</Text></Pressable>
-      <Pressable disabled={busy} onPress={() => void run(async () => { validEmail(); setMessage((await authRequest<{ message: string }>("/resend", { email: email.trim() })).message); })}><Text style={s.link}>確認メールを再送する</Text></Pressable>
-    </>}
-    {!!message && <Text accessibilityLiveRegion="polite" style={s.success}>{message}</Text>}
-    {!!error && <Text accessibilityRole="alert" style={s.error}>{error}</Text>}
-  </Panel></View></AppPage>;
+  const button = (label: string, onPress: () => void, outline = false) => (
+    <Pressable
+      accessibilityRole="button"
+      disabled={busy || !ready}
+      onPress={onPress}
+      style={({ pressed }) => [
+        s.button,
+        outline && s.outline,
+        (pressed || busy || !ready) && { opacity: 0.6 },
+      ]}
+    >
+      <Text style={[s.buttonText, outline && { color: C.text }]}>{label}</Text>
+    </Pressable>
+  );
+  return (
+    <AppPage
+      title={translateText(
+        register ? sourceText("createAnAccount") : sourceText("logIn"),
+      )}
+      subtitle={tText("getStartedWithGlobalworkersForFree")}
+    >
+      <View style={s.wrap}>
+        <Panel style={s.card}>
+          {!ready ? (
+            <ActivityIndicator color={C.primary} />
+          ) : user ? (
+            <>
+              <Text style={s.title}>{tText("loggedIn")}</Text>
+              <Text localize={false} style={s.info}>
+                {user.displayName} {tText("honorific")}
+              </Text>
+              <Text localize={false} style={s.info}>
+                {user.email}
+              </Text>
+              <Text style={s.info}>
+                {user.googleLinked
+                  ? sourceText("googleAccountLinked")
+                  : sourceText("loggedInWithEmail")}
+              </Text>
+              {button(sourceText("goToHome"), () => router.replace("/"))}
+              {button(sourceText("logOut"), () => void run(logout), true)}
+            </>
+          ) : (
+            <>
+              <Text style={s.title}>
+                {register
+                  ? sourceText("createAFreeAccount")
+                  : sourceText("logInToYourAccount")}
+              </Text>
+              {register && (
+                <AppRadioGroup
+                  label={tText("accountType")}
+                  required
+                  options={accountTypes}
+                  value={accountType}
+                  onValueChange={(value) => {
+                    if (value === "GENERAL" || value === "COMPANY")
+                      setAccountType(value);
+                  }}
+                  disabled={busy}
+                />
+              )}
+              {register && accountType === "COMPANY" && (
+                <>
+                  <AppInput
+                    label={tText("businessOrCompanyNameOptional")}
+                    value={businessName}
+                    onChangeText={setBusinessName}
+                    editable={!busy}
+                    maxLength={100}
+                    placeholder={tText("exampleSubaruStore")}
+                  />
+                  <Text style={s.info}>
+                    {tText("ifYouOperateABusinessYouCan")}
+                  </Text>
+                </>
+              )}
+              {(!register || !!accountType) && (
+                <>
+                  {button(
+                    register
+                      ? sourceText("signUpWithGoogle")
+                      : sourceText("logInWithGoogle"),
+                    () => void run(google),
+                    true,
+                  )}
+                  <Text style={s.divider}>
+                    {tText("orUseYourEmailAddress")}
+                    {register ? sourceText("signUp") : sourceText("logIn")}
+                  </Text>
+                </>
+              )}
+              {register && (
+                <AppInput
+                  label={tText("name")}
+                  required
+                  accessibilityLabel={tText("name")}
+                  value={name}
+                  onChangeText={setName}
+                  editable={!busy}
+                  maxLength={100}
+                  placeholder={tText("taroYamada")}
+                  style={s.input}
+                />
+              )}
+              <AppInput
+                label={tText("emailAddress")}
+                required
+                accessibilityLabel={tText("emailAddress")}
+                value={email}
+                onChangeText={setEmail}
+                editable={!busy}
+                maxLength={254}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                autoComplete="email"
+                placeholder="example@example.jp"
+                style={s.input}
+              />
+              <AppInput
+                label={tText("password")}
+                required
+                accessibilityLabel={tText("password")}
+                value={password}
+                onChangeText={setPassword}
+                editable={!busy}
+                secureTextEntry={!visible}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete={register ? "new-password" : "current-password"}
+                placeholder={translateText(
+                  register
+                    ? sourceText("atLeast8Characters")
+                    : sourceText("password"),
+                )}
+                style={s.input}
+              />
+              {register && (
+                <AppInput
+                  label={tText("confirmPassword")}
+                  required
+                  accessibilityLabel={tText("passwordConfirmation")}
+                  value={confirm}
+                  onChangeText={setConfirm}
+                  editable={!busy}
+                  secureTextEntry={!visible}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder={tText("enterAgain")}
+                  style={s.input}
+                />
+              )}
+              <AppCheckbox
+                label={tText("showPassword")}
+                checked={visible}
+                onValueChange={setVisible}
+                disabled={busy}
+              />
+              {register && (
+                <Text style={s.info}>
+                  {tText("openTheLinkInYourVerificationEmail")}
+                </Text>
+              )}
+              {button(
+                busy
+                  ? sourceText("processing")
+                  : register
+                    ? sourceText("sendVerificationEmail")
+                    : sourceText("logIn"),
+                () => void run(submit),
+              )}
+              <Pressable
+                disabled={busy}
+                onPress={() => {
+                  setRegister((v) => !v);
+                  setAccountType("");
+                  setBusinessName("");
+                  setPassword("");
+                  setConfirm("");
+                  setMessage("");
+                  setError("");
+                }}
+              >
+                <Text style={s.link}>
+                  {register
+                    ? sourceText("backToLogin")
+                    : sourceText("createAccount")}
+                </Text>
+              </Pressable>
+              <Pressable
+                disabled={busy}
+                onPress={() =>
+                  void run(async () => {
+                    validEmail();
+                    setMessage(
+                      (
+                        await authRequest<{ message: string }>("/resend", {
+                          email: email.trim(),
+                        })
+                      ).message,
+                    );
+                  })
+                }
+              >
+                <Text style={s.link}>{tText("resendVerificationEmail")}</Text>
+              </Pressable>
+            </>
+          )}
+          {!!message && (
+            <Text accessibilityLiveRegion="polite" style={s.success}>
+              {message}
+            </Text>
+          )}
+          {!!error && (
+            <Text accessibilityRole="alert" style={s.error}>
+              {error}
+            </Text>
+          )}
+        </Panel>
+      </View>
+    </AppPage>
+  );
 }
-const s = StyleSheet.create({ wrap: { minHeight: 560, paddingVertical: 28, alignItems: "center", justifyContent: "center" }, card: { width: "100%", maxWidth: 480, padding: 26, gap: 16 }, title: { textAlign: "center", color: C.text, fontSize: 23, fontWeight: "900" }, field: { gap: 7 }, label: { color: C.text, fontWeight: "700", fontSize: 14 }, input: {minHeight: 48}, button: { minHeight: 48, borderRadius: 8, backgroundColor: C.primary, alignItems: "center", justifyContent: "center", padding: 12 }, outline: { backgroundColor: C.white, borderColor: C.border, borderWidth: 1 }, buttonText: { color: C.white, fontWeight: "800", fontSize: 15 }, link: { textAlign: "center", color: C.primary, fontSize: 13, padding: 6 }, divider: { textAlign: "center", color: C.textSub }, info: { color: C.textSub, fontSize: 14, lineHeight: 22 }, success: { color: C.success, backgroundColor: C.successSoft, padding: 12, lineHeight: 22 }, error: { color: C.danger, padding: 12, backgroundColor: "#FDECEC", lineHeight: 22 } });
+const s = StyleSheet.create({
+  wrap: {
+    minHeight: 560,
+    paddingVertical: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  card: { width: "100%", maxWidth: 480, padding: 26, gap: 16 },
+  title: {
+    textAlign: "center",
+    color: C.text,
+    fontSize: 23,
+    fontWeight: "900",
+  },
+  field: { gap: 7 },
+  label: { color: C.text, fontWeight: "700", fontSize: 14 },
+  input: { minHeight: 48 },
+  button: {
+    minHeight: 48,
+    borderRadius: 8,
+    backgroundColor: C.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 12,
+  },
+  outline: { backgroundColor: C.white, borderColor: C.border, borderWidth: 1 },
+  buttonText: { color: C.white, fontWeight: "800", fontSize: 15 },
+  link: { textAlign: "center", color: C.primary, fontSize: 13, padding: 6 },
+  divider: { textAlign: "center", color: C.textSub },
+  info: { color: C.textSub, fontSize: 14, lineHeight: 22 },
+  success: {
+    color: C.success,
+    backgroundColor: C.successSoft,
+    padding: 12,
+    lineHeight: 22,
+  },
+  error: {
+    color: C.danger,
+    padding: 12,
+    backgroundColor: "#FDECEC",
+    lineHeight: 22,
+  },
+});

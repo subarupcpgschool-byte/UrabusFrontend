@@ -1,4 +1,6 @@
-import { View, Text } from "react-native";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
+import { View } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
@@ -8,13 +10,15 @@ import AppPage from "@/components/layout/AppPage";
 import { AppButton, Panel, BodyText } from "@/components/ui/AppUI";
 import { ConfirmAction } from "@/api/ApiUI";
 export default function ComparePage() {
+  "use no memo";
+  useLocaleVersion();
   const { token, user } = useAuth();
   const r = useResource<
     { recruitmentId: string; document: Document; companyName: string }[]
   >(token ? "/comparisons" : null, [], true);
   return (
     <AppPage
-      title="求人比較"
+      title={tText("compareJobs")}
       subtitle=""
       role={user?.accountType === "GENERAL" ? "user" : "company"}
     >
@@ -30,19 +34,19 @@ export default function ComparePage() {
             <Text style={{ fontSize: 17, fontWeight: "700" }}>
               {j.document.title}
             </Text>
-            <BodyText>{j.companyName}</BodyText>
+            <BodyText localize={false}>{j.companyName}</BodyText>
             <BodyText>
               {j.document.location} ／ {j.document.employment}
             </BodyText>
             <BodyText>{j.document.compensation}</BodyText>
             <BodyText>{j.document.requirements}</BodyText>
             <AppButton
-              label="詳細を見る"
+              label={tText("viewDetails")}
               onPress={() => router.push(`/jobs/${j.recruitmentId}` as never)}
             />
             <ConfirmAction
-              label="比較から外す"
-              message="この求人を比較一覧から外しますか？"
+              label={tText("removeFromComparison")}
+              message={tText("removeThisJobFromYourComparison")}
               onConfirm={() =>
                 dataRequest(
                   `/comparisons/${j.recruitmentId}`,
@@ -56,9 +60,7 @@ export default function ComparePage() {
         ))}
       </View>
       {!r.loading && !r.error && !r.data.length && (
-        <BodyText>
-          求人詳細から比較する求人を追加してください。最大5件まで比較できます。
-        </BodyText>
+        <BodyText>{tText("addJobsFromAJobDetailsPage")}</BodyText>
       )}
     </AppPage>
   );

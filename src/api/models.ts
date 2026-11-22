@@ -1,3 +1,4 @@
+import { sourceText } from "@/i18n/source";
 import type {
   JobSearchItem,
   CompanySearchItem,
@@ -46,7 +47,7 @@ export type CompanyRow = Omit<CompanySearchItem, "id"> & {
 };
 export const jobItem = (r: JobRow): JobSearchItem => ({
   ...r,
-  mark: r.mark || r.companyName?.slice(0, 1) || "企",
+  mark: r.mark || r.companyName?.slice(0, 1) || sourceText("co"),
   description: r.description || "",
   workStyle: r.workStyle || "",
   tags: r.tags || [],
@@ -55,7 +56,7 @@ export const jobItem = (r: JobRow): JobSearchItem => ({
 });
 export const companyItem = (r: CompanyRow): CompanySearchItem => ({
   ...r,
-  mark: r.mark || r.companyName?.slice(0, 1) || "企",
+  mark: r.mark || r.companyName?.slice(0, 1) || sourceText("co"),
   industry: r.industry || "",
   location: r.location || "",
   employeeRange: r.employeeRange || "",

@@ -1,3 +1,4 @@
+import { sourceText } from "@/i18n/source";
 export type Profile = {
   familyName: string;
   givenName: string;
@@ -102,9 +103,9 @@ export function createAccountData(name: string, _mock = false): AccountData {
 }
 export function profileError(profile: Profile): string {
   if (!profile.familyName.trim() || !profile.givenName.trim())
-    return "姓と名を入力してください。";
+    return sourceText("enterYourFamilyAndGivenNames");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(profile.birthDate))
-    return "生年月日を YYYY-MM-DD 形式で入力してください。";
+    return sourceText("enterYourDateOfBirthInYyyy");
   const [y, m, d] = profile.birthDate.split("-").map(Number);
   const date = new Date(Date.UTC(y, m - 1, d));
   if (
@@ -113,16 +114,16 @@ export function profileError(profile: Profile): string {
     date.getUTCDate() !== d ||
     date > new Date()
   )
-    return "有効な生年月日を入力してください。";
+    return sourceText("enterAValidDateOfBirth");
   if (profile.phone && !/^[\d+()\-\s]{6,25}$/.test(profile.phone))
-    return "電話番号の形式を確認してください。";
+    return sourceText("checkThePhoneNumberFormat");
   return "";
 }
 export function reviewError(rating: number, comment: string): string {
   if (!Number.isInteger(rating) || rating < 1 || rating > 5)
-    return "評価を1〜5から選択してください。";
-  if (!comment.trim()) return "評価内容を入力してください。";
+    return sourceText("chooseARatingFrom1To5");
+  if (!comment.trim()) return sourceText("enterReviewContent");
   if (comment.trim().length > 2000)
-    return "評価内容は2,000文字以内で入力してください。";
+    return sourceText("reviewContentMustBeNoMoreThan");
   return "";
 }

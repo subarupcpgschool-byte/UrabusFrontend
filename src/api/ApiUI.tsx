@@ -1,5 +1,8 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useState, type ReactNode } from "react";
-import { Modal, View, Text } from "react-native";
+import { Modal, View } from "react-native";
 import { AppButton, Panel } from "@/components/ui/AppUI";
 export function ConfirmAction({
   label,
@@ -12,6 +15,8 @@ export function ConfirmAction({
   onConfirm: () => Promise<unknown>;
   danger?: boolean;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const [open, setOpen] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -51,14 +56,14 @@ export function ConfirmAction({
             )}
             <View style={{ flexDirection: "row", gap: 10 }}>
               <AppButton
-                label="キャンセル"
+                label={tText("cancel")}
                 outline
                 onPress={() => {
                   if (!busy) setOpen(false);
                 }}
               />
               <AppButton
-                label={busy ? "処理中…" : "実行する"}
+                label={busy ? sourceText("processing") : sourceText("confirm")}
                 danger={danger}
                 onPress={() => {
                   if (busy) return;
@@ -69,7 +74,7 @@ export function ConfirmAction({
                       setError(
                         e instanceof Error
                           ? e.message
-                          : "処理できませんでした。",
+                          : sourceText("unableToCompleteTheAction"),
                       ),
                     )
                     .finally(() => setBusy(false));
@@ -93,6 +98,8 @@ export function Pager({
   pageSize?: number;
   onChange: (page: number) => void;
 }) {
+  "use no memo";
+  useLocaleVersion();
   const pages = Math.max(1, Math.ceil(total / pageSize));
   return (
     <View
@@ -104,13 +111,24 @@ export function Pager({
       }}
     >
       {page > 1 && (
-        <AppButton label="前へ" outline onPress={() => onChange(page - 1)} />
+        <AppButton
+          label={tText("previous")}
+          outline
+          onPress={() => onChange(page - 1)}
+        />
       )}
       <Text>
-        {page} / {pages}ページ（{total}件）
+        {page} / {pages}
+        {tText("pageS")}
+        {total}
+        {tText("total")}
       </Text>
       {page < pages && (
-        <AppButton label="次へ" outline onPress={() => onChange(page + 1)} />
+        <AppButton
+          label={tText("next")}
+          outline
+          onPress={() => onChange(page + 1)}
+        />
       )}
     </View>
   );

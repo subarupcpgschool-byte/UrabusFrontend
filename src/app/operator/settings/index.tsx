@@ -1,5 +1,8 @@
+import { sourceText } from "@/i18n/source";
+import { tText, useLocaleVersion } from "@/i18n/display";
+import { Text } from "@/i18n/native";
 import { useEffect, useState } from "react";
-import { Text } from "react-native";
+
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
 import { dataRequest } from "@/api/platform";
@@ -17,6 +20,8 @@ import {
   type Field,
 } from "@/features/operator/ResourceEditor";
 export default function OperatorSettings() {
+  "use no memo";
+  useLocaleVersion();
   const { token } = useAuth();
   const r = useResource<
     {
@@ -45,20 +50,30 @@ export default function OperatorSettings() {
   const optionFields: Field[] = [
     {
       key: "category",
-      label: "区分",
+      label: sourceText("category"),
       kind: "select",
       choices: [category],
       initial: category,
     },
-    { key: "value", label: "登録値" },
-    { key: "label", label: "表示名" },
-    { key: "active", label: "有効", kind: "boolean", initial: true },
-    { key: "sortOrder", label: "表示順", kind: "number", initial: 0 },
+    { key: "value", label: sourceText("storedValue") },
+    { key: "label", label: sourceText("displayLabel") },
+    {
+      key: "active",
+      label: sourceText("enabled"),
+      kind: "boolean",
+      initial: true,
+    },
+    {
+      key: "sortOrder",
+      label: sourceText("displayOrder"),
+      kind: "number",
+      initial: 0,
+    },
   ];
   async function save() {
     if (busy) return;
     if (!/^\d+$/.test(access) || !/^\d+$/.test(retention)) {
-      setError("保存日数は0以上の整数で入力してください。");
+      setError(sourceText("enterANonNegativeIntegerForRetention"));
       return;
     }
     setBusy(true);
@@ -78,7 +93,7 @@ export default function OperatorSettings() {
         },
         "PUT",
       );
-      setNotice("設定を保存しました。");
+      setNotice(sourceText("settingsSaved"));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -86,7 +101,12 @@ export default function OperatorSettings() {
     }
   }
   return (
-    <AppPage title="運営設定" subtitle="" role="operator" activeMenu="設定">
+    <AppPage
+      title={tText("operatorSettings")}
+      subtitle=""
+      role="operator"
+      activeMenu={sourceText("settings")}
+    >
       <ResourceStatus
         loading={r.loading}
         error={r.error}
@@ -96,29 +116,32 @@ export default function OperatorSettings() {
       {!r.error && token && (
         <>
           <Panel>
-            <SectionTitle>通知・保存期間</SectionTitle>
+            <SectionTitle>{tText("notificationsAndRetention")}</SectionTitle>
             <AppMultiSelect
-              label="通知先"
+              label={tText("notificationDestination")}
               value={channels}
               onValueChange={setChannels}
-              options={["メール", "管理画面"].map((value) => ({
+              options={[
+                sourceText("email"),
+                sourceText("managementConsole"),
+              ].map((value) => ({
                 value,
                 label: value,
               }))}
             />
             <AppInput
-              label="アクセス履歴の保存日数"
+              label={tText("accessLogRetentionDays")}
               value={access}
               onChangeText={setAccess}
               keyboardType="number-pad"
             />
             <AppInput
-              label="エラー履歴の保存日数"
+              label={tText("errorLogRetentionDays")}
               value={retention}
               onChangeText={setRetention}
               keyboardType="number-pad"
             />
-            <BodyText>通知・保存期間の設定値を保存します。</BodyText>
+            <BodyText>{tText("saveNotificationAndRetentionSettings")}</BodyText>
             {!!error && (
               <Text accessibilityRole="alert" style={{ color: "#B42318" }}>
                 {error}
@@ -126,28 +149,28 @@ export default function OperatorSettings() {
             )}
             {!!notice && <Text>{notice}</Text>}
             <AppButton
-              label={busy ? "保存中…" : "保存"}
+              label={busy ? sourceText("saving") : sourceText("save_384")}
               onPress={() => void save()}
             />
           </Panel>
           <ResourceEditor
             path="/operator/rules"
-            title="監視条件"
+            title={tText("monitoringConditions")}
             fields={ruleFields}
           />
           <Panel>
-            <SectionTitle>検索・入力の基礎データ</SectionTitle>
+            <SectionTitle>{tText("searchAndInputReferenceData")}</SectionTitle>
             <AppSelect
-              label="区分"
+              label={tText("category")}
               value={category}
               onValueChange={setCategory}
               options={[
-                ["prefecture", "都道府県"],
-                ["employment", "雇用形態"],
-                ["workStyle", "働き方"],
-                ["industry", "業種"],
-                ["skill", "スキル"],
-                ["requirement", "応募条件"],
+                ["prefecture", sourceText("prefecture")],
+                ["employment", sourceText("employmentType")],
+                ["workStyle", sourceText("workArrangements")],
+                ["industry", sourceText("industry")],
+                ["skill", sourceText("skills")],
+                ["requirement", sourceText("requirements")],
               ].map(([value, label]) => ({ value, label }))}
             />
           </Panel>
@@ -155,7 +178,7 @@ export default function OperatorSettings() {
             key={category}
             path="/options"
             readPath={`/options?category=${category}`}
-            title="選択肢"
+            title={tText("options")}
             fields={optionFields}
           />
         </>
