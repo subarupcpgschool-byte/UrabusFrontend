@@ -87,10 +87,15 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       })),
   };
   const received = reviews.data
-    .filter((r) => r.direction === "COMPANY_TO_USER" && r.contractId)
+    .filter((r) => r.direction === "COMPANY_TO_USER")
     .map((r) => ({
       id: r.id,
-      contractId: r.contractId!,
+      contractId: r.contractId,
+      subject: {
+        kind: r.recruitmentId ? ("job" as const) : ("company" as const),
+        company: r.company,
+        title: r.applicationName || "",
+      },
       date: r.submittedAt.slice(0, 10),
       rating: Number(r.total),
       comment: r.comment,

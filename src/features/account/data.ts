@@ -28,7 +28,8 @@ export type Contract = {
 };
 export type ReceivedReview = {
   id: string;
-  contractId: string;
+  contractId: string | null;
+  subject?: { kind: "company" | "job"; company: string; title: string };
   date: string;
   rating: number;
   comment: string;

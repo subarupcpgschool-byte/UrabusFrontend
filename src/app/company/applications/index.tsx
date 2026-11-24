@@ -2,6 +2,7 @@ import { sourceText } from "@/i18n/source";
 import { tText, useLocaleVersion } from "@/i18n/display";
 import { Text, Pressable } from "@/i18n/native";
 import { useEffect, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 import { View } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
@@ -33,10 +34,13 @@ function Content() {
   "use no memo";
   useLocaleVersion();
   const { token } = useAuth();
+  const params = useLocalSearchParams<{ interactionId?: string }>();
   const [status, setStatus] = useState(""),
     [kind, setKind] = useState(""),
     [page, setPage] = useState(1),
-    [selected, setSelected] = useState<string | null>(null),
+    [selected, setSelected] = useState<string | null>(
+      params.interactionId || null,
+    ),
     [tab, setTab] = useState("messages"),
     [stage, setStage] = useState("0"),
     [result, setResult] = useState(""),
@@ -57,7 +61,15 @@ function Content() {
     { items: [], total: 0, page, pageSize: 20 },
     true,
   );
-  const item = r.data.items.find((i) => i.id === selected);
+  useEffect(() => {
+    setSelected(params.interactionId || null);
+  }, [params.interactionId]);
+  const picked = useResource<InteractionRow | null>(
+    token && selected ? `/interactions/${selected}` : null,
+    null,
+    true,
+  );
+  const item = picked.data || r.data.items.find((i) => i.id === selected);
   const resume = useResource<{ title: string; body: ResumeRow["body"] }[]>(
     item ? `/interactions/${item.id}/resume` : null,
     [],
@@ -102,6 +114,11 @@ function Content() {
         error={r.error}
         onRetry={r.refresh}
         privateData
+      />
+      <ResourceStatus
+        loading={picked.loading}
+        error={picked.error}
+        onRetry={picked.refresh}
       />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
         <Panel style={{ flex: 3, minWidth: 260 }}>

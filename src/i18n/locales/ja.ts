@@ -1,3 +1,5 @@
+import dashboardMessages from "./dashboard.ja";
+import companyReviewMessages from "./companyReviews.ja";
 const translation = {
   projectName: "GlobalWorkers",
   common: {
@@ -6,6 +8,8 @@ const translation = {
     search: "検索",
   },
   messages: {
+    ...dashboardMessages,
+    ...companyReviewMessages,
     "5": "{{v0}} {{v1}}点 / 5点",
     cancel: "キャンセル",
     processing: "処理中…",

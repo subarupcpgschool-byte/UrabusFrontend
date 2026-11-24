@@ -82,6 +82,8 @@ export type InteractionRow = Application & {
   snapshot: { document?: Document };
 };
 export type EvaluationRow = {
+  applicationName?: string;
+  recruitmentId?: string | null;
   id: string;
   interactionId: string;
   contractId: string | null;

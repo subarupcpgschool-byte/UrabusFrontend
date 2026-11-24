@@ -45,6 +45,7 @@ const menus = {
       sourceText("applicationsAndSelection"),
       "/company/applications",
     ],
+    ["star-outline", sourceText("reviews"), "/company/evaluations"],
     ["briefcase-outline", sourceText("jobManagement"), "/company/jobs"],
     ["search-outline", sourceText("talentSearch"), "/company/talent"],
     [
@@ -82,7 +83,15 @@ export default function AppPage({
   return (
     <SafeAreaView style={s.safe}>
       <Header onNavigate={onNavigate} />
-      <View style={s.shell}>
+      <View
+        style={[
+          s.shell,
+          role === "company" &&
+            activeMenu === sourceText("dashboard") && {
+              backgroundColor: C.background,
+            },
+        ]}
+      >
         {showSidebar && (
           <Sidebar
             role={role as Exclude<AppRole, "public">}
@@ -98,6 +107,12 @@ export default function AppPage({
             s.content,
             (activeMenu === sourceText("applicationsAndOffers_641") ||
               activeMenu === sourceText("reviews")) && { maxWidth: 1760 },
+            role === "company" &&
+              activeMenu === sourceText("dashboard") && {
+                maxWidth: 1600,
+                padding: 14,
+                paddingBottom: 14,
+              },
             width < 600 && { padding: 12 },
           ]}
         >
@@ -196,7 +211,12 @@ function Sidebar({
           />
           {!collapsed && (
             <Text
-              style={[s.sideText, active === label && { color: C.primary }]}
+              style={[
+                s.sideText,
+                active === label && {
+                  color: C.primary,
+                },
+              ]}
             >
               {label}
             </Text>

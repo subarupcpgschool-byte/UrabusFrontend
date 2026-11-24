@@ -9,6 +9,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/slider": "5.0.1",
     "@react-native-picker/picker": "2.11.1",
+    "chart.js": "4.5.1",
     "expo": "^54.0.0",
     "expo-asset": "~12.0.14",
     "expo-constants": "~18.0.13",
@@ -60,7 +61,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "check:i18n": "node ./scripts/check-i18n.cjs",
-    "typecheck:i18n": "tsc --noEmit -p tsconfig.i18n-check.json"
+    "typecheck:i18n": "tsc --noEmit -p tsconfig.i18n-check.json",
+    "build:charts": "node scripts/build-dashboard-chart.cjs"
   },
   "private": true
 }

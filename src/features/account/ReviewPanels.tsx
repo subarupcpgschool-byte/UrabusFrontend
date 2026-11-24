@@ -107,7 +107,7 @@ export function ReceivedReviews() {
   const [kind, setKind] = useState("all"),
     [query, setQuery] = useState("");
   const list = received.filter((r) => {
-    const c = contracts.find((c) => c.id === r.contractId);
+    const c = contracts.find((c) => c.id === r.contractId) || r.subject;
     return (
       c &&
       (kind === "all" || c.kind === kind) &&
@@ -133,9 +133,7 @@ export function ReceivedReviews() {
             {tText("reviews_653")}
           </Text>
         </View>
-        <BodyText>
-          {tText("viewFeedbackWrittenByYourContractPartners")}
-        </BodyText>
+        <BodyText>{tText("companyReviewReceivedDescription")}</BodyText>
       </Panel>
       <View style={s.filters}>
         <AppInput
@@ -157,10 +155,21 @@ export function ReceivedReviews() {
         />
       </View>
       {list.map((review) => {
-        const c = contracts.find((c) => c.id === review.contractId)!;
+        const c = contracts.find((c) => c.id === review.contractId);
         return (
           <Panel key={review.id}>
-            <ContractHeading contract={c} />
+            {c ? (
+              <ContractHeading contract={c} />
+            ) : (
+              <View style={{ gap: 6 }}>
+                <Text localize={false} style={s.company}>
+                  {review.subject?.company}
+                </Text>
+                <Text localize={false} style={s.title}>
+                  {review.subject?.title}
+                </Text>
+              </View>
+            )}
             <View style={s.row}>
               <Stars value={review.rating} />
               <Text style={s.meta}>{review.date}</Text>
