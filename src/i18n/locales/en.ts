@@ -1,3 +1,4 @@
+import hrMessages from "./hr.en";
 import dashboardMessages from "./dashboard.en";
 import companyReviewMessages from "./companyReviews.en";
 const translation = {
@@ -8,6 +9,7 @@ const translation = {
     search: "Search",
   },
   messages: {
+    ...hrMessages,
     ...dashboardMessages,
     ...companyReviewMessages,
     "5": "{{v0}} {{v1}} / 5",

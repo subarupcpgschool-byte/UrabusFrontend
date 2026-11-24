@@ -1,3 +1,4 @@
+import hrMessages from "./hr.ja";
 import dashboardMessages from "./dashboard.ja";
 import companyReviewMessages from "./companyReviews.ja";
 const translation = {
@@ -8,6 +9,7 @@ const translation = {
     search: "検索",
   },
   messages: {
+    ...hrMessages,
     ...dashboardMessages,
     ...companyReviewMessages,
     "5": "{{v0}} {{v1}}点 / 5点",

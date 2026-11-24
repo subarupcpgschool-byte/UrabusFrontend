@@ -1,8 +1,9 @@
+import { SharedDocumentsPanel } from "@/features/company/hr/SharedDocumentsPanel";
 import { sourceText } from "@/i18n/source";
 import { tText, useLocaleVersion } from "@/i18n/display";
 import { Text, Pressable } from "@/i18n/native";
 import { useEffect, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { View } from "react-native";
 import { useAuth } from "@/auth/AuthProvider";
 import { useResource, ResourceStatus } from "@/api/useResource";
@@ -290,6 +291,41 @@ function Content() {
                   </Text>
                 )}
               </Panel>
+              <Panel>
+                <BodyText>{tText("hrResultMailNotice")}</BodyText>
+                <View
+                  style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}
+                >
+                  <AppButton
+                    outline
+                    label={tText("hrMailHistory")}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/company/mail-templates" as never,
+                        params: { interactionId: item.id },
+                      })
+                    }
+                  />
+                  {item.companyResult === sourceText("jobOffer") &&
+                    !item.afterResult && (
+                      <AppButton
+                        outline
+                        label={tText("hrEmployment")}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/company/employment" as never,
+                            params: { interactionId: item.id },
+                          })
+                        }
+                      />
+                    )}
+                </View>
+              </Panel>
+              {!item.afterResult &&
+                (!item.companyResult ||
+                  item.companyResult === sourceText("jobOffer")) && (
+                  <SharedDocumentsPanel interaction={item.id} />
+                )}
               <Tabs
                 label={tText("applicantDetails")}
                 value={tab}

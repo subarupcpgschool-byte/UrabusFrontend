@@ -9,11 +9,13 @@ export function ConfirmAction({
   message,
   onConfirm,
   danger = false,
+  ButtonComponent = AppButton,
 }: {
   label: string;
   message: string;
   onConfirm: () => Promise<unknown>;
   danger?: boolean;
+  ButtonComponent?: typeof AppButton;
 }) {
   "use no memo";
   useLocaleVersion();
@@ -22,7 +24,7 @@ export function ConfirmAction({
     [error, setError] = useState("");
   return (
     <>
-      <AppButton
+      <ButtonComponent
         label={label}
         danger={danger}
         outline={!danger}
@@ -55,14 +57,14 @@ export function ConfirmAction({
               </Text>
             )}
             <View style={{ flexDirection: "row", gap: 10 }}>
-              <AppButton
+              <ButtonComponent
                 label={tText("cancel")}
                 outline
                 onPress={() => {
                   if (!busy) setOpen(false);
                 }}
               />
-              <AppButton
+              <ButtonComponent
                 label={busy ? sourceText("processing") : sourceText("confirm")}
                 danger={danger}
                 onPress={() => {

@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { translateText } from "@/i18n/display";
 import { sourceText, sourceFormat } from "@/i18n/source";
 import { tText, useLocaleVersion, localeTag } from "@/i18n/display";
@@ -443,6 +444,14 @@ export default function CompanyManagement({
   );
   return (
     <>
+      {employeeManagementLevel >= 1 && (
+        <View style={{ alignItems: "flex-start" }}>
+          <ManagementButton
+            label={tText("hrSettings")}
+            onPress={() => router.push("/company/hr-settings" as never)}
+          />
+        </View>
+      )}
       {!!notice && (
         <Text accessibilityLiveRegion="polite" style={s.success}>
           {notice}

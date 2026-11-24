@@ -37,6 +37,11 @@ const menus = {
     ["star-outline", sourceText("reviews"), "/user/evaluations"],
     ["chatbubbles-outline", sourceText("messages"), "/messages"],
     ["person-outline", sourceText("resume"), "/user/resume"],
+    [
+      "folder-open-outline",
+      sourceText("hrPersonalDocuments"),
+      "/user/documents",
+    ],
   ],
   company: [
     ["grid-outline", sourceText("dashboard"), "/company"],
@@ -46,6 +51,8 @@ const menus = {
       "/company/applications",
     ],
     ["star-outline", sourceText("reviews"), "/company/evaluations"],
+    ["person-add-outline", sourceText("hrEmployment"), "/company/employment"],
+    ["mail-outline", sourceText("hrMailTemplates"), "/company/mail-templates"],
     ["briefcase-outline", sourceText("jobManagement"), "/company/jobs"],
     ["search-outline", sourceText("talentSearch"), "/company/talent"],
     [
