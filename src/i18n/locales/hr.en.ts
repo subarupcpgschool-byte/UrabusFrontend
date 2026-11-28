@@ -1,4 +1,41 @@
 const messages = {
+  mtCreate: "Create email template",
+  mtEdit: "Edit email template",
+  mtNameRequired: "Enter a template name.",
+  mtPartial: "Enter both subject and body for {{result}}, or leave both empty.",
+  mtDeletePermission:
+    "Delete permission is required to remove an existing notification.",
+  mtOneRequired: "Enter a subject and body for at least one notification.",
+  mtBlankNote:
+    "Notifications with an empty subject and body are not registered. Clearing both removes that notification only.",
+  mtConfigured: "Configured",
+  mtNotConfigured: "Not configured",
+  mtPreviewSample: "Shown with sample data.",
+  mtPreviewEmpty: "Enter a subject and body to preview this notification.",
+  mtDiscardTitle: "Unsaved changes",
+  mtDiscardMessage: "You have unsaved changes. Discard them and close?",
+  mtDiscard: "Discard and close",
+  mtSaveConfirm:
+    "Save {{count}} configured notifications and remove {{removed}} cleared notifications?",
+  mtNoFilter: "No filter",
+  mtSearch: "Search",
+  mtSearchHint: "Template name, subject, body or job",
+  mtEnabledFilter: "Enabled status",
+  mtScopeAll: "Scope: all",
+  mtSort: "Sort by",
+  mtUpdatedAt: "Updated at",
+  mtCount: "Notification count",
+  mtDirection: "Order",
+  mtAscending: "Ascending",
+  mtDescending: "Descending",
+  mtReset: "Reset filters",
+  mtNoMatches: "No templates match the filters.",
+  mtConfiguredCount: "{{count}} notification types",
+  mtView: "View details",
+  mtDeleteSet: "Delete this template and all of its registered notifications?",
+  mtHistoryApplicant: "Interaction for delivery history",
+  mtSelectHistory: "Select an interaction",
+
   hrLoginLinkNote: "Employee login URL (the initial password is not emailed)",
   hrEmployment: "Onboarding & employment",
   hrPersonalDocuments: "Documents & sharing",
@@ -87,7 +124,7 @@ const messages = {
   hrSample: "Sample data",
   hrForwardNote:
     "Confirming a result notifies the applicant and sends the same body to the company owner with a forwarded subject prefix.",
-  hrMailHistory: "Result emails & delivery history",
+  hrMailHistory: "Notification delivery history",
   hrNoMail: "No delivery history for this interaction.",
   hrToApplicant: "To applicant",
   hrToCompany: "To company owner",
@@ -126,5 +163,12 @@ const messages = {
   hrSharedDocuments: "Latest documents shared by applicant",
   hrNoSharedDocuments:
     "No latest documents have been shared. Ask the applicant to grant access.",
+  mtListTab: "Template list",
+  mtManagePermission:
+    "Creating or updating templates requires write access to Applicant management (all).",
+  mtGlobalPermission:
+    "Viewing templates requires read access to Applicant management (all). You can check assigned applications under Notification delivery history.",
+  mtHistoryHelp:
+    "Review the content, delivery status and errors of applicant result notifications and company copies. Create and edit templates under Template list.",
 } as const;
 export default messages;

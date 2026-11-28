@@ -40,6 +40,7 @@ export function useCompanyPermission(permission: PermissionKey) {
   }, [token, user?.accountType]);
   if (!ready)
     return {
+      allLevel: 0,
       ready: false,
       level: 0,
       allowed: false,
@@ -48,6 +49,7 @@ export function useCompanyPermission(permission: PermissionKey) {
     };
   if (user?.accountType === "COMPANY")
     return {
+      allLevel: 3,
       ready: true,
       level: 3,
       allowed: true,
@@ -56,6 +58,7 @@ export function useCompanyPermission(permission: PermissionKey) {
     };
   if (user?.accountType !== "EMPLOYEE" || !token)
     return {
+      allLevel: 0,
       ready: true,
       level: 0,
       allowed: false,
@@ -77,6 +80,11 @@ export function useCompanyPermission(permission: PermissionKey) {
     }
   }
   return {
+    allLevel: flags
+      ? permission === "applicants"
+        ? flags.applicantsAll
+        : level
+      : 0,
     ready: result?.token === token,
     allowed: level > 0,
     level,

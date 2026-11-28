@@ -1,58 +1,77 @@
-import { HrButton as AppButton } from "./shared";
 import { useEffect, useState } from "react";
-import { View, ScrollView, useWindowDimensions } from "react-native";
+import { View, useWindowDimensions } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { Text, Pressable } from "@/i18n/native";
-import { tText, useLocaleVersion } from "@/i18n/display";
+import { tText, useLocaleVersion, localeTag } from "@/i18n/display";
 import { sourceText } from "@/i18n/source";
 import AppPage from "@/components/layout/AppPage";
 import { useAuth } from "@/auth/AuthProvider";
-import { API_BASE } from "@/auth/api";
-import { dataRequest, type Page } from "@/api/platform";
+import { dataRequest, query, type Page } from "@/api/platform";
 import { useResource, ResourceStatus } from "@/api/useResource";
-import { ConfirmAction } from "@/api/ApiUI";
-import { AppInput, AppSelect, AppTextArea, AppSwitch } from "@/components/form";
+import { ConfirmAction, Pager } from "@/api/ApiUI";
+import { AppInput, AppSelect } from "@/components/form";
 import { Panel, SectionTitle, BodyText } from "@/components/ui/AppUI";
 import {
   CompanyPermissionBoundary,
   useCompanyPermission,
 } from "../CompanyPermissionBoundary";
-import { hs, ActionStatus, useHrAction } from "./shared";
-import type { MailTemplate, MailLog } from "./models";
-const fresh = (): MailTemplate => ({
-  version: 0,
-  name: "",
-  result: "内定",
-  recruitmentId: null,
-  recruitmentKind: "*",
-  employmentType: "*",
-  subject: "【{{company.name}}】{{job.title}}：{{result}}",
-  body: "{{user.name}} 様\n\n{{company.name}}です。\n{{job.title}}について、結果は「{{result}}」となりました。\nサービス内のメッセージをご確認ください。\n\n{{company.name}}\n{{company.email}}",
-  enabled: true,
-});
+import { HrButton, hs } from "./shared";
+import {
+  MAIL_RESULTS,
+  type MailSet,
+  type MailSetDraft,
+  type MailLog,
+} from "./models";
+import {
+  MailTemplateEditor,
+  freshMailSet,
+  mailResultLabel,
+} from "./MailTemplateEditor";
 function Content() {
   "use no memo";
   useLocaleVersion();
-  const { token } = useAuth();
-  const permission = useCompanyPermission("applicants");
+  const { token } = useAuth(),
+    permission = useCompanyPermission("applicants");
   const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ interactionId?: string }>();
-  const [form, setForm] = useState<MailTemplate>(fresh),
+  const [tab, setTab] = useState<"templates" | "history">(
+    params.interactionId ? "history" : "templates",
+  );
+  const [editor, setEditor] = useState<MailSetDraft | null>(null),
+    [opening, setOpening] = useState(false),
+    [error, setError] = useState(""),
     [selected, setSelected] = useState(params.interactionId || ""),
-    [preview, setPreview] = useState<{
-      subject: string;
-      body: string;
-      variables: string[];
-    } | null>(null),
-    [previewError, setPreviewError] = useState("");
-  const action = useHrAction();
-  const templates = useResource<MailTemplate[]>(
-      "/company-mail/templates",
-      [],
+    [search, setSearch] = useState(""),
+    [q, setQ] = useState(""),
+    [page, setPage] = useState(1),
+    [filter, setFilter] = useState({
+      job: "",
+      result: "",
+      enabled: "",
+      kind: "",
+      employment: "",
+      sort: "updatedAt",
+      direction: "desc",
+    });
+  const canManage = permission.ready && permission.allLevel >= 1;
+  const writable = canManage && permission.allLevel >= 2;
+  useEffect(() => {
+    if (search === q) return;
+    const timer = setTimeout(() => {
+      setQ(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+  const sets = useResource<Page<MailSet>>(
+      canManage
+        ? "/company-mail/sets?" + query({ q, ...filter, page, pageSize: 20 })
+        : null,
+      { items: [], total: 0, page: 1, pageSize: 20 },
       true,
     ),
     jobs = useResource<{ id: string; title: string }[]>(
-      "/company-mail/jobs",
+      canManage ? "/company-mail/jobs" : null,
       [],
       true,
     ),
@@ -72,40 +91,25 @@ function Content() {
       [],
       true,
     );
-  const writable = permission.level >= 2 && !permission.assignedOnly;
-  const editable = (key: keyof MailTemplate, value: unknown) =>
-    setForm((f) => ({ ...f, [key]: value }));
-  useEffect(() => {
-    const controller = new AbortController();
-    let active = true;
-    setPreview(null);
-    setPreviewError("");
-    const timer = setTimeout(() => {
-      fetch(`${API_BASE}/api/platform-data/company-mail/preview`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...form, interactionId: selected }),
-        signal: controller.signal,
-      })
-        .then(async (r) => {
-          const value = await r.json();
-          if (!r.ok) throw Error(value.message || tText("unableToLoad"));
-          if (active) setPreview(value);
-        })
-        .catch((e) => {
-          if (active && e.name !== "AbortError") setPreviewError(e.message);
-        });
-    }, 350);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [form.subject, form.body, form.result, selected, token]);
-  const all = { value: "*", label: tText("hrAll") };
+  const change = (key: keyof typeof filter, v: string) => {
+    setFilter((f) => ({ ...f, [key]: v }));
+    setPage(1);
+  };
+  const open = async (id: string) => {
+    if (opening) return;
+    setOpening(true);
+    setError("");
+    try {
+      setEditor(
+        await dataRequest<MailSetDraft>(`/company-mail/sets/${id}`, token),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : tText("unableToLoad"));
+    } finally {
+      setOpening(false);
+    }
+  };
+  const all = { value: "", label: tText("mtNoFilter") };
   return (
     <AppPage
       title={tText("hrMailTemplates")}
@@ -113,241 +117,287 @@ function Content() {
       role="company"
       activeMenu={sourceText("hrMailTemplates")}
     >
-      <ActionStatus {...action} />
-      <ResourceStatus
-        loading={templates.loading}
-        error={templates.error || jobs.error}
-        onRetry={() => {
-          templates.refresh();
-          jobs.refresh();
-        }}
-        privateData
-      />
       <View style={hs.row}>
         <SectionTitle>{tText("hrMailTemplates")}</SectionTitle>
-        {writable && (
-          <AppButton
-            label={tText("hrCreate")}
-            onPress={() => setForm(fresh())}
-          />
-        )}
+        <View style={{ flex: 1 }} />
+        <HrButton
+          disabled={!writable}
+          label={tText("hrCreate")}
+          onPress={() => setEditor(freshMailSet())}
+        />
       </View>
-      <BodyText>{tText("hrTemplatePriority")}</BodyText>
-      <View style={width >= 1100 ? hs.split : { gap: 16 }}>
-        <View style={width >= 1100 ? hs.left : { gap: 10 }}>
-          {templates.data.map((row) => (
-            <Pressable
-              key={row.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: form.id === row.id }}
-              style={[hs.item, form.id === row.id && hs.selected]}
-              onPress={() => setForm({ ...row })}
-            >
-              <Text localize={false} style={{ fontWeight: "700" }}>
-                {row.name}
-              </Text>
-              <Text>
-                {row.result} ／{" "}
-                {row.enabled ? tText("hrEnabled") : tText("hrDisabled")}
-              </Text>
-            </Pressable>
-          ))}
-          {!templates.data.length && !templates.loading && (
-            <BodyText>{tText("hrNoTemplates")}</BodyText>
-          )}
-        </View>
-        <View style={width >= 1100 ? hs.right : { gap: 14 }}>
+      <View style={hs.row} accessibilityRole="tablist">
+        {(["templates", "history"] as const).map((value) => (
+          <Pressable
+            key={value}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: tab === value }}
+            onPress={() => setTab(value)}
+            style={[hs.item, tab === value && hs.selected]}
+          >
+            <Text>
+              {tText(value === "templates" ? "mtListTab" : "hrMailHistory")}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {!writable && (
+        <BodyText>
+          {!permission.ready
+            ? tText("checkingPermissions")
+            : permission.error || tText("mtManagePermission")}
+        </BodyText>
+      )}
+      {!!error && (
+        <Text accessibilityRole="alert" style={hs.error}>
+          {error}
+        </Text>
+      )}
+      {tab === "templates" && (
+        <>
           <Panel style={hs.card}>
-            <AppInput
-              label={tText("hrTemplateName")}
-              value={form.name}
-              onChangeText={(v) => editable("name", v)}
-            />
             <View style={hs.row}>
-              <View style={hs.field}>
-                <AppSelect
-                  label={tText("hrResult")}
-                  value={form.result}
-                  onValueChange={(v) => editable("result", v)}
-                  options={[
-                    "内定",
-                    "不採用",
-                    "見送り",
-                    "内定取り消し",
-                    "内定辞退",
-                  ].map((v) => ({ value: v, label: v }))}
+              <View style={{ width: 240, maxWidth: "100%" }}>
+                <AppInput
+                  maxLength={200}
+                  label={tText("mtSearch")}
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder={tText("mtSearchHint")}
                 />
               </View>
-              <View style={hs.field}>
+              <View style={{ width: 220, maxWidth: "100%" }}>
                 <AppSelect
                   label={tText("hrTargetJob")}
-                  value={form.recruitmentId || ""}
-                  onValueChange={(v) => {
-                    editable("recruitmentId", v || null);
-                    if (v)
-                      setForm((f) => ({
-                        ...f,
-                        recruitmentKind: "*",
-                        employmentType: "*",
-                      }));
-                  }}
+                  value={filter.job}
+                  onValueChange={(v) => change("job", v)}
                   options={[
-                    { value: "", label: tText("hrNoJobScope") },
+                    all,
+                    { value: "*", label: tText("hrNoJobScope") },
                     ...jobs.data.map((j) => ({ value: j.id, label: j.title })),
                   ]}
                 />
               </View>
-            </View>
-            {!form.recruitmentId && (
-              <View style={hs.row}>
-                <View style={hs.field}>
-                  <AppSelect
-                    label={tText("hrRecruitmentKind")}
-                    value={form.recruitmentKind}
-                    onValueChange={(v) => editable("recruitmentKind", v)}
-                    options={[
-                      all,
-                      { value: "JOB", label: tText("hrJob") },
-                      {
-                        value: "COMPANY_RECRUITMENT",
-                        label: tText("hrCompanyRecruitment"),
-                      },
-                    ]}
-                  />
-                </View>
-                <View style={hs.field}>
-                  <AppSelect
-                    label={tText("hrEmploymentType")}
-                    value={form.employmentType}
-                    onValueChange={(v) => editable("employmentType", v)}
-                    options={[
-                      all,
-                      ...employment.data.map((e) => ({
-                        value: e.value,
-                        label: e.label,
-                      })),
-                    ]}
-                  />
-                </View>
+              <View style={{ width: 160, maxWidth: "100%" }}>
+                <AppSelect
+                  label={tText("hrResult")}
+                  value={filter.result}
+                  onValueChange={(v) => change("result", v)}
+                  options={[
+                    all,
+                    ...MAIL_RESULTS.map((r) => ({
+                      value: r,
+                      label: mailResultLabel(r),
+                    })),
+                  ]}
+                />
               </View>
-            )}
-            <AppInput
-              label={tText("hrSubject")}
-              value={form.subject}
-              onChangeText={(v) => editable("subject", v)}
-            />
-            <AppTextArea
-              label={tText("hrBody")}
-              value={form.body}
-              onChangeText={(v) => editable("body", v)}
-              numberOfLines={10}
-            />
-            <BodyText>{tText("hrTemplateFormat")}</BodyText>
-            <Text localize={false} style={hs.muted}>
-              {(
-                preview?.variables || [
-                  "company.name",
-                  "company.email",
-                  "company.address",
-                  "user.name",
-                  "user.email",
-                  "job.title",
-                  "job.salary",
-                  "job.location",
-                  "job.employment",
-                  "job.kind",
-                  "result",
-                ]
-              )
-                .map((v) => `{{${v}}}`)
-                .join("　")}
-            </Text>
+              <View style={{ width: 160, maxWidth: "100%" }}>
+                <AppSelect
+                  label={tText("mtEnabledFilter")}
+                  value={filter.enabled}
+                  onValueChange={(v) => change("enabled", v)}
+                  options={[
+                    all,
+                    { value: "true", label: tText("hrEnabled") },
+                    { value: "false", label: tText("hrDisabled") },
+                  ]}
+                />
+              </View>
+            </View>
             <View style={hs.row}>
-              <Text>{tText("hrEnabled")}</Text>
-              <AppSwitch
-                accessibilityLabel={tText("hrEnabled")}
-                value={form.enabled}
-                onValueChange={(v) => editable("enabled", v)}
+              <View style={{ width: 170, maxWidth: "100%" }}>
+                <AppSelect
+                  label={tText("hrRecruitmentKind")}
+                  value={filter.kind}
+                  onValueChange={(v) => change("kind", v)}
+                  options={[
+                    all,
+                    { value: "*", label: tText("mtScopeAll") },
+                    { value: "JOB", label: tText("hrJob") },
+                    {
+                      value: "COMPANY_RECRUITMENT",
+                      label: tText("hrCompanyRecruitment"),
+                    },
+                  ]}
+                />
+              </View>
+              <View style={{ width: 170, maxWidth: "100%" }}>
+                <AppSelect
+                  label={tText("hrEmploymentType")}
+                  value={filter.employment}
+                  onValueChange={(v) => change("employment", v)}
+                  options={[
+                    all,
+                    { value: "*", label: tText("mtScopeAll") },
+                    ...employment.data,
+                  ]}
+                />
+              </View>
+              <View style={{ width: 170, maxWidth: "100%" }}>
+                <AppSelect
+                  label={tText("mtSort")}
+                  value={filter.sort}
+                  onValueChange={(v) => change("sort", v)}
+                  options={[
+                    { value: "updatedAt", label: tText("mtUpdatedAt") },
+                    { value: "name", label: tText("hrTemplateName") },
+                    { value: "count", label: tText("mtCount") },
+                  ]}
+                />
+              </View>
+              <View style={{ width: 160, maxWidth: "100%" }}>
+                <AppSelect
+                  label={tText("mtDirection")}
+                  value={filter.direction}
+                  onValueChange={(v) => change("direction", v)}
+                  options={[
+                    { value: "asc", label: tText("mtAscending") },
+                    { value: "desc", label: tText("mtDescending") },
+                  ]}
+                />
+              </View>
+              <HrButton
+                outline
+                label={tText("mtReset")}
+                onPress={() => {
+                  setSearch("");
+                  setQ("");
+                  setFilter({
+                    job: "",
+                    result: "",
+                    enabled: "",
+                    kind: "",
+                    employment: "",
+                    sort: "updatedAt",
+                    direction: "desc",
+                  });
+                  setPage(1);
+                }}
               />
             </View>
-            {writable && (
-              <View style={hs.row}>
-                <AppButton
-                  label={tText("hrSave")}
-                  disabled={action.busy || !form.name.trim() || !!previewError}
-                  onPress={() =>
-                    void action.run(async () => {
-                      const saved = await dataRequest<MailTemplate>(
-                        "/company-mail/templates" +
-                          (form.id ? "/" + form.id : ""),
-                        token,
-                        form,
-                        form.id ? "PUT" : "POST",
-                      );
-                      setForm(saved);
-                    })
-                  }
-                />
-                {form.id && permission.level >= 3 && (
-                  <ConfirmAction
-                    ButtonComponent={AppButton}
-                    danger
-                    label={tText("hrDelete")}
-                    message={tText("hrDeleteConfirm")}
-                    onConfirm={async () => {
-                      await dataRequest(
-                        `/company-mail/templates/${form.id}?version=${form.version}`,
-                        token,
-                        undefined,
-                        "DELETE",
-                      );
-                      setForm(fresh());
-                    }}
+          </Panel>
+          <BodyText>{tText("hrTemplatePriority")}</BodyText>
+          {!canManage && <BodyText>{tText("mtGlobalPermission")}</BodyText>}
+          <ResourceStatus
+            loading={sets.loading || jobs.loading}
+            error={sets.error || jobs.error}
+            onRetry={() => {
+              sets.refresh();
+              jobs.refresh();
+            }}
+            privateData
+          />
+          <Pager page={page} total={sets.data.total} onChange={setPage} />
+          {canManage &&
+            !sets.loading &&
+            !sets.error &&
+            !sets.data.items.length && (
+              <Panel>
+                <BodyText>{tText("mtNoMatches")}</BodyText>
+              </Panel>
+            )}
+          <View style={[hs.row, { alignItems: "stretch" }]}>
+            {sets.data.items.map((row) => (
+              <View
+                key={row.id}
+                style={[
+                  hs.item,
+                  {
+                    width:
+                      width >= 1350 ? "31.8%" : width >= 850 ? "48%" : "100%",
+                    gap: 12,
+                  },
+                ]}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={row.name}
+                  disabled={opening}
+                  onPress={() => void open(row.id)}
+                >
+                  <Text
+                    localize={false}
+                    style={{ fontWeight: "700", fontSize: 15 }}
+                  >
+                    {row.name}
+                  </Text>
+                </Pressable>
+                <Text localize={false} style={hs.muted}>
+                  {row.jobTitle || tText("hrNoJobScope")} ／{" "}
+                  {row.recruitmentKind === "*"
+                    ? tText("hrAll")
+                    : row.recruitmentKind === "JOB"
+                      ? tText("hrJob")
+                      : tText("hrCompanyRecruitment")}{" "}
+                  ／{" "}
+                  {row.employmentType === "*"
+                    ? tText("hrAll")
+                    : row.employmentType}
+                </Text>
+                <Text>
+                  {tText(row.enabled ? "hrEnabled" : "hrDisabled")} ／{" "}
+                  {tText("mtConfiguredCount", { count: row.notificationCount })}
+                </Text>
+                <Text>{row.results.map(mailResultLabel).join("・")}</Text>
+                <Text style={hs.muted}>
+                  {tText("mtUpdatedAt")}:{" "}
+                  {new Date(row.updatedAt).toLocaleString(localeTag())}
+                </Text>
+                <View style={hs.row}>
+                  <HrButton
+                    outline
+                    label={tText(writable ? "hrEdit" : "mtView")}
+                    disabled={opening}
+                    onPress={() => void open(row.id)}
                   />
-                )}
+                  {permission.allLevel >= 3 && (
+                    <ConfirmAction
+                      ButtonComponent={HrButton}
+                      danger
+                      label={tText("hrDelete")}
+                      message={tText("mtDeleteSet")}
+                      onConfirm={() =>
+                        dataRequest(
+                          `/company-mail/sets/${row.id}?version=${row.version}`,
+                          token,
+                          undefined,
+                          "DELETE",
+                        )
+                      }
+                    />
+                  )}
+                </View>
               </View>
-            )}
-          </Panel>
-          <Panel style={hs.card}>
-            <SectionTitle>{tText("hrPreview")}</SectionTitle>
-            <AppSelect
-              label={tText("hrPreviewApplicant")}
-              value={selected}
-              onValueChange={setSelected}
-              options={[
-                { value: "", label: tText("hrSample") },
-                ...interactions.data.items.map((i) => ({
-                  value: i.id,
-                  label: i.name + " / " + i.title,
-                })),
-              ]}
-            />
-            {!!previewError && (
-              <Text accessibilityRole="alert" style={hs.error}>
-                {previewError}
-              </Text>
-            )}
-            {preview && (
-              <View style={hs.preview}>
-                <Text localize={false} style={{ fontWeight: "700" }}>
-                  {preview.subject}
-                </Text>
-                <Text localize={false} style={{ lineHeight: 23 }}>
-                  {preview.body}
-                </Text>
-              </View>
-            )}
-            <BodyText>{tText("hrForwardNote")}</BodyText>
-          </Panel>
+            ))}
+          </View>
+          <Pager page={page} total={sets.data.total} onChange={setPage} />
+        </>
+      )}
+      {tab === "history" && (
+        <Panel style={hs.card}>
+          <SectionTitle>{tText("hrMailHistory")}</SectionTitle>
+          <BodyText>{tText("mtHistoryHelp")}</BodyText>
+          <AppSelect
+            label={tText("mtHistoryApplicant")}
+            value={selected}
+            onValueChange={setSelected}
+            options={[
+              { value: "", label: tText("mtSelectHistory") },
+              ...interactions.data.items.map((i) => ({
+                value: i.id,
+                label: i.name + " / " + i.title,
+              })),
+            ]}
+          />
           {selected && (
-            <Panel style={hs.card}>
-              <SectionTitle>{tText("hrMailHistory")}</SectionTitle>
+            <>
               <ResourceStatus
                 loading={logs.loading}
                 error={logs.error}
                 onRetry={logs.refresh}
               />
-              {!logs.data.length && !logs.loading && (
+              {!logs.loading && !logs.error && !logs.data.length && (
                 <BodyText>{tText("hrNoMail")}</BodyText>
               )}
               {logs.data.map((log) => (
@@ -370,7 +420,7 @@ function Content() {
                   {["FAILED", "UNCERTAIN"].includes(log.state) &&
                     permission.level >= 2 && (
                       <ConfirmAction
-                        ButtonComponent={AppButton}
+                        ButtonComponent={HrButton}
                         label={tText("hrRetry")}
                         message={tText("hrRetryNote")}
                         onConfirm={() =>
@@ -384,10 +434,26 @@ function Content() {
                     )}
                 </View>
               ))}
-            </Panel>
+            </>
           )}
-        </View>
-      </View>
+        </Panel>
+      )}
+      {editor && (
+        <MailTemplateEditor
+          initial={editor}
+          jobs={jobs.data}
+          employment={employment.data}
+          canWrite={writable}
+          canDelete={permission.allLevel >= 3}
+          applicants={interactions.data.items}
+          initialApplicant={selected}
+          onClose={() => setEditor(null)}
+          onSaved={() => {
+            setEditor(null);
+            sets.refresh();
+          }}
+        />
+      )}
     </AppPage>
   );
 }

@@ -1,4 +1,42 @@
 const messages = {
+  mtCreate: "メールテンプレートを作成",
+  mtEdit: "メールテンプレートを編集",
+  mtNameRequired: "テンプレート名を入力してください。",
+  mtPartial: "{{result}}の件名と本文を両方入力するか、両方空にしてください。",
+  mtDeletePermission:
+    "登録済みの通知を空にして解除するには、削除権限が必要です。",
+  mtOneRequired: "少なくとも1種類の通知の件名と本文を入力してください。",
+  mtBlankNote:
+    "件名・本文が両方空の通知は登録しません。登録済みの通知を両方空にすると、その通知だけ登録解除します。",
+  mtConfigured: "設定済み",
+  mtNotConfigured: "未設定",
+  mtPreviewSample: "サンプルデータで表示します。",
+  mtPreviewEmpty: "この通知の件名と本文を入力すると、プレビューを表示します。",
+  mtDiscardTitle: "変更内容の確認",
+  mtDiscardMessage: "保存していない変更があります。破棄して閉じますか？",
+  mtDiscard: "破棄して閉じる",
+  mtSaveConfirm:
+    "設定済みの通知 {{count}} 件を保存します。空にした既存通知 {{removed}} 件は登録解除します。よろしいですか？",
+  mtNoFilter: "絞り込みなし",
+  mtSearch: "検索",
+  mtSearchHint: "テンプレート名・件名・本文・案件名",
+  mtEnabledFilter: "有効状態",
+  mtScopeAll: "適用条件：すべて",
+  mtSort: "並び替え",
+  mtUpdatedAt: "更新日時",
+  mtCount: "設定通知数",
+  mtDirection: "並び順",
+  mtAscending: "昇順",
+  mtDescending: "降順",
+  mtReset: "条件をリセット",
+  mtNoMatches: "条件に一致するテンプレートはありません。",
+  mtConfiguredCount: "{{count}}種類の通知",
+  mtView: "詳細表示",
+  mtDeleteSet:
+    "このテンプレートと、登録されているすべての通知内容を削除します。よろしいですか？",
+  mtHistoryApplicant: "送信履歴を確認する応募",
+  mtSelectHistory: "応募を選択",
+
   hrLoginLinkNote: "従業員ログイン用URL（初期パスワードはメール送信しません）",
   hrEmployment: "入社・雇用管理",
   hrPersonalDocuments: "提出書類・共有設定",
@@ -87,7 +125,7 @@ const messages = {
   hrSample: "サンプルデータ",
   hrForwardNote:
     "結果を確定すると応募者へ通知し、企業オーナーへ同じ本文を件名「[転送]」付きで送信します。",
-  hrMailHistory: "結果通知メール・送信履歴",
+  hrMailHistory: "通知メールの送信履歴",
   hrNoMail: "この応募の送信履歴はありません。",
   hrToApplicant: "応募者宛",
   hrToCompany: "企業オーナー宛",
@@ -125,5 +163,12 @@ const messages = {
   hrSharedDocuments: "本人が共有した最新書類",
   hrNoSharedDocuments:
     "共有された最新書類はありません。本人に共有を依頼してください。",
+  mtListTab: "テンプレート一覧",
+  mtManagePermission:
+    "テンプレートの作成・更新には「応募者管理（すべて）」の更新権限が必要です。",
+  mtGlobalPermission:
+    "テンプレートの閲覧には「応募者管理（すべて）」の閲覧権限が必要です。対象案件の通知履歴は「通知メールの送信履歴」で確認できます。",
+  mtHistoryHelp:
+    "応募者への結果通知と企業宛の転送メールについて、送信内容・送信状況・エラーを確認できます。テンプレートの作成・編集は「テンプレート一覧」で行います。",
 } as const;
 export default messages;

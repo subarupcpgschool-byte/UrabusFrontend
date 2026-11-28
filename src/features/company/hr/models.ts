@@ -70,3 +70,35 @@ export type MailLog = {
   sentAt: string | null;
   lastError: string | null;
 };
+export const MAIL_RESULTS = [
+  "内定",
+  "不採用",
+  "見送り",
+  "内定取り消し",
+  "内定辞退",
+] as const;
+export type MailResult = (typeof MAIL_RESULTS)[number];
+export type MailEntry = {
+  id?: string;
+  version: number;
+  result: MailResult;
+  subject: string;
+  body: string;
+};
+export type MailSet = {
+  id: string;
+  version: number;
+  name: string;
+  recruitmentId: string | null;
+  recruitmentKind: string;
+  employmentType: string;
+  enabled: boolean;
+  updatedAt: string;
+  jobTitle?: string;
+  notificationCount: number;
+  results: MailResult[];
+};
+export type MailSetDraft = Omit<
+  MailSet,
+  "id" | "updatedAt" | "notificationCount" | "results"
+> & { id?: string; entries: MailEntry[] };
